@@ -117,4 +117,12 @@ On conflict, the client will read the shadow again and redo the merge and write 
 
 When iterating merging the structures and _ClientIsMaster_ mode (other mode is _ServerIsMaster_) is set, it will check if the fields that are timestamped are not present in the client model but in the shadow. If it is, it will delete the field in the shadow. Since it is the loaded from shadow model that will be written back. Added elements in the client will be added to the shadow as well as updated will be updated.
 
-When _ServerIsMaster_ it is not possible to delete elements only add and updates are possbile from the client model.
+When _ServerIsMaster_ it is not possible to delete elements only add and updates are possible from the client model.
+
+=== Desired State
+
+This is a separate sort key and must match a _Reported_ sort key name. This is to denote the desired state and when the client wants to report a state it may also include that the _SDK_ shall load the desired state and clear it when the desired state value are the same as reported.
+
+In this case it will need to do this in a transaction since it is two different sort keys. For DynamoDB this is done using the transaction _API_.
+
+It is possible for a client to state that it should ignore the desired state and only report the reported state. This is done by setting the _IgnoreDesiredState_ mode instead of the default _UseDesiredState_ mode when doing reporting.
