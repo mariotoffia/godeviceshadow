@@ -1,0 +1,66 @@
+= Go Device Shadow (godeviceshadow)
+This is an implementation of a device shadow storage and notification for DynamoDB and SQS/SNS. It is pluggable for other storage/notifications.
+
+== Introduction
+
+This is a somewhat emulation of the existing IoT Core Device Shadow. However, it separates the _Reported_ and _Desired_ states into two different sort keys to allow for more data and better querying.
+
+The partition key is the "name" of the device shadow and hence, it is possible to do advanced naming e.g. _My House#Basement#Lightning Controller_ as a _PK_. The _SK_(s) are handled by this library.
+
+The storage is pluggable, but it comes with a DynamoDB and in-memory implementation out of the box.
+
+When DynamoDB is used, a DynamoDB stream listener code can be registered for the table to listen for changes and notify the clients using SQS or SNS.
+
+This is pluggable as well, but it comes with an SQS and SNS implementation out of the box.
+
+== Device Shadow Layout
+
+The device shadow is rather alike the IoT Core Device Shadow but with a few differences. It has split the _Reported_ and _Desired_ states into two different sort keys to allow for more data and better querying. It will not provide with any 
+diff inside the shadow itself. Instead this is reported when a change has been made to the reported/desired shadow as both old, new and diff.
+
+=== Reported State
+
+The sort key is a single R#<name> where the name by default is _main_ but clients may have multiple sub device shadows on a single _PK_.
+
+A sample PK, SK: _My House#Basement#Lightning Controller_, _R#main_
+
+.Mandatory Fields in Reported State
+[source,json]
+----
+{
+  "v": "<int64 number>", // <1>
+  "ts": "int32 unix32 bit second timestamp",
+  "clientToken": "<arbitrary string that the last client used to update the state>"
+}
+----
+<1> This is used to do concurrency control where the client reads the shadow, updates and then writes back with the condition that the version number is the same as when it was read. If fails, it will read it back again and retry up to _n_ times before giving up.
+
+=== Desired State
+
+The sort key is a single D#<name> where the name by default is _main_ but clients may have multiple sub device shadows on a single _PK_. It must match the _R#<name>_ in order to be coupled with the device shadow sub named _<name>_.
+
+A sample PK, SK: _My House#Basement#Lightning Controller_, _D#main_
+
+.Mandatory Fields in Desired State
+[source,json]
+----
+{
+  "v": "<int64 number>", // <1>
+  "ts": "int32 unix32 bit second timestamp",
+  "clientToken": "<arbitrary string that the last client used to update the state>"
+}
+----
+<1> This is used to do concurrency control where the client reads the shadow, updates and then writes back with the condition that the version number is the same as when it was read. If fails, it will read it back again and retry up to _n_ times before giving up.
+
+=== Notifications
+
+When a shadow is updated, a notification is sent to the clients. This is done by the storage implementation. For example, DynamoDB, uses a _DynamoDB Stream_ listener to listen for changes and sends to target e.g. SQS or SNS (or any other implementation).
+
+Each target registration specifies what type of plugin (e.g. SQS), attributes such as the queue name, topic name, etc.
+
+In addition the attributes specifies what type of events to listen for:
+* Report, Desired or Both
+* Regexp for PK and SK combined with a'#' separator.
+* Old, New, Diff (or any combination of these)
+
+The registrations are stored as _JSON_ with the event lambda itself (for dynamodb stream). 
