@@ -105,17 +105,27 @@ type Circuit struct {
 }
 ----
 <1> This is the timestamp that the sensor value was read for this example, it is possible to have many different types as long as it implements the `ValueAndTimestamp` interface.
-<2> For this sensor we decided the use _RFC3339_ timestamp for user readability (not efficient though). If unix timestamp use `UnixTimestamp32` instead.
+<2> For this sensor we decided the use _RFC3339_ timestamp for user readability (not efficient though). If unix timestamp use `UnixTimestamp32` or for (64 bit `UnixTimestamp64` nano resolution) instead.
 <3> Here all sensor values are stored as a map with the sensor name as the key and the value as the value. The value is a struct that implements the `ValueAndTimestamp` interface. The system only handles timestamps for a certain value and ignores the rest.
 
 === Creating or Updating the Device Shadow
-When writing to the device shadow, for example _Report_, the _SDK_ will read the whole document and marshal it to the registered model. For example `Building` it will iterate all the fields and check if they implement the `ValueAndTimestamp` interface. If they do, it will check with the `Building` that it wants to update the shadow with and check if the timestamps are newer than the one in the shadow. If it is, it will update the shadow with the new value and timestamp. When done it will write the loaded it back conditionally on version and increment the version (atomically).
+When writing to the device shadow, for example _Report_, the _SDK_ will read the whole document and marshal it to the registered model. For example `Building` it will iterate all the fields and check if they implement the `ValueAndTimestamp` interface. If they do, it will use it to check if the client model is newer than the device shadow model. If it is, the client model value will be kept, if older, the device shadow model value will be copied to the client model.
+
+If any field is missing in the client model but present in the shadow model, it will be added to the client model. If any field is present in the client model but not in the shadow model, it will be kept (se _Deleting an Element_ for the options).
+
+When done it will write the loaded it back conditionally on version and increment the version (atomically). This is done with an updated timestamp of `time.Now.UTC().Unix()`. If the client supplied a `ClientToken` string, it will be added to the shadow as well.
 
 On conflict, the client will read the shadow again and redo the merge and write it back again. After _n_ times it will give up and return an conflict error.
 
 === Deleting an Element
 
-When iterating merging the structures and _ClientIsMaster_ mode (other mode is _ServerIsMaster_) is set, it will check if the fields that are timestamped are not present in the client model but in the shadow. If it is, it will delete the field in the shadow. Since it is the loaded from shadow model that will be written back. Added elements in the client will be added to the shadow as well as updated will be updated.
+When iterating merging the structures there are two modes:  _ClientIsMaster_ and  _ServerIsMaster_.
+
+When _ClientIsMaster_ it will just check elements that are timestamped and exists on both models. If the server model value is newer, the value will be copied to the client model. Otherwise the client model will be kept as is.
+
+If the _ServerIsMaster_ mode it will not allow the client to delete any property only, add, update or keep values are possible.
+
+In both modes, all values that do not implement `ValueAndTimestamp` are just used as is on the client model to write the device shadow (i.e. always overwritten without any timestamp handling).
 
 When _ServerIsMaster_ it is not possible to delete elements only add and updates are possible from the client model.
 
