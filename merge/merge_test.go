@@ -39,6 +39,7 @@ type TimestampedMapVal struct {
 func (tmv *TimestampedMapVal) GetTimestamp() time.Time {
 	return tmv.UpdatedAt
 }
+
 func (tmv *TimestampedMapVal) SetTimestamp(t time.Time) {
 	tmv.UpdatedAt = t
 }

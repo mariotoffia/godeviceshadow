@@ -19,6 +19,13 @@ const (
 // MergeOptions holds configuration for how the merge should be performed.
 type MergeOptions struct {
 	Mode MergeMode
+	// Loggers will be notified on add, updated, remove, not-changed operations while merging.
+	Loggers MergeLoggers
+}
+
+type MergeObject struct {
+	MergeOptions
+	CurrentPath string
 }
 
 // Merge merges newModel into oldModel following the specified rules:
@@ -39,7 +46,7 @@ func Merge[T any](oldModel, newModel T, opts MergeOptions) (T, error) {
 	oldVal := reflect.ValueOf(oldModel)
 	newVal := reflect.ValueOf(newModel)
 
-	mergedVal := mergeRecursive(oldVal, newVal, opts)
+	mergedVal := mergeRecursive(oldVal, newVal, MergeObject{MergeOptions: opts})
 
 	var zero T
 	res, ok := mergedVal.Interface().(T)
@@ -52,7 +59,7 @@ func Merge[T any](oldModel, newModel T, opts MergeOptions) (T, error) {
 }
 
 // mergeRecursive is the core that merges base with override respecting MergeOptions.
-func mergeRecursive(base, override reflect.Value, opts MergeOptions) reflect.Value {
+func mergeRecursive(base, override reflect.Value, opts MergeObject) reflect.Value {
 	// Handle invalid (e.g., the new model missing that field).
 	if !base.IsValid() {
 		// base is missing => just return override as final (unless it's invalid too)
@@ -125,7 +132,7 @@ func mergeRecursive(base, override reflect.Value, opts MergeOptions) reflect.Val
 	}
 }
 
-func mergeSlice(baseVal, overrideVal reflect.Value, opts MergeOptions) reflect.Value {
+func mergeSlice(baseVal, overrideVal reflect.Value, opts MergeObject) reflect.Value {
 	// base or invalid or nil -> override wins
 	if !baseVal.IsValid() || baseVal.IsNil() {
 		return overrideVal
@@ -196,7 +203,7 @@ func mergeSlice(baseVal, overrideVal reflect.Value, opts MergeOptions) reflect.V
 }
 
 // mergeStruct merges two struct values (non-timestamped case).
-func mergeStruct(baseVal, overrideVal reflect.Value, opts MergeOptions) reflect.Value {
+func mergeStruct(baseVal, overrideVal reflect.Value, opts MergeObject) reflect.Value {
 	if !baseVal.IsValid() {
 		return overrideVal
 	}
@@ -215,24 +222,26 @@ func mergeStruct(baseVal, overrideVal reflect.Value, opts MergeOptions) reflect.
 	nFields := baseVal.NumField()
 
 	for i := 0; i < nFields; i++ {
-		baseField := baseVal.Field(i)
-		fieldName := baseVal.Type().Field(i).Name
+		baseFieldValue := baseVal.Field(i)
+		baseField := baseVal.Type().Field(i)
+
+		opts.CurrentPath = concatPath(opts.CurrentPath, getJSONTag(baseField))
 
 		var overrideField reflect.Value
 
 		// get the override field if it exists
-		if i < overrideVal.NumField() && baseVal.Type().Field(i).Name == overrideVal.Type().Field(i).Name {
+		if i < overrideVal.NumField() && baseField.Name == overrideVal.Type().Field(i).Name {
 			overrideField = overrideVal.Field(i)
 		} else {
-			// if struct layouts differ -> fallback by name
-			overrideField = tryFieldByName(overrideVal, fieldName)
+			// if struct layouts differ -> skip it
+			continue
 		}
 
 		if !result.Field(i).CanSet() {
 			continue
 		}
 
-		merged := mergeRecursive(baseField, overrideField, opts)
+		merged := mergeRecursive(baseFieldValue, overrideField, opts)
 		// If merged is invalid -> (effectively) remove
 		if merged.IsValid() {
 			// Ensure correct type/pointer shape
@@ -248,7 +257,7 @@ func mergeStruct(baseVal, overrideVal reflect.Value, opts MergeOptions) reflect.
 }
 
 // mergeMap merges two map values (non-timestamped case).
-func mergeMap(baseVal, overrideVal reflect.Value, opts MergeOptions) reflect.Value {
+func mergeMap(baseVal, overrideVal reflect.Value, opts MergeObject) reflect.Value {
 	if !baseVal.IsValid() || baseVal.IsNil() {
 		// missing base -> override
 		return overrideVal

@@ -20,60 +20,33 @@ func isEmptyValue(v reflect.Value) bool {
 	return false
 }
 
-func isPrimitiveOrPtrToPrimitive(t reflect.Type) bool {
-	// If pointer, unwrap one level and check again
-	if t.Kind() == reflect.Ptr {
-		elem := t.Elem()
-		return isPrimitiveKind(elem.Kind())
+func concatPath(path, name string) string {
+	if path == "" {
+		return name
 	}
-
-	return isPrimitiveKind(t.Kind())
+	return path + "." + name
 }
 
-func isPrimitiveKind(k reflect.Kind) bool {
-	switch k {
-	case reflect.Bool,
-		reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
-		reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr,
-		reflect.Float32, reflect.Float64,
-		reflect.Complex64, reflect.Complex128,
-		reflect.String:
-		return true
-	default:
-		// Other kinds: Struct, Map, Slice, Array, Interface, Ptr, Chan, Func, UnsafePointer are non-primitive
-		return false
+// getJSONTag get the tag (name part only) from a struct field.
+//
+// If no _JSON_ field tag is present, the field name is returned.
+func getJSONTag(field reflect.StructField) string {
+	tag := field.Tag.Get("json")
+	if tag == "" {
+		return field.Name
 	}
-}
 
-// unwrapToInterface safely unwraps pointer/interface and returns the underlying
-// `any` if possible.
-func unwrapToInterface(v reflect.Value) any {
-	if !v.IsValid() {
-		return nil
+	// If the tag is "-", ignore it
+	if tag == "-" {
+		return ""
 	}
-	// Unwrap interface
-	if v.Kind() == reflect.Interface && !v.IsNil() {
-		v = v.Elem()
-	}
-	// Unwrap pointer
-	if v.Kind() == reflect.Ptr && !v.IsNil() {
-		v = v.Elem()
-	}
-	if !v.IsValid() {
-		return nil
-	}
-	return v.Interface()
-}
 
-// tryFieldByName attempts to get a named field from a struct by name (if it exists).
-// If overrideVal is not a struct or doesn't have that field, returns zero Value.
-func tryFieldByName(structVal reflect.Value, fieldName string) reflect.Value {
-	if structVal.Kind() != reflect.Struct {
-		return reflect.Value{}
+	// If the tag contains a comma, only consider the first part
+	if idx := 0; idx < len(tag) {
+		if tag[idx] == ',' {
+			return tag[:idx]
+		}
 	}
-	f, ok := structVal.Type().FieldByName(fieldName)
-	if !ok {
-		return reflect.Value{}
-	}
-	return structVal.FieldByIndex(f.Index)
+
+	return tag
 }
