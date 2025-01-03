@@ -18,6 +18,7 @@ type Circuit struct {
 	ID      int
 	Sensors []Sensor
 }
+
 type Device struct {
 	Name     string
 	Circuits []Circuit
@@ -324,7 +325,8 @@ func TestEqualTimestampNoUpdate(t *testing.T) {
 	}
 
 	merged, err := merge.Merge(oldDevice, newDevice, merge.MergeOptions{
-		Mode: merge.ClientIsMaster,
+		Mode:                merge.ClientIsMaster,
+		DoOverrideWithEmpty: true,
 	})
 	require.NoError(t, err)
 

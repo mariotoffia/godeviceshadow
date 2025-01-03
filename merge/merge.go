@@ -3,6 +3,8 @@ package merge
 import (
 	"fmt"
 	"reflect"
+
+	"github.com/mariotoffia/godeviceshadow/model"
 )
 
 // MergeMode indicates how merging is done regarding deletions.
@@ -18,7 +20,13 @@ const (
 
 // MergeOptions holds configuration for how the merge should be performed.
 type MergeOptions struct {
+	// Mode specified how the merge should be performed regarding deletions.
 	Mode MergeMode
+	// DoOverrideWithEmpty when set to `true` it will check if the override value is "empty"
+	// i.e. zero value zero len array, map, slice, nil pointer, etc. If it is `true` and the
+	// override value is "empty" it will override the base value. If set to `false` it will
+	// keep the base value.
+	DoOverrideWithEmpty bool
 	// Loggers will be notified on add, updated, remove, not-changed operations while merging.
 	Loggers MergeLoggers
 }
@@ -46,43 +54,29 @@ func Merge[T any](oldModel, newModel T, opts MergeOptions) (T, error) {
 	oldVal := reflect.ValueOf(oldModel)
 	newVal := reflect.ValueOf(newModel)
 
-	mergedVal := mergeRecursive(oldVal, newVal, MergeObject{MergeOptions: opts})
+	mergedVal, err := mergeRecursive(oldVal, newVal, MergeObject{MergeOptions: opts})
 
 	var zero T
-	res, ok := mergedVal.Interface().(T)
 
-	if !ok {
-		return zero, fmt.Errorf("unexpected type %T after merge", mergedVal.Interface())
+	if err != nil {
+		return zero, err
 	}
+
+	res, _ := mergedVal.Interface().(T)
 
 	return res, nil
 }
 
-// mergeRecursive is the core that merges base with override respecting MergeOptions.
-func mergeRecursive(base, override reflect.Value, opts MergeObject) reflect.Value {
-	// Handle invalid (e.g., the new model missing that field).
-	if !base.IsValid() {
-		// base is missing => just return override as final (unless it's invalid too)
-		return override
-	}
-
+// mergeRecursive will try to merge base with override recursively.
+func mergeRecursive(base, override reflect.Value, obj MergeObject) (reflect.Value, error) {
 	if !override.IsValid() {
-		// override is missing => in ClientIsMaster remove, in ServerIsMaster keep
-		switch opts.Mode {
-		case ClientIsMaster:
-			// Return zero or invalid. For struct fields, we'll skip it in the parent.
-			return reflect.Value{}
-		case ServerIsMaster:
-			// Keep old
-			return base
-		}
+		return reflect.Value{}, fmt.Errorf("both base: '%T' and override: '%T' must be valid", base.Interface(), override.Interface())
 	}
 
-	// If both are interface or pointer, handle unwrapping
 	baseVal := base
 	overrideVal := override
 
-	// If either is an interface, unwrap.
+	// If either is an interface, unwrap to get the concrete type.
 	if base.Kind() == reflect.Interface {
 		baseVal = base.Elem()
 	}
@@ -101,56 +95,76 @@ func mergeRecursive(base, override reflect.Value, opts MergeObject) reflect.Valu
 	}
 
 	// implements ValueAndTimestamp -> handle timestamped merge
-	if isValueAndTimestamp(baseVal) && isValueAndTimestamp(overrideVal) {
-		return mergeTimestamped(base, override, opts)
+	baseValTS, baseOk := unwrapValueAndTimestamp(baseVal)
+	overrideValTS, overrideOk := unwrapValueAndTimestamp(overrideVal)
+
+	if baseOk && overrideOk {
+		oldTS := baseValTS.GetTimestamp()
+		newTS := overrideValTS.GetTimestamp()
+
+		switch {
+		case newTS.After(oldTS):
+			obj.Loggers.NotifyProcessed(obj.CurrentPath, model.MergeOperationUpdate, baseVal, overrideVal, oldTS, newTS)
+
+			return override, nil // override newer -> replace
+		default:
+			obj.Loggers.NotifyProcessed(obj.CurrentPath, model.MergeOperationNotChanged, baseVal, overrideVal, oldTS, newTS)
+
+			return base, nil // override less or equal -> no update -> keep old
+		}
 	}
 
 	switch baseVal.Kind() {
 	case reflect.Struct:
-		return mergeStruct(baseVal, overrideVal, opts)
-
+		return mergeStruct(baseVal, overrideVal, obj)
 	case reflect.Map:
-		return mergeMap(baseVal, overrideVal, opts)
-
+		return mergeMap(baseVal, overrideVal, obj)
 	case reflect.Slice, reflect.Array:
-		return mergeSlice(baseVal, overrideVal, opts)
-
-	// Basic types
+		return mergeSlice(baseVal, overrideVal, obj)
+	// Basic types (int, string, ...)
 	default:
-		// override is empty -> remove or keep
-		if isEmptyValue(overrideVal) {
-			if opts.Mode == ClientIsMaster {
-				// remove
-				return reflect.Value{}
-			}
-			// keep old
-			return base
+		if obj.DoOverrideWithEmpty && isEmptyValue(overrideVal) {
+			return override, nil
 		}
 
-		// override is non-empty -> override
-		return override
+		if !reflect.DeepEqual(baseVal, overrideVal) {
+			obj.Loggers.NotifyPlain(obj.CurrentPath, model.MergeOperationUpdate, baseVal, overrideVal)
+
+			return override, nil // not equal -> override
+		} else {
+			obj.Loggers.NotifyPlain(obj.CurrentPath, model.MergeOperationNotChanged, baseVal, overrideVal)
+
+			return base, nil // equal -> keep old
+		}
 	}
 }
 
-func mergeSlice(baseVal, overrideVal reflect.Value, opts MergeObject) reflect.Value {
-	// base or invalid or nil -> override wins
-	if !baseVal.IsValid() || baseVal.IsNil() {
-		return overrideVal
+func mergeSlice(baseVal, overrideVal reflect.Value, opts MergeObject) (reflect.Value, error) {
+	if baseVal.IsNil() {
+		// TODO: Need to iterate over overrideVal and notify added...
+		return overrideVal, nil
 	}
 
-	// override is invalid or nil -> remove or keep
-	if !overrideVal.IsValid() || overrideVal.IsNil() {
+	basePath := opts.CurrentPath
+
+	// override is nil -> remove or keep
+	if overrideVal.IsNil() {
 		switch opts.Mode {
 		case ClientIsMaster:
-			// remove entirely
-			return reflect.Value{}
+			for i := 0; i < baseVal.Len(); i++ {
+				opts.CurrentPath = fmt.Sprintf("%s.%d", basePath, i)
+				// TODO: Need to iterate over baseVal and notify removed...
+			}
+			return overrideVal, nil
 		case ServerIsMaster:
-			// keep old
-			return baseVal
+			for i := 0; i < baseVal.Len(); i++ {
+				opts.CurrentPath = fmt.Sprintf("%s.%d", basePath, i)
+				// TODO: Need to iterate over baseVal and notify no-change...
+			}
+			return baseVal, nil
 		}
 	}
 
-	// Both are valid slices
 	baseLen := baseVal.Len()
 	ovLen := overrideVal.Len()
 
@@ -168,149 +182,261 @@ func mergeSlice(baseVal, overrideVal reflect.Value, opts MergeObject) reflect.Va
 	for i := 0; i < minLen; i++ {
 		baseElem := baseVal.Index(i)
 		ovElem := overrideVal.Index(i)
-		mergedElem := mergeRecursive(baseElem, ovElem, opts)
+		mergedElem, err := mergeRecursive(baseElem, ovElem, opts)
 
-		if mergedElem.IsValid() {
-			// "replace"
-			result = reflect.Append(result, mergedElem)
-		} else {
-			if opts.Mode == ServerIsMaster {
-				// ServerIsMaster -> keep old
-				result = reflect.Append(result, baseElem)
-			}
+		if err != nil {
+			return reflect.Value{}, err
 		}
+
+		result = reflect.Append(result, mergedElem)
 	}
 
 	// new slice is longer -> add extra elements in override
 	if ovLen > minLen {
 		for i := minLen; i < ovLen; i++ {
+			opts.CurrentPath = fmt.Sprintf("%s.%d", basePath, i)
+
+			// TODO: Needs to recurse down and notify added...
 			result = reflect.Append(result, overrideVal.Index(i))
 		}
 	}
 
 	// old slice is longer -> remove or keep
 	if baseLen > minLen {
-		// If ClientIsMaster -> (effectively) remove
 		if opts.Mode == ServerIsMaster {
 			// ServerIsMaster -> keep
 			for i := minLen; i < baseLen; i++ {
+				opts.CurrentPath = fmt.Sprintf("%s.%d", basePath, i)
+
+				// TODO: Needs to recurse down and notify no-change...
 				result = reflect.Append(result, baseVal.Index(i))
+			}
+		} else /*ClientIsMaster*/ {
+			for i := minLen; i < baseLen; i++ {
+				opts.CurrentPath = fmt.Sprintf("%s.%d", basePath, i)
+
+				// TODO: Needs to recurse down and notify removed...
 			}
 		}
 	}
 
-	return result
+	return result, nil
 }
 
 // mergeStruct merges two struct values (non-timestamped case).
-func mergeStruct(baseVal, overrideVal reflect.Value, opts MergeObject) reflect.Value {
-	if !baseVal.IsValid() {
-		return overrideVal
+func mergeStruct(baseVal, overrideVal reflect.Value, opts MergeObject) (reflect.Value, error) {
+	if !baseVal.IsValid() || !overrideVal.IsValid() {
+		return reflect.Value{}, fmt.Errorf("both base: '%T' and override: '%T' must be valid", baseVal.Interface(), overrideVal.Interface())
 	}
 
-	if !overrideVal.IsValid() {
-		switch opts.Mode {
-		case ClientIsMaster:
-			return reflect.Value{}
-		case ServerIsMaster:
-			return baseVal
-		}
-	}
+	result := reflect.New(baseVal.Type()).Elem()
+	numFields := baseVal.NumField()
+	basePath := opts.CurrentPath
 
-	result := reflect.New(baseVal.Type()).Elem() // same struct type
+	for i := 0; i < numFields; i++ {
+		fieldValue := baseVal.Field(i)
+		fieldType := baseVal.Type().Field(i)
 
-	nFields := baseVal.NumField()
-
-	for i := 0; i < nFields; i++ {
-		baseFieldValue := baseVal.Field(i)
-		baseField := baseVal.Type().Field(i)
-
-		opts.CurrentPath = concatPath(opts.CurrentPath, getJSONTag(baseField))
-
-		var overrideField reflect.Value
-
-		// get the override field if it exists
-		if i < overrideVal.NumField() && baseField.Name == overrideVal.Type().Field(i).Name {
-			overrideField = overrideVal.Field(i)
-		} else {
-			// if struct layouts differ -> skip it
-			continue
+		if fieldType.PkgPath != "" {
+			continue // Unexported field -> skip
 		}
 
 		if !result.Field(i).CanSet() {
 			continue
 		}
 
-		merged := mergeRecursive(baseFieldValue, overrideField, opts)
-		// If merged is invalid -> (effectively) remove
-		if merged.IsValid() {
-			// Ensure correct type/pointer shape
-			if result.Field(i).Kind() == reflect.Ptr && merged.Kind() != reflect.Ptr && merged.CanAddr() {
-				merged = merged.Addr()
-			}
+		opts.CurrentPath = concatPath(basePath, getJSONTag(fieldType))
+		merged, err := mergeRecursive(fieldValue, overrideVal.Field(i), opts)
 
-			result.Field(i).Set(merged)
+		if err != nil {
+			return reflect.Value{}, err
 		}
+
+		result.Field(i).Set(merged)
 	}
 
-	return result
+	return result, nil
 }
 
 // mergeMap merges two map values (non-timestamped case).
-func mergeMap(baseVal, overrideVal reflect.Value, opts MergeObject) reflect.Value {
-	if !baseVal.IsValid() || baseVal.IsNil() {
-		// missing base -> override
-		return overrideVal
+func mergeMap(baseVal, overrideVal reflect.Value, opts MergeObject) (reflect.Value, error) {
+	if baseVal.IsNil() {
+		// TODO: Need to iterate over overrideVal and notify added...
+		return overrideVal, nil
 	}
 
-	if !overrideVal.IsValid() || overrideVal.IsNil() {
-		// override missing
+	basePath := opts.CurrentPath
+
+	if overrideVal.IsNil() {
 		switch opts.Mode {
 		case ClientIsMaster:
-			return reflect.Value{} // remove
+			for _, key := range baseVal.MapKeys() {
+				opts.CurrentPath = concatPath(basePath, key.String())
+				// TODO: Need to iterate over baseVal and notify removed...
+			}
+
+			return overrideVal, nil
 		case ServerIsMaster:
-			return baseVal // keep old
+			for _, key := range baseVal.MapKeys() {
+				opts.CurrentPath = concatPath(basePath, key.String())
+				// TODO: Need to iterate over baseVal and notify no-change...
+			}
+
+			return baseVal, nil
 		}
 	}
 
-	// Both are maps
 	result := reflect.MakeMap(baseVal.Type())
-	// Copy base first
+
+	// Base keys
+	baseKeys := make(map[reflect.Value]struct{}, baseVal.Len())
+
 	for _, key := range baseVal.MapKeys() {
-		result.SetMapIndex(key, baseVal.MapIndex(key))
+		baseKeys[key] = struct{}{}
 	}
 
 	for _, key := range overrideVal.MapKeys() {
-		ovVal := overrideVal.MapIndex(key)
+		overrideVal := overrideVal.MapIndex(key)
 		baseValForKey := baseVal.MapIndex(key)
 
+		opts.CurrentPath = concatPath(basePath, key.String())
+
 		if !baseValForKey.IsValid() {
-			// Key is new -> add/override
-			result.SetMapIndex(key, ovVal)
+			// TODO: Recurse down and notify added...
+			result.SetMapIndex(key, overrideVal) // add
+
 			continue
 		}
 
+		// Remove key from base
+		delete(baseKeys, key)
+
 		// Merge recursively
-		merged := mergeRecursive(baseValForKey, ovVal, opts)
-		if merged.IsValid() {
-			result.SetMapIndex(key, merged)
-		} else {
-			if opts.Mode == ClientIsMaster {
-				result.SetMapIndex(key, reflect.Value{}) // remove
-			} else {
-				result.SetMapIndex(key, baseValForKey) // keep old
-			}
+		merged, err := mergeRecursive(baseValForKey, overrideVal, opts)
+
+		if err != nil {
+			return reflect.Value{}, err
+		}
+
+		result.SetMapIndex(key, merged)
+	}
+
+	// keys in base (but not in override)
+	for key := range baseKeys {
+		opts.CurrentPath = concatPath(basePath, key.String())
+
+		if opts.Mode == ServerIsMaster {
+			// TODO: Recurse down and notify no-change...
+			result.SetMapIndex(key, baseVal.MapIndex(key)) // keep
+		} else /*ClientIsMaster*/ {
+			// TODO: Recurse down and notify removed...
 		}
 	}
 
-	// remove keys from result if they are missing in overrideVal (ClientIsMaster only)
-	if opts.Mode == ClientIsMaster {
-		for _, key := range baseVal.MapKeys() {
-			if !overrideVal.MapIndex(key).IsValid() {
-				result.SetMapIndex(key, reflect.Value{}) // remove
-			}
+	return result, nil
+}
+
+func unwrapValueAndTimestamp(rv reflect.Value) (model.ValueAndTimestamp, bool) {
+	// Must be a pointer or interface with non nil value
+	if !rv.IsValid() || rv.Kind() == reflect.Invalid || (rv.Kind() == reflect.Ptr || rv.Kind() == reflect.Interface) && rv.IsNil() {
+		return nil, false
+	}
+
+	// Unwrap pointers and interfaces recursively
+	rv = unwrapReflectValue(rv)
+	if !rv.IsValid() {
+		return nil, false
+	}
+
+	// Try to convert the value directly
+	if vt, ok := toValueAndTimestamp(rv); ok {
+		return vt, true
+	}
+
+	if !rv.CanAddr() {
+		copy := reflect.New(rv.Type())
+		copy.Elem().Set(rv)
+		rv = copy
+	} else {
+		rv = rv.Addr()
+	}
+
+	// Attempt conversion on the copied addressable value
+	if vt, ok := toValueAndTimestamp(rv); ok {
+		return vt, true
+	}
+
+	return nil, false
+}
+
+// unwrapReflectValue unwraps pointers and interfaces recursively.
+func unwrapReflectValue(rv reflect.Value) reflect.Value {
+	for rv.IsValid() && (rv.Kind() == reflect.Ptr || rv.Kind() == reflect.Interface) {
+		if rv.IsNil() {
+			return reflect.Value{}
+		}
+		rv = rv.Elem()
+	}
+	return rv
+}
+
+// toValueAndTimestamp attempts to convert a reflect.Value to ValueAndTimestamp.
+func toValueAndTimestamp(rv reflect.Value) (model.ValueAndTimestamp, bool) {
+	if rv.Kind() == reflect.Interface || rv.Kind() == reflect.Ptr {
+		if i, ok := rv.Interface().(model.ValueAndTimestamp); ok {
+			return i, true
+		}
+	}
+	return nil, false
+}
+
+// isEmptyValue checks if a reflect.Value is valid or "the zero value" (len of zero).
+func isEmptyValue(v reflect.Value) bool {
+	if !v.IsValid() {
+		return true
+	}
+
+	switch v.Kind() {
+	case reflect.Array, reflect.Map, reflect.Slice, reflect.String:
+		return v.Len() == 0
+	case reflect.Bool,
+		reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
+		reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr,
+		reflect.Float32, reflect.Float64,
+		reflect.Interface, reflect.Pointer:
+		return v.IsZero()
+	}
+
+	return false
+}
+
+func concatPath(path, name string) string {
+	if path == "" {
+		return name
+	}
+	return path + "." + name
+}
+
+// getJSONTag get the tag (name part only) from a struct field.
+//
+// If no _JSON_ field tag is present, the field name is returned.
+func getJSONTag(field reflect.StructField) string {
+	tag := field.Tag.Get("json")
+	if tag == "" {
+		return field.Name
+	}
+
+	// If the tag is "-", ignore it
+	if tag == "-" {
+		return ""
+	}
+
+	// If the tag contains a comma, only consider the first part
+	if idx := 0; idx < len(tag) {
+		if tag[idx] == ',' {
+			return tag[:idx]
 		}
 	}
 
-	return result
+	return tag
 }
