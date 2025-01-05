@@ -127,12 +127,15 @@ func mergeRecursive(base, override reflect.Value, obj MergeObject) (reflect.Valu
 			return override, nil
 		}
 
-		if !reflect.DeepEqual(baseVal, overrideVal) {
-			obj.Loggers.NotifyPlain(obj.CurrentPath, model.MergeOperationUpdate, baseVal, overrideVal)
+		bv := baseVal.Interface()
+		ov := overrideVal.Interface()
+
+		if bv != ov {
+			obj.Loggers.NotifyPlain(obj.CurrentPath, model.MergeOperationUpdate, bv, ov)
 
 			return override, nil // not equal -> override
 		} else {
-			obj.Loggers.NotifyPlain(obj.CurrentPath, model.MergeOperationNotChanged, baseVal, overrideVal)
+			obj.Loggers.NotifyPlain(obj.CurrentPath, model.MergeOperationNotChanged, bv, ov)
 
 			return base, nil // equal -> keep old
 		}
@@ -141,7 +144,8 @@ func mergeRecursive(base, override reflect.Value, obj MergeObject) (reflect.Valu
 
 func mergeSlice(baseVal, overrideVal reflect.Value, opts MergeObject) (reflect.Value, error) {
 	if baseVal.IsNil() {
-		// TODO: Need to iterate over overrideVal and notify added...
+		notifyRecursive(overrideVal, model.MergeOperationAdd, opts)
+
 		return overrideVal, nil
 	}
 
@@ -153,13 +157,15 @@ func mergeSlice(baseVal, overrideVal reflect.Value, opts MergeObject) (reflect.V
 		case ClientIsMaster:
 			for i := 0; i < baseVal.Len(); i++ {
 				opts.CurrentPath = fmt.Sprintf("%s.%d", basePath, i)
-				// TODO: Need to iterate over baseVal and notify removed...
+
+				notifyRecursive(baseVal.Index(i), model.MergeOperationRemove, opts)
 			}
 			return overrideVal, nil
 		case ServerIsMaster:
 			for i := 0; i < baseVal.Len(); i++ {
 				opts.CurrentPath = fmt.Sprintf("%s.%d", basePath, i)
-				// TODO: Need to iterate over baseVal and notify no-change...
+
+				notifyRecursive(baseVal.Index(i), model.MergeOperationNotChanged, opts)
 			}
 			return baseVal, nil
 		}
@@ -195,9 +201,9 @@ func mergeSlice(baseVal, overrideVal reflect.Value, opts MergeObject) (reflect.V
 	if ovLen > minLen {
 		for i := minLen; i < ovLen; i++ {
 			opts.CurrentPath = fmt.Sprintf("%s.%d", basePath, i)
-
-			// TODO: Needs to recurse down and notify added...
 			result = reflect.Append(result, overrideVal.Index(i))
+
+			notifyRecursive(overrideVal.Index(i), model.MergeOperationAdd, opts)
 		}
 	}
 
@@ -207,15 +213,15 @@ func mergeSlice(baseVal, overrideVal reflect.Value, opts MergeObject) (reflect.V
 			// ServerIsMaster -> keep
 			for i := minLen; i < baseLen; i++ {
 				opts.CurrentPath = fmt.Sprintf("%s.%d", basePath, i)
-
-				// TODO: Needs to recurse down and notify no-change...
 				result = reflect.Append(result, baseVal.Index(i))
+
+				notifyRecursive(baseVal.Index(i), model.MergeOperationNotChanged, opts)
 			}
 		} else /*ClientIsMaster*/ {
 			for i := minLen; i < baseLen; i++ {
 				opts.CurrentPath = fmt.Sprintf("%s.%d", basePath, i)
 
-				// TODO: Needs to recurse down and notify removed...
+				notifyRecursive(baseVal.Index(i), model.MergeOperationRemove, opts)
 			}
 		}
 	}
@@ -261,7 +267,8 @@ func mergeStruct(baseVal, overrideVal reflect.Value, opts MergeObject) (reflect.
 // mergeMap merges two map values (non-timestamped case).
 func mergeMap(baseVal, overrideVal reflect.Value, opts MergeObject) (reflect.Value, error) {
 	if baseVal.IsNil() {
-		// TODO: Need to iterate over overrideVal and notify added...
+		notifyRecursive(overrideVal, model.MergeOperationAdd, opts)
+
 		return overrideVal, nil
 	}
 
@@ -272,14 +279,16 @@ func mergeMap(baseVal, overrideVal reflect.Value, opts MergeObject) (reflect.Val
 		case ClientIsMaster:
 			for _, key := range baseVal.MapKeys() {
 				opts.CurrentPath = concatPath(basePath, key.String())
-				// TODO: Need to iterate over baseVal and notify removed...
+
+				notifyRecursive(baseVal.MapIndex(key), model.MergeOperationRemove, opts)
 			}
 
 			return overrideVal, nil
 		case ServerIsMaster:
 			for _, key := range baseVal.MapKeys() {
 				opts.CurrentPath = concatPath(basePath, key.String())
-				// TODO: Need to iterate over baseVal and notify no-change...
+
+				notifyRecursive(baseVal.MapIndex(key), model.MergeOperationNotChanged, opts)
 			}
 
 			return baseVal, nil
@@ -302,8 +311,9 @@ func mergeMap(baseVal, overrideVal reflect.Value, opts MergeObject) (reflect.Val
 		opts.CurrentPath = concatPath(basePath, key.String())
 
 		if !baseValForKey.IsValid() {
-			// TODO: Recurse down and notify added...
 			result.SetMapIndex(key, overrideVal) // add
+
+			notifyRecursive(overrideVal, model.MergeOperationAdd, opts)
 
 			continue
 		}
@@ -318,7 +328,7 @@ func mergeMap(baseVal, overrideVal reflect.Value, opts MergeObject) (reflect.Val
 			return reflect.Value{}, err
 		}
 
-		result.SetMapIndex(key, merged)
+		result.SetMapIndex(key, merged) // Already notified in (mergeRecursive)
 	}
 
 	// keys in base (but not in override)
@@ -326,10 +336,11 @@ func mergeMap(baseVal, overrideVal reflect.Value, opts MergeObject) (reflect.Val
 		opts.CurrentPath = concatPath(basePath, key.String())
 
 		if opts.Mode == ServerIsMaster {
-			// TODO: Recurse down and notify no-change...
 			result.SetMapIndex(key, baseVal.MapIndex(key)) // keep
+
+			notifyRecursive(baseVal.MapIndex(key), model.MergeOperationNotChanged, opts)
 		} else /*ClientIsMaster*/ {
-			// TODO: Recurse down and notify removed...
+			notifyRecursive(baseVal.MapIndex(key), model.MergeOperationRemove, opts)
 		}
 	}
 
@@ -344,6 +355,7 @@ func unwrapValueAndTimestamp(rv reflect.Value) (model.ValueAndTimestamp, bool) {
 
 	// Unwrap pointers and interfaces recursively
 	rv = unwrapReflectValue(rv)
+
 	if !rv.IsValid() {
 		return nil, false
 	}
@@ -369,14 +381,17 @@ func unwrapValueAndTimestamp(rv reflect.Value) (model.ValueAndTimestamp, bool) {
 	return nil, false
 }
 
-// unwrapReflectValue unwraps pointers and interfaces recursively.
+// unwrapReflectValue unwraps pointers and interfaces recursively so it returns the
+// first non-pointer/interface value.
 func unwrapReflectValue(rv reflect.Value) reflect.Value {
 	for rv.IsValid() && (rv.Kind() == reflect.Ptr || rv.Kind() == reflect.Interface) {
 		if rv.IsNil() {
 			return reflect.Value{}
 		}
+
 		rv = rv.Elem()
 	}
+
 	return rv
 }
 
@@ -387,6 +402,7 @@ func toValueAndTimestamp(rv reflect.Value) (model.ValueAndTimestamp, bool) {
 			return i, true
 		}
 	}
+
 	return nil, false
 }
 
