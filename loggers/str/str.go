@@ -13,6 +13,8 @@ import (
 type StringLogger struct {
 	// log is the buffer that contains the log.
 	log bytes.Buffer
+	// header is set to true when it has printed the header.
+	header bool
 }
 
 // NewStringLogger creates a new StringLogger.
@@ -25,35 +27,48 @@ func (sl *StringLogger) String() string {
 	return sl.log.String()
 }
 
-func (sl *StringLogger) Processed(
+func (sl *StringLogger) printHeader() {
+	if !sl.header {
+		fmt.Fprintf(&sl.log, "%-7s %-10s %-20s %-20s %-30s %-40s %-40s\n",
+			"Path", "Operation", "Old Timestamp", "New Timestamp", "Path", "OldValue", "NewValue")
+		sl.header = true
+	}
+}
+func (sl *StringLogger) Plain(path string, operation model.MergeOperation, oldValue, newValue any) {
+	sl.printHeader()
+
+	fmt.Fprintf(&sl.log, "%-7s %-10s %-20s %-20s %-30s %-40s %-40s\n",
+		path, operation.String(), "", "", path,
+		fmt.Sprintf("%v", oldValue),
+		fmt.Sprintf("%v", newValue),
+	)
+}
+func (sl *StringLogger) Managed(
 	path string,
 	operation model.MergeOperation,
-	oldValue, newValue any,
+	oldValue, newValue model.ValueAndTimestamp,
 	oldTimeStamp, newTimeStamp time.Time,
 ) {
 	var ov, nv string
 
 	if oldValue != nil {
-		ov = fmt.Sprintf("%v", oldValue)
+		ov = fmt.Sprintf("%v", oldValue.GetValue())
 	} else {
 		ov = "nil"
 	}
 
 	if newValue != nil {
-		nv = fmt.Sprintf("%v", newValue)
+		nv = fmt.Sprintf("%v", newValue.GetValue())
 	} else {
 		nv = "nil"
 	}
 
-	sl.log.WriteString(path)
-	sl.log.WriteString(" ")
-	sl.log.WriteString(operation.String())
-	sl.log.WriteString(" ")
-	sl.log.WriteString(ov)
-	sl.log.WriteString(" ")
-	sl.log.WriteString(nv)
-	sl.log.WriteString(" ")
-	sl.log.WriteString(oldTimeStamp.Format(time.RFC3339))
-	sl.log.WriteString(" ")
-	sl.log.WriteString(newTimeStamp.Format(time.RFC3339))
+	sl.printHeader()
+
+	fmt.Fprintf(&sl.log, "%-7s %-10s %-20s %-20s %-30s %-40s %-40s\n",
+		path, operation.String(),
+		oldTimeStamp.Format(time.RFC3339),
+		newTimeStamp.Format(time.RFC3339),
+		path, ov, nv,
+	)
 }
