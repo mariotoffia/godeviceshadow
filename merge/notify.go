@@ -17,14 +17,14 @@ func notifyRecursive(val reflect.Value, op model.MergeOperation, obj MergeObject
 		return
 	}
 
-	if vt, ok := toValueAndTimestamp(val); ok {
+	if vt, ok := unwrapValueAndTimestamp(val); ok {
 		switch op {
 		case model.MergeOperationAdd:
-			obj.Loggers.NotifyProcessed(obj.CurrentPath, op, nil, vt, time.Time{}, vt.GetTimestamp())
+			obj.Loggers.NotifyManaged(obj.CurrentPath, op, nil, vt, time.Time{}, vt.GetTimestamp())
 		case model.MergeOperationRemove:
-			obj.Loggers.NotifyProcessed(obj.CurrentPath, op, vt, nil, vt.GetTimestamp(), time.Now().UTC())
+			obj.Loggers.NotifyManaged(obj.CurrentPath, op, vt, nil, vt.GetTimestamp(), time.Time{})
 		case model.MergeOperationNotChanged:
-			obj.Loggers.NotifyProcessed(obj.CurrentPath, op, vt, vt, vt.GetTimestamp(), vt.GetTimestamp())
+			obj.Loggers.NotifyManaged(obj.CurrentPath, op, vt, vt, vt.GetTimestamp(), vt.GetTimestamp())
 		}
 
 		return
@@ -59,6 +59,10 @@ func notifyRecursive(val reflect.Value, op model.MergeOperation, obj MergeObject
 			notifyRecursive(val.Index(i), op, obj)
 		}
 	default:
+		if !val.IsValid() {
+			return // Do not notify nil values
+		}
+
 		switch op {
 		case model.MergeOperationAdd:
 			obj.Loggers.NotifyPlain(obj.CurrentPath, op, nil, val.Interface())

@@ -104,11 +104,11 @@ func mergeRecursive(base, override reflect.Value, obj MergeObject) (reflect.Valu
 
 		switch {
 		case newTS.After(oldTS):
-			obj.Loggers.NotifyProcessed(obj.CurrentPath, model.MergeOperationUpdate, baseVal, overrideVal, oldTS, newTS)
+			obj.Loggers.NotifyManaged(obj.CurrentPath, model.MergeOperationUpdate, baseValTS, overrideValTS, oldTS, newTS)
 
 			return override, nil // override newer -> replace
 		default:
-			obj.Loggers.NotifyProcessed(obj.CurrentPath, model.MergeOperationNotChanged, baseVal, overrideVal, oldTS, newTS)
+			obj.Loggers.NotifyManaged(obj.CurrentPath, model.MergeOperationNotChanged, baseValTS, overrideValTS, oldTS, newTS)
 
 			return base, nil // override less or equal -> no update -> keep old
 		}
@@ -188,6 +188,8 @@ func mergeSlice(baseVal, overrideVal reflect.Value, opts MergeObject) (reflect.V
 	for i := 0; i < minLen; i++ {
 		baseElem := baseVal.Index(i)
 		ovElem := overrideVal.Index(i)
+
+		opts.CurrentPath = fmt.Sprintf("%s.%d", basePath, i)
 		mergedElem, err := mergeRecursive(baseElem, ovElem, opts)
 
 		if err != nil {
@@ -298,10 +300,10 @@ func mergeMap(baseVal, overrideVal reflect.Value, opts MergeObject) (reflect.Val
 	result := reflect.MakeMap(baseVal.Type())
 
 	// Base keys
-	baseKeys := make(map[reflect.Value]struct{}, baseVal.Len())
+	baseKeys := make(map[string]reflect.Value, baseVal.Len())
 
 	for _, key := range baseVal.MapKeys() {
-		baseKeys[key] = struct{}{}
+		baseKeys[key.String()] = key
 	}
 
 	for _, key := range overrideVal.MapKeys() {
@@ -319,7 +321,7 @@ func mergeMap(baseVal, overrideVal reflect.Value, opts MergeObject) (reflect.Val
 		}
 
 		// Remove key from base
-		delete(baseKeys, key)
+		delete(baseKeys, key.String())
 
 		// Merge recursively
 		merged, err := mergeRecursive(baseValForKey, overrideVal, opts)
@@ -332,15 +334,15 @@ func mergeMap(baseVal, overrideVal reflect.Value, opts MergeObject) (reflect.Val
 	}
 
 	// keys in base (but not in override)
-	for key := range baseKeys {
-		opts.CurrentPath = concatPath(basePath, key.String())
+	for k, v := range baseKeys {
+		opts.CurrentPath = concatPath(basePath, k)
 
 		if opts.Mode == ServerIsMaster {
-			result.SetMapIndex(key, baseVal.MapIndex(key)) // keep
+			result.SetMapIndex(v, baseVal.MapIndex(v)) // keep
 
-			notifyRecursive(baseVal.MapIndex(key), model.MergeOperationNotChanged, opts)
+			notifyRecursive(baseVal.MapIndex(v), model.MergeOperationNotChanged, opts)
 		} else /*ClientIsMaster*/ {
-			notifyRecursive(baseVal.MapIndex(key), model.MergeOperationRemove, opts)
+			notifyRecursive(baseVal.MapIndex(v), model.MergeOperationRemove, opts)
 		}
 	}
 
@@ -397,6 +399,7 @@ func unwrapReflectValue(rv reflect.Value) reflect.Value {
 
 // toValueAndTimestamp attempts to convert a reflect.Value to ValueAndTimestamp.
 func toValueAndTimestamp(rv reflect.Value) (model.ValueAndTimestamp, bool) {
+	//
 	if rv.Kind() == reflect.Interface || rv.Kind() == reflect.Ptr {
 		if i, ok := rv.Interface().(model.ValueAndTimestamp); ok {
 			return i, true

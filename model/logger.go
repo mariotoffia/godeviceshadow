@@ -5,17 +5,15 @@ import "time"
 // MergeLogger is a interface that will be called in the different merge
 // operations that has been performed.
 type MergeLogger interface {
-	// Processed is called when a value has been processed in a merge operation. It is even called
-	// when a value has not been changed.
+	// Managed is called when a managed value (`ValueAndTimestamp`) has been processed in a
+	// merge operation. It is even called when a value has not been changed.
 	//
 	// The path is a a _JSON_ path to the value that has been processed. It is extracted from the
 	// field names, map keys, and slice indexes. If field names do have a JSON tag, the tag is used instead.
-	//
-	// This is called when a "managed" value (`ValueAndTimestamp`) has been processed and not a "plain" value.
-	Processed(
+	Managed(
 		path string,
 		operation MergeOperation,
-		oldValue, newValue any,
+		oldValue, newValue ValueAndTimestamp,
 		oldTimeStamp, newTimeStamp time.Time,
 	)
 
@@ -40,3 +38,18 @@ const (
 	// changed and thus left as is.
 	MergeOperationNotChanged MergeOperation = 4
 )
+
+func (op MergeOperation) String() string {
+	switch op {
+	case MergeOperationAdd:
+		return "add"
+	case MergeOperationUpdate:
+		return "update"
+	case MergeOperationRemove:
+		return "remove"
+	case MergeOperationNotChanged:
+		return "not_changed"
+	default:
+		return "unknown"
+	}
+}

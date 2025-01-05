@@ -12,6 +12,7 @@ import (
 type Sensor struct {
 	ID        int
 	TimeStamp time.Time
+	Value     any
 }
 
 type Circuit struct {
@@ -30,6 +31,9 @@ func (s *Sensor) GetTimestamp() time.Time {
 func (s *Sensor) SetTimestamp(t time.Time) {
 	s.TimeStamp = t
 }
+func (s *Sensor) GetValue() any {
+	return s.Value
+}
 
 // For map testing
 type TimestampedMapVal struct {
@@ -40,9 +44,11 @@ type TimestampedMapVal struct {
 func (tmv *TimestampedMapVal) GetTimestamp() time.Time {
 	return tmv.UpdatedAt
 }
-
 func (tmv *TimestampedMapVal) SetTimestamp(t time.Time) {
 	tmv.UpdatedAt = t
+}
+func (tmv *TimestampedMapVal) GetValue() any {
+	return tmv.Value
 }
 
 func TestMergeOneNewerInSlice(t *testing.T) {

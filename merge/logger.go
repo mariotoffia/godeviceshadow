@@ -9,14 +9,14 @@ import (
 // MergeLoggers is a slice of MergeLogger.
 type MergeLoggers []model.MergeLogger
 
-func (ml MergeLoggers) NotifyProcessed(
+func (ml MergeLoggers) NotifyManaged(
 	path string,
 	operation model.MergeOperation,
-	oldValue, newValue any,
+	oldValue, newValue model.ValueAndTimestamp,
 	oldTimeStamp, newTimeStamp time.Time,
 ) {
 	for _, l := range ml {
-		l.Processed(path, operation, oldValue, newValue, oldTimeStamp, newTimeStamp)
+		l.Managed(path, operation, oldValue, newValue, oldTimeStamp, newTimeStamp)
 	}
 }
 
