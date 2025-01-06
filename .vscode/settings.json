@@ -8,6 +8,7 @@
     "omitempty",
     "processmodel",
     "stretchr",
+    "strlogger",
     "Toffia",
     "unaddressable"
   ]

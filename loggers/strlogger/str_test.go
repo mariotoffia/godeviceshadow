@@ -1,11 +1,11 @@
-package str_test
+package strlogger_test
 
 import (
 	"strings"
 	"testing"
 	"time"
 
-	"github.com/mariotoffia/godeviceshadow/loggers/str"
+	"github.com/mariotoffia/godeviceshadow/loggers/strlogger"
 	"github.com/mariotoffia/godeviceshadow/merge"
 	"github.com/mariotoffia/godeviceshadow/model"
 	"github.com/stretchr/testify/assert"
@@ -27,7 +27,7 @@ func (tmv *Value) GetValue() any {
 }
 
 func TestStringLogger(t *testing.T) {
-	sl := str.NewStringLogger()
+	sl := strlogger.NewStringLogger()
 	now := time.Now().UTC()
 	nowMinusOneHour := now.Add(-1 * time.Hour)
 

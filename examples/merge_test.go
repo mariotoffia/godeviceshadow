@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/mariotoffia/godeviceshadow/loggers/str"
+	"github.com/mariotoffia/godeviceshadow/loggers/strlogger"
 	"github.com/mariotoffia/godeviceshadow/merge"
 
 	"github.com/stretchr/testify/assert"
@@ -74,7 +74,7 @@ func TestMerge(t *testing.T) {
 		},
 	}
 
-	sl := str.NewStringLogger() // <3>
+	sl := strlogger.NewStringLogger() // <3>
 
 	res, err := merge.Merge(hubZero, hub, merge.MergeOptions{
 		Mode:    merge.ServerIsMaster,   // <4>
