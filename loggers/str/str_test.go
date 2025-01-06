@@ -90,12 +90,12 @@ func TestStringLogger(t *testing.T) {
 
 	find := func(s string) string {
 		for _, line := range lines {
-			if strings.Contains(line, "Z "+s+" ") {
+			if strings.Contains(line, " "+s+" ") {
 				return line
 			}
 		}
 
-		require.Fail(t, "could not find line with prefix: "+s)
+		require.Fail(t, "could not find line containing: "+s)
 		return ""
 	}
 
