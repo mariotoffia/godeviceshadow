@@ -8,6 +8,9 @@ import (
 	"github.com/mariotoffia/godeviceshadow/model"
 )
 
+// lf is the log format
+const lf = "%-10s %-26s %-26s %-30s %-40s %-40s\n"
+
 // StringLogger is a `model.MergeLogger` that logs the operations to a bytes buffer
 // where it is possible to retrieve the log as a string.
 type StringLogger struct {
@@ -29,7 +32,7 @@ func (sl *StringLogger) String() string {
 
 func (sl *StringLogger) printHeader() {
 	if !sl.header {
-		fmt.Fprintf(&sl.log, "%-10s %-26s %-26s %-30s %-40s %-40s\n",
+		fmt.Fprintf(&sl.log, lf,
 			"Operation", "Old Timestamp", "New Timestamp", "Path", "OldValue", "NewValue")
 		sl.header = true
 	}
@@ -37,7 +40,7 @@ func (sl *StringLogger) printHeader() {
 func (sl *StringLogger) Plain(path string, operation model.MergeOperation, oldValue, newValue any) {
 	sl.printHeader()
 
-	fmt.Fprintf(&sl.log, "%-10s %-26s %-26s %-30s %-40s %-40s\n",
+	fmt.Fprintf(&sl.log, lf,
 		operation.String(), "", "", path,
 		fmt.Sprintf("%v", oldValue),
 		fmt.Sprintf("%v", newValue),
@@ -65,7 +68,7 @@ func (sl *StringLogger) Managed(
 
 	sl.printHeader()
 
-	fmt.Fprintf(&sl.log, "%-10s %-26s %-26s %-30s %-40s %-40s\n",
+	fmt.Fprintf(&sl.log, lf,
 		operation.String(),
 		oldTimeStamp.Format(time.RFC3339),
 		newTimeStamp.Format(time.RFC3339),
