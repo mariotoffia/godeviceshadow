@@ -3,6 +3,8 @@ This is an implementation of a device shadow storage and notification for Dynamo
 
 == Introduction
 
+CAUTION: This is work in progress and is in design stages - do not use it. This statement is removed when this library have a alpha status.
+
 This is a somewhat emulation of the existing IoT Core Device Shadow. However, it separates the _Reported_ and _Desired_ states into two different sort keys to allow for more data and better querying.
 
 The partition key is the "name" of the device shadow and hence, it is possible to do advanced naming e.g. _My House#Basement#Lightning Controller_ as a _PK_. The _SK_(s) are handled by this library.
