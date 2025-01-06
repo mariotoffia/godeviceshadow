@@ -29,16 +29,16 @@ func (sl *StringLogger) String() string {
 
 func (sl *StringLogger) printHeader() {
 	if !sl.header {
-		fmt.Fprintf(&sl.log, "%-7s %-10s %-20s %-20s %-30s %-40s %-40s\n",
-			"Path", "Operation", "Old Timestamp", "New Timestamp", "Path", "OldValue", "NewValue")
+		fmt.Fprintf(&sl.log, "%-10s %-26s %-26s %-30s %-40s %-40s\n",
+			"Operation", "Old Timestamp", "New Timestamp", "Path", "OldValue", "NewValue")
 		sl.header = true
 	}
 }
 func (sl *StringLogger) Plain(path string, operation model.MergeOperation, oldValue, newValue any) {
 	sl.printHeader()
 
-	fmt.Fprintf(&sl.log, "%-7s %-10s %-20s %-20s %-30s %-40s %-40s\n",
-		path, operation.String(), "", "", path,
+	fmt.Fprintf(&sl.log, "%-10s %-26s %-26s %-30s %-40s %-40s\n",
+		operation.String(), "", "", path,
 		fmt.Sprintf("%v", oldValue),
 		fmt.Sprintf("%v", newValue),
 	)
@@ -65,8 +65,8 @@ func (sl *StringLogger) Managed(
 
 	sl.printHeader()
 
-	fmt.Fprintf(&sl.log, "%-7s %-10s %-20s %-20s %-30s %-40s %-40s\n",
-		path, operation.String(),
+	fmt.Fprintf(&sl.log, "%-10s %-26s %-26s %-30s %-40s %-40s\n",
+		operation.String(),
 		oldTimeStamp.Format(time.RFC3339),
 		newTimeStamp.Format(time.RFC3339),
 		path, ov, nv,

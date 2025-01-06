@@ -48,7 +48,7 @@ func (op MergeOperation) String() string {
 	case MergeOperationRemove:
 		return "remove"
 	case MergeOperationNotChanged:
-		return "not_changed"
+		return "noop"
 	default:
 		return "unknown"
 	}

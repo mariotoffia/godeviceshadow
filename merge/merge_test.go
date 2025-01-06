@@ -28,9 +28,6 @@ type Device struct {
 func (s *Sensor) GetTimestamp() time.Time {
 	return s.TimeStamp
 }
-func (s *Sensor) SetTimestamp(t time.Time) {
-	s.TimeStamp = t
-}
 func (s *Sensor) GetValue() any {
 	return s.Value
 }
@@ -43,9 +40,6 @@ type TimestampedMapVal struct {
 
 func (tmv *TimestampedMapVal) GetTimestamp() time.Time {
 	return tmv.UpdatedAt
-}
-func (tmv *TimestampedMapVal) SetTimestamp(t time.Time) {
-	tmv.UpdatedAt = t
 }
 func (tmv *TimestampedMapVal) GetValue() any {
 	return tmv.Value

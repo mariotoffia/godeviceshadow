@@ -3,6 +3,7 @@ package merge
 import (
 	"fmt"
 	"reflect"
+	"strings"
 
 	"github.com/mariotoffia/godeviceshadow/model"
 )
@@ -450,11 +451,10 @@ func getJSONTag(field reflect.StructField) string {
 		return ""
 	}
 
-	// If the tag contains a comma, only consider the first part
-	if idx := 0; idx < len(tag) {
-		if tag[idx] == ',' {
-			return tag[:idx]
-		}
+	// comma -> ignore the rest
+	idx := strings.Index(tag, ",")
+	if idx != -1 {
+		return tag[:idx]
 	}
 
 	return tag
