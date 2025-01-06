@@ -1,0 +1,27 @@
+:author_name: Mario Toffia
+:author_email: no.spam@please
+:author: {author_name}
+:email: {author_email}
+:source-highlighter: highlightjs
+ifndef::icons[:icons: font]
+ifndef::imagesdir[:imagesdir: ../meta/assets]
+:toc:
+:toclevels: 3
+
+= Examples
+Some examples how to use the library and it's functionality.
+
+== Merge Package
+This shows how to use and expect from the merge package.
+
+.Merging
+[source,go]
+----
+include::./merge_test.go[]
+----
+<1> This is the baseline (e.g. gotten from _DynamoDB_)
+<2> Acts as the update to the device shadow.
+<3> Simple logger that logs each merge event in a single row (good for debugging)
+<4> No deletion is possible only: add, update and no change are permitted (use `ClientIsMaster` to allow deletions)
+<5> It is possible to have multiple merge loggers attached e.g. one to log, one to update _Amazon Aurora DSQL_ table and so on.
+<6> In this case we are in suync with latest, but where there any deletes in _res_, those would not been propagated.

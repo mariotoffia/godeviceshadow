@@ -23,7 +23,7 @@ func TestMerge(t *testing.T) {
 		}
 	}
 
-	hubZero := HomeTemperatureHub{
+	hubZero := HomeTemperatureHub{ // <1>
 		DeviceShadow: DeviceShadow{
 			TimeZone: "Europe/Stockholm",
 			Owner:    "mariotoffia",
@@ -41,7 +41,7 @@ func TestMerge(t *testing.T) {
 		},
 	}
 
-	hub := HomeTemperatureHub{
+	hub := HomeTemperatureHub{ // <2>
 		DeviceShadow: DeviceShadow{
 			TimeZone: "Europe/Stockholm",
 			Owner:    "mariotoffia",
@@ -74,14 +74,14 @@ func TestMerge(t *testing.T) {
 		},
 	}
 
-	sl := str.NewStringLogger()
+	sl := str.NewStringLogger() // <3>
 
 	res, err := merge.Merge(hubZero, hub, merge.MergeOptions{
-		Mode:    merge.ServerIsMaster, // No deletion is possible only add, update (and no change)
-		Loggers: merge.MergeLoggers{sl},
+		Mode:    merge.ServerIsMaster,   // <4>
+		Loggers: merge.MergeLoggers{sl}, // <5>
 	})
 	require.NoError(t, err)
-	assert.Equal(t, hub, res)
+	assert.Equal(t, hub, res) // <6>
 
 	fmt.Println(sl.String())
 	// Outputs:
