@@ -17,7 +17,79 @@ This shows how to use and expect from the merge package.
 .Merging
 [source,go]
 ----
-include::./merge_test.go[]
+func TestMerge(t *testing.T) {
+	parse := func(s string) time.Time {
+		if tm, err := time.Parse(time.RFC3339, s); err == nil {
+			return tm
+		} else {
+			t.Fatal(err)
+
+			return time.Time{}
+		}
+	}
+
+	hubZero := HomeTemperatureHub{ // <1>
+		DeviceShadow: DeviceShadow{
+			TimeZone: "Europe/Stockholm",
+			Owner:    "mariotoffia",
+		},
+		ClimateSensors: ClimateSensors{
+			Indoor: map[string]IndoorTemperatureSensor{
+				"living_room": {
+					Floor:       1,
+					Direction:   DirectionNorth,
+					Temperature: 22.6,
+					UpdatedAt:   parse("2023-01-01T10:00:00+01:00"),
+					Humidity:    32.0,
+				},
+			},
+		},
+	}
+
+	hub := HomeTemperatureHub{ // <2>
+		DeviceShadow: DeviceShadow{
+			TimeZone: "Europe/Stockholm",
+			Owner:    "mariotoffia",
+		},
+		ClimateSensors: ClimateSensors{
+			Outdoor: map[string]OutdoorTemperatureSensor{
+				"garden": {
+					Direction:   DirectionNorth,
+					Temperature: -27.0,
+					UpdatedAt:   parse("2023-01-01T12:00:00+01:00"),
+					Humidity:    17.0,
+				},
+			},
+			Indoor: map[string]IndoorTemperatureSensor{
+				"living_room": {
+					Floor:       1,
+					Direction:   DirectionNorth,
+					Temperature: 22.6,
+					UpdatedAt:   parse("2023-01-01T11:55:00+01:00"),
+					Humidity:    32.0,
+				},
+				"basement": {
+					Floor:       0,
+					Direction:   DirectionSouth,
+					Temperature: 18.0,
+					UpdatedAt:   parse("2023-01-01T11:00:00+01:00"),
+					Humidity:    40.0,
+				},
+			},
+		},
+	}
+
+	sl := str.NewStringLogger() // <3>
+
+	res, err := merge.Merge(hubZero, hub, merge.MergeOptions{
+		Mode:    merge.ServerIsMaster,   // <4>
+		Loggers: merge.MergeLoggers{sl}, // <5>
+	})
+	require.NoError(t, err)
+	assert.Equal(t, hub, res) // <6>
+
+	fmt.Println(sl.String())
+}
 ----
 <1> This is the baseline (e.g. gotten from _DynamoDB_)
 <2> Acts as the update to the device shadow.
