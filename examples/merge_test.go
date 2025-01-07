@@ -74,7 +74,7 @@ func TestMerge(t *testing.T) {
 		},
 	}
 
-	sl := strlogger.NewStringLogger() // <3>
+	sl := strlogger.New() // <3>
 
 	res, err := merge.Merge(hubZero, hub, merge.MergeOptions{
 		Mode:    merge.ServerIsMaster,   // <4>

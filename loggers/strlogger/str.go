@@ -20,8 +20,8 @@ type StringLogger struct {
 	header bool
 }
 
-// NewStringLogger creates a new StringLogger.
-func NewStringLogger() *StringLogger {
+// New creates a new StringLogger.
+func New() *StringLogger {
 	return &StringLogger{}
 }
 
