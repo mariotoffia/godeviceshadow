@@ -55,7 +55,15 @@ func Merge[T any](oldModel, newModel T, opts MergeOptions) (T, error) {
 	oldVal := reflect.ValueOf(oldModel)
 	newVal := reflect.ValueOf(newModel)
 
+	if err := opts.Loggers.NotifyPrepare(); err != nil {
+		return oldModel, err
+	}
+
 	mergedVal, err := mergeRecursive(oldVal, newVal, MergeObject{MergeOptions: opts})
+
+	if err2 := opts.Loggers.NotifyPost(err); err2 != nil {
+		return oldModel, err2
+	}
 
 	var zero T
 

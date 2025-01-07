@@ -42,7 +42,13 @@ func notifyRecursive(val reflect.Value, op model.MergeOperation, obj MergeObject
 				continue // Unexported field -> skip
 			}
 
-			obj.CurrentPath = concatPath(basePath, getJSONTag(field))
+			tag := getJSONTag(field)
+
+			if tag == "" {
+				continue // No tag -> skip
+			}
+
+			obj.CurrentPath = concatPath(basePath, tag)
 
 			notifyRecursive(val.Field(i), op, obj)
 		}

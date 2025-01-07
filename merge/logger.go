@@ -9,6 +9,30 @@ import (
 // MergeLoggers is a slice of MergeLogger.
 type MergeLoggers []model.MergeLogger
 
+func (ml MergeLoggers) NotifyPrepare() error {
+	for _, l := range ml {
+		if p, ok := l.(model.MergeLoggerPrepare); ok {
+			if err := p.Prepare(); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
+func (ml MergeLoggers) NotifyPost(err error) error {
+	for _, l := range ml {
+		if p, ok := l.(model.MergeLoggerPost); ok {
+			if err := p.Post(err); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
 func (ml MergeLoggers) NotifyManaged(
 	path string,
 	operation model.MergeOperation,
