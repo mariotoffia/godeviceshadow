@@ -6,6 +6,7 @@
     "imagesdir",
     "jsonutils",
     "mariotoffia",
+    "mempersistence",
     "nocng",
     "Nygatan",
     "omitempty",

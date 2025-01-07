@@ -25,8 +25,6 @@ type ReadOperation struct {
 	ID PersistenceID
 	// Model is the model `type` that will be read.
 	Model reflect.Type
-	// ModelType is the model type that this `PersistenceID` refers to.
-	ModelType ModelType
 	// Version is the version of the model that will be read. If 0 or less it will be ignored,
 	// otherwise it will only return the model with the version that matches the `Version`
 	// or a `PersistenceError` with code 404 (Not Found) is returned.
@@ -63,6 +61,11 @@ type ListResult struct {
 	// TimeStamp is a optional timestamp of the model that was listed (not all `Persistence` will return this and thus
 	// set it to -1).
 	TimeStamp int64
+	// ClientToken is a optional last client token write operation (not all `Persistence` will return this and thus
+	// set it to "").
+	//
+	// NOTE: if no client token has been used in the write operation, it will not be persisted and hence not visible here either.
+	ClientToken string
 	// Token is set to "something" when there's a additional page to be fetched of results.
 	Token string
 }
@@ -78,6 +81,8 @@ type ReadResult struct {
 	// TimeStamp is the timestamp of the model that was read. This is the main timestamp that gets updated
 	// each time a model was created or updated. It is a Unix64 bit nanosecond timestamp.
 	TimeStamp int64
+	// ClientToken is the last client token write operation (if any)
+	ClientToken string
 	// Error is set when the operation failed.
 	Error error
 }

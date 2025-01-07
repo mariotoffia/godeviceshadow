@@ -3,7 +3,7 @@ package persistencemodel
 type PersistenceID struct {
 	// Is a unique identifier e.g. MyCar 22 or a UUID.
 	ID string
-	// Name is the persistence name so it is possible to have multiple device shadows.
+	// Name is the persistence name so it is possible to have multiple device shadows (model types).
 	Name string
 	// ModelType is the model type that this `PersistenceID` refers to.
 	ModelType ModelType

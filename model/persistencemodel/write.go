@@ -32,8 +32,6 @@ type WriteOperation struct {
 	ID PersistenceID
 	// Model is the model that will be written.
 	Model any
-	// ModelType is the model type that this `PersistenceID` refers to.
-	ModelType ModelType
 	// Version is the version of the model that will be written. If this version is not matching, it
 	// will fail with a `PersistenceError` with code 409 (Conflict). This is the version read from the
 	// `Persistence.Read` operation.
