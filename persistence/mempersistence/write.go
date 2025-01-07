@@ -8,7 +8,7 @@ import (
 )
 
 // Write writes a model into the in-memory persistence. It supports update and create operations.
-func (p *InMemoryPersistence) Write(
+func (p *Persistence) Write(
 	ctx context.Context,
 	opt persistencemodel.WriteOptions,
 	operations ...persistencemodel.WriteOperation,
@@ -83,7 +83,7 @@ func (p *InMemoryPersistence) Write(
 }
 
 // Delete deletes models from the in-memory persistence. Supports optional version constraints.
-func (p *InMemoryPersistence) Delete(
+func (p *Persistence) Delete(
 	ctx context.Context,
 	opt persistencemodel.WriteOptions,
 	operations ...persistencemodel.WriteOperation,

@@ -3,6 +3,7 @@
     "distiguisher",
     "godeviceshadow",
     "highlightjs",
+    "ifndef",
     "imagesdir",
     "jsonutils",
     "mariotoffia",
@@ -13,9 +14,11 @@
     "Östra",
     "Persistable",
     "persistencemodel",
+    "persistor",
     "processmodel",
     "stretchr",
     "strlogger",
+    "toclevels",
     "Toffia",
     "unaddressable"
   ]

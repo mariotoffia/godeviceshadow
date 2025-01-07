@@ -7,7 +7,8 @@ import (
 	"github.com/mariotoffia/godeviceshadow/model/persistencemodel"
 )
 
-type InMemoryPersistence struct {
+// Persistence is a in memory persistence, that stores the model without cloning.
+type Persistence struct {
 	// store is map[ID]map[Name]*modelEntry
 	store map[string]map[string]*modelEntry
 	mu    sync.RWMutex
@@ -22,14 +23,14 @@ type modelEntry struct {
 }
 
 // New creates a new instance of InMemoryReadonlyPersistence.
-func New() *InMemoryPersistence {
-	return &InMemoryPersistence{
+func New() *Persistence {
+	return &Persistence{
 		store: map[string]map[string]*modelEntry{},
 	}
 }
 
 // List lists models in the in-memory persistence. SearchExpr is not supported.
-func (p *InMemoryPersistence) List(
+func (p *Persistence) List(
 	ctx context.Context,
 	opt persistencemodel.ListOptions,
 ) ([]persistencemodel.ListResult, error) {
@@ -90,7 +91,7 @@ func (p *InMemoryPersistence) List(
 }
 
 // Read reads models from the in-memory persistence by ID and ModelType.
-func (p *InMemoryPersistence) Read(
+func (p *Persistence) Read(
 	ctx context.Context,
 	opt persistencemodel.ReadOptions,
 	operations ...persistencemodel.ReadOperation,

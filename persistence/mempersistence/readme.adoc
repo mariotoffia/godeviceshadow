@@ -1,0 +1,61 @@
+:author_name: Mario Toffia
+:author_email: no.spam@please
+:author: {author_name}
+:email: {author_email}
+:source-highlighter: highlightjs
+ifndef::icons[:icons: font]
+ifndef::imagesdir[:imagesdir: ../meta/assets]
+
+= In-Memory Optimistic Locking Persistence
+This `Persistence` is a non transactional persistence that uses the `Version` field to do optimistic locking. It is guarded by a mutex and hence is thread safe. It is primarily meant for testing purposes but may be used as a in memory persister.
+
+== Sample Usage
+Since no moving parts, it is just to instantiate and start read, write, delete and list models.
+
+It does not use any marshalling, hence do clone the model before writing it (if going to use it elsewhere). It will not touch the model
+but a reader may do this and since it is a straight assignment share - it will be reflected in the model.
+
+.Merging
+[source,go]
+----
+persistor := mempersistence.New()
+ctx := context.TODO()
+
+write := persistence.Write(ctx, persistencemodel.WriteOptions{}, persistencemodel.WriteOperation{ // <1>
+  ID: persistencemodel.PersistenceID{ // <2>
+    ID:        "device123",
+    Name:      "HomeHub",
+    ModelType: persistencemodel.ModelTypeReported,
+  },
+  Model: map[string]any{ // <3>
+    "temperature": 22.5,
+  },
+})
+
+if write[0].Error != nil { // <4>
+  return write[0].Error
+}
+
+read := persistence.Read(ctx, persistencemodel.ReadOptions{}, persistencemodel.ReadOperation{ // <5>
+  ID: persistencemodel.PersistenceID{ // <6>
+    ID:        "device123",
+    Name:      "HomeHub",
+    ModelType: persistencemodel.ModelTypeReported,
+  },
+})
+
+if read[0].Error != nil { // <7>
+  return read[0].Error
+}
+
+fmt.Print(read[0].Model["temperature"])
+// Output: 22.5
+----
+<1> Write support batch writes
+<2> ID is the unique identifier of the model. All three components are needed to uniquely identify a model.
+<3> Model is the actual model to be written. It is a simple map of string to any (se `model.ValueAndTimestamp` to incorporate timestamped values for proper device shadow operation)
+<4> writes will have the exactly the same amount of items as write operations independent on outcome
+<5> Read support batch reads
+<6> ID is the unique identifier of the model. All three components are needed to uniquely identify a model.
+<7> reads will have the exactly the same amount of items as read operations independent on outcome
+
