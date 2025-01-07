@@ -26,7 +26,7 @@ func TestWriteAndListSingleModel(t *testing.T) {
 	writeResults := persistence.Write(context.TODO(), persistencemodel.WriteOptions{}, persistencemodel.WriteOperation{
 		ID: persistencemodel.PersistenceID{
 			ID:        "device123",
-			Name:      "Reported",
+			Name:      "HomeHub",
 			ModelType: persistencemodel.ModelTypeReported,
 		},
 		Model: map[string]any{
@@ -45,7 +45,7 @@ func TestWriteAndListSingleModel(t *testing.T) {
 
 	assert.Len(t, listResults, 1, "There should be one model listed")
 	assert.Equal(t, "device123", listResults[0].ID.ID, "ID should match")
-	assert.Equal(t, "Reported", listResults[0].ID.Name, "Name should match")
+	assert.Equal(t, "HomeHub", listResults[0].ID.Name, "Name should match")
 	assert.Equal(t, persistencemodel.ModelTypeReported, listResults[0].ID.ModelType, "ModelType should match")
 	assert.Greater(t, listResults[0].Version, int64(0), "Version should be greater than 0")
 }
@@ -56,7 +56,7 @@ func TestWriteAndReadSingleModel(t *testing.T) {
 	writeResults := persistence.Write(context.TODO(), persistencemodel.WriteOptions{}, persistencemodel.WriteOperation{
 		ID: persistencemodel.PersistenceID{
 			ID:        "device123",
-			Name:      "Reported",
+			Name:      "HomeHub",
 			ModelType: persistencemodel.ModelTypeReported,
 		},
 		Model: map[string]any{
@@ -70,7 +70,7 @@ func TestWriteAndReadSingleModel(t *testing.T) {
 	readResults := persistence.Read(context.TODO(), persistencemodel.ReadOptions{}, persistencemodel.ReadOperation{
 		ID: persistencemodel.PersistenceID{
 			ID:        "device123",
-			Name:      "Reported",
+			Name:      "HomeHub",
 			ModelType: persistencemodel.ModelTypeReported,
 		},
 	})
@@ -78,7 +78,7 @@ func TestWriteAndReadSingleModel(t *testing.T) {
 	assert.Len(t, readResults, 1, "There should be one result for the read operation")
 	assert.NoError(t, readResults[0].Error, "Read operation should not return an error")
 	assert.Equal(t, "device123", readResults[0].ID.ID, "ID should match")
-	assert.Equal(t, "Reported", readResults[0].ID.Name, "Name should match")
+	assert.Equal(t, "HomeHub", readResults[0].ID.Name, "Name should match")
 	assert.Equal(t, persistencemodel.ModelTypeReported, readResults[0].ID.ModelType, "ModelType should match")
 	assert.NotNil(t, readResults[0].Model, "Model should not be nil")
 	assert.Equal(t, map[string]any{"temperature": 22.5}, readResults[0].Model, "Model data should match")
@@ -90,7 +90,7 @@ func TestWriteAndDeleteSingleModel(t *testing.T) {
 	writeResults := persistence.Write(context.TODO(), persistencemodel.WriteOptions{}, persistencemodel.WriteOperation{
 		ID: persistencemodel.PersistenceID{
 			ID:        "device123",
-			Name:      "Reported",
+			Name:      "HomeHub",
 			ModelType: persistencemodel.ModelTypeReported,
 		},
 		Model: map[string]any{
@@ -104,7 +104,7 @@ func TestWriteAndDeleteSingleModel(t *testing.T) {
 	deleteResults := persistence.Delete(context.TODO(), persistencemodel.WriteOptions{}, persistencemodel.WriteOperation{
 		ID: persistencemodel.PersistenceID{
 			ID:        "device123",
-			Name:      "Reported",
+			Name:      "HomeHub",
 			ModelType: persistencemodel.ModelTypeReported,
 		},
 	})
@@ -115,7 +115,7 @@ func TestWriteAndDeleteSingleModel(t *testing.T) {
 	readResults := persistence.Read(context.TODO(), persistencemodel.ReadOptions{}, persistencemodel.ReadOperation{
 		ID: persistencemodel.PersistenceID{
 			ID:        "device123",
-			Name:      "Reported",
+			Name:      "HomeHub",
 			ModelType: persistencemodel.ModelTypeReported,
 		},
 	})
@@ -131,7 +131,7 @@ func TestWriteVersionConflict(t *testing.T) {
 	writeResults := persistence.Write(context.TODO(), persistencemodel.WriteOptions{}, persistencemodel.WriteOperation{
 		ID: persistencemodel.PersistenceID{
 			ID:        "device123",
-			Name:      "Reported",
+			Name:      "HomeHub",
 			ModelType: persistencemodel.ModelTypeReported,
 		},
 		Model: map[string]any{
@@ -145,7 +145,7 @@ func TestWriteVersionConflict(t *testing.T) {
 	conflictResults := persistence.Write(context.TODO(), persistencemodel.WriteOptions{}, persistencemodel.WriteOperation{
 		ID: persistencemodel.PersistenceID{
 			ID:        "device123",
-			Name:      "Reported",
+			Name:      "HomeHub",
 			ModelType: persistencemodel.ModelTypeReported,
 		},
 		Model: map[string]any{
@@ -165,7 +165,7 @@ func TestDeleteVersionConflict(t *testing.T) {
 	writeResults := persistence.Write(context.TODO(), persistencemodel.WriteOptions{}, persistencemodel.WriteOperation{
 		ID: persistencemodel.PersistenceID{
 			ID:        "device123",
-			Name:      "Reported",
+			Name:      "HomeHub",
 			ModelType: persistencemodel.ModelTypeReported,
 		},
 		Model: map[string]any{
@@ -179,7 +179,7 @@ func TestDeleteVersionConflict(t *testing.T) {
 	deleteResults := persistence.Delete(context.TODO(), persistencemodel.WriteOptions{}, persistencemodel.WriteOperation{
 		ID: persistencemodel.PersistenceID{
 			ID:        "device123",
-			Name:      "Reported",
+			Name:      "HomeHub",
 			ModelType: persistencemodel.ModelTypeReported,
 		},
 		Version: 99, // Incorrect version
@@ -196,7 +196,7 @@ func TestDeleteWithoutVersionConstraint(t *testing.T) {
 	writeResults := persistence.Write(context.TODO(), persistencemodel.WriteOptions{}, persistencemodel.WriteOperation{
 		ID: persistencemodel.PersistenceID{
 			ID:        "device123",
-			Name:      "Reported",
+			Name:      "HomeHub",
 			ModelType: persistencemodel.ModelTypeReported,
 		},
 		Model: map[string]any{
@@ -210,7 +210,7 @@ func TestDeleteWithoutVersionConstraint(t *testing.T) {
 	deleteResults := persistence.Delete(context.TODO(), persistencemodel.WriteOptions{}, persistencemodel.WriteOperation{
 		ID: persistencemodel.PersistenceID{
 			ID:        "device123",
-			Name:      "Reported",
+			Name:      "HomeHub",
 			ModelType: persistencemodel.ModelTypeReported,
 		},
 		Version: 0, // No version constraint
@@ -222,7 +222,7 @@ func TestDeleteWithoutVersionConstraint(t *testing.T) {
 	readResults := persistence.Read(context.TODO(), persistencemodel.ReadOptions{}, persistencemodel.ReadOperation{
 		ID: persistencemodel.PersistenceID{
 			ID:        "device123",
-			Name:      "Reported",
+			Name:      "HomeHub",
 			ModelType: persistencemodel.ModelTypeReported,
 		},
 	})
@@ -239,7 +239,7 @@ func TestListMultipleModels(t *testing.T) {
 		persistencemodel.WriteOperation{
 			ID: persistencemodel.PersistenceID{
 				ID:        "device123",
-				Name:      "Reported",
+				Name:      "HomeHub",
 				ModelType: persistencemodel.ModelTypeReported,
 			},
 			Model: map[string]any{
@@ -249,7 +249,7 @@ func TestListMultipleModels(t *testing.T) {
 		persistencemodel.WriteOperation{
 			ID: persistencemodel.PersistenceID{
 				ID:        "device124",
-				Name:      "Desired",
+				Name:      "Car",
 				ModelType: persistencemodel.ModelTypeDesired,
 			},
 			Model: map[string]any{
@@ -271,7 +271,7 @@ func TestListMultipleModels(t *testing.T) {
 	assert.ElementsMatch(t, []string{"device123", "device124"}, []string{
 		listResults[0].ID.ID, listResults[1].ID.ID,
 	}, "IDs of listed models should match")
-	assert.ElementsMatch(t, []string{"Reported", "Desired"}, []string{
+	assert.ElementsMatch(t, []string{"HomeHub", "Car"}, []string{
 		listResults[0].ID.Name, listResults[1].ID.Name,
 	}, "Names of listed models should match")
 }
@@ -283,7 +283,7 @@ func TestListWithIDFilter(t *testing.T) {
 		persistencemodel.WriteOperation{
 			ID: persistencemodel.PersistenceID{
 				ID:        "device123",
-				Name:      "Reported",
+				Name:      "HomeHub",
 				ModelType: persistencemodel.ModelTypeReported,
 			},
 			Model: map[string]any{
@@ -293,7 +293,7 @@ func TestListWithIDFilter(t *testing.T) {
 		persistencemodel.WriteOperation{
 			ID: persistencemodel.PersistenceID{
 				ID:        "device124",
-				Name:      "Desired",
+				Name:      "Car",
 				ModelType: persistencemodel.ModelTypeDesired,
 			},
 			Model: map[string]any{
@@ -310,7 +310,7 @@ func TestListWithIDFilter(t *testing.T) {
 
 	assert.Len(t, listResults, 1, "There should be one model listed")
 	assert.Equal(t, "device123", listResults[0].ID.ID, "Listed model ID should match the filter")
-	assert.Equal(t, "Reported", listResults[0].ID.Name, "Listed model Name should match")
+	assert.Equal(t, "HomeHub", listResults[0].ID.Name, "Listed model Name should match")
 	assert.Equal(t, persistencemodel.ModelTypeReported, listResults[0].ID.ModelType, "Listed model ModelType should match")
 }
 
@@ -320,7 +320,7 @@ func TestReadNonExistentModel(t *testing.T) {
 	readResults := persistence.Read(context.TODO(), persistencemodel.ReadOptions{}, persistencemodel.ReadOperation{
 		ID: persistencemodel.PersistenceID{
 			ID:        "nonexistent123",
-			Name:      "Reported",
+			Name:      "HomeHub",
 			ModelType: persistencemodel.ModelTypeReported,
 		},
 	})
@@ -329,7 +329,7 @@ func TestReadNonExistentModel(t *testing.T) {
 	assert.Error(t, readResults[0].Error, "Read operation should return an error for a non-existent model")
 	assert.Equal(t, 404, readResults[0].Error.(persistencemodel.PersistenceError).Code, "Error code should be 404 (Not Found)")
 	assert.Equal(t, "nonexistent123", readResults[0].ID.ID, "Returned ID should match the requested ID")
-	assert.Equal(t, "Reported", readResults[0].ID.Name, "Returned Name should match the requested Name")
+	assert.Equal(t, "HomeHub", readResults[0].ID.Name, "Returned Name should match the requested Name")
 	assert.Equal(t, persistencemodel.ModelTypeReported, readResults[0].ID.ModelType, "Returned ModelType should match the requested ModelType")
 }
 
@@ -339,7 +339,7 @@ func TestWriteUpdateExistingModel(t *testing.T) {
 	initialWrite := persistence.Write(context.TODO(), persistencemodel.WriteOptions{}, persistencemodel.WriteOperation{
 		ID: persistencemodel.PersistenceID{
 			ID:        "device123",
-			Name:      "Reported",
+			Name:      "HomeHub",
 			ModelType: persistencemodel.ModelTypeReported,
 		},
 		Model: map[string]any{
@@ -354,7 +354,7 @@ func TestWriteUpdateExistingModel(t *testing.T) {
 	updateWrite := persistence.Write(context.TODO(), persistencemodel.WriteOptions{}, persistencemodel.WriteOperation{
 		ID: persistencemodel.PersistenceID{
 			ID:        "device123",
-			Name:      "Reported",
+			Name:      "HomeHub",
 			ModelType: persistencemodel.ModelTypeReported,
 		},
 		Model: map[string]any{
@@ -369,7 +369,7 @@ func TestWriteUpdateExistingModel(t *testing.T) {
 	readResults := persistence.Read(context.TODO(), persistencemodel.ReadOptions{}, persistencemodel.ReadOperation{
 		ID: persistencemodel.PersistenceID{
 			ID:        "device123",
-			Name:      "Reported",
+			Name:      "HomeHub",
 			ModelType: persistencemodel.ModelTypeReported,
 		},
 	})
@@ -386,7 +386,7 @@ func TestDeleteNonExistentModel(t *testing.T) {
 	deleteResults := persistence.Delete(context.TODO(), persistencemodel.WriteOptions{}, persistencemodel.WriteOperation{
 		ID: persistencemodel.PersistenceID{
 			ID:        "nonexistent123",
-			Name:      "Reported",
+			Name:      "HomeHub",
 			ModelType: persistencemodel.ModelTypeReported,
 		},
 	})
@@ -395,7 +395,7 @@ func TestDeleteNonExistentModel(t *testing.T) {
 	assert.Error(t, deleteResults[0].Error, "Delete operation should return an error for a non-existent model")
 	assert.Equal(t, 404, deleteResults[0].Error.(persistencemodel.PersistenceError).Code, "Error code should be 404 (Not Found)")
 	assert.Equal(t, "nonexistent123", deleteResults[0].ID.ID, "Returned ID should match the requested ID")
-	assert.Equal(t, "Reported", deleteResults[0].ID.Name, "Returned Name should match the requested Name")
+	assert.Equal(t, "HomeHub", deleteResults[0].ID.Name, "Returned Name should match the requested Name")
 	assert.Equal(t, persistencemodel.ModelTypeReported, deleteResults[0].ID.ModelType, "Returned ModelType should match the requested ModelType")
 }
 
@@ -406,7 +406,7 @@ func TestListAfterDeletingAllModels(t *testing.T) {
 		persistencemodel.WriteOperation{
 			ID: persistencemodel.PersistenceID{
 				ID:        "device123",
-				Name:      "Reported",
+				Name:      "HomeHub",
 				ModelType: persistencemodel.ModelTypeReported,
 			},
 			Model: map[string]any{
@@ -416,7 +416,7 @@ func TestListAfterDeletingAllModels(t *testing.T) {
 		persistencemodel.WriteOperation{
 			ID: persistencemodel.PersistenceID{
 				ID:        "device124",
-				Name:      "Desired",
+				Name:      "Car",
 				ModelType: persistencemodel.ModelTypeDesired,
 			},
 			Model: map[string]any{
@@ -433,14 +433,14 @@ func TestListAfterDeletingAllModels(t *testing.T) {
 		persistencemodel.WriteOperation{
 			ID: persistencemodel.PersistenceID{
 				ID:        "device123",
-				Name:      "Reported",
+				Name:      "HomeHub",
 				ModelType: persistencemodel.ModelTypeReported,
 			},
 		},
 		persistencemodel.WriteOperation{
 			ID: persistencemodel.PersistenceID{
 				ID:        "device124",
-				Name:      "Desired",
+				Name:      "Car",
 				ModelType: persistencemodel.ModelTypeDesired,
 			},
 		},
@@ -459,7 +459,7 @@ func TestWriteIdenticalIDDifferentNames(t *testing.T) {
 		persistencemodel.WriteOperation{
 			ID: persistencemodel.PersistenceID{
 				ID:        "device123",
-				Name:      "Reported",
+				Name:      "HomeHub",
 				ModelType: persistencemodel.ModelTypeReported,
 			},
 			Model: map[string]any{
@@ -469,7 +469,7 @@ func TestWriteIdenticalIDDifferentNames(t *testing.T) {
 		persistencemodel.WriteOperation{
 			ID: persistencemodel.PersistenceID{
 				ID:        "device123",
-				Name:      "Desired",
+				Name:      "Car",
 				ModelType: persistencemodel.ModelTypeDesired,
 			},
 			Model: map[string]any{
@@ -489,7 +489,7 @@ func TestWriteIdenticalIDDifferentNames(t *testing.T) {
 
 	assert.NoError(t, err, "List should not return an error")
 	assert.Len(t, listResults, 2, "There should be two models listed")
-	assert.ElementsMatch(t, []string{"Reported", "Desired"}, []string{
+	assert.ElementsMatch(t, []string{"HomeHub", "Car"}, []string{
 		listResults[0].ID.Name, listResults[1].ID.Name,
 	}, "Names of listed models should match")
 }
@@ -501,7 +501,7 @@ func TestDeleteByNameForIdenticalID(t *testing.T) {
 		persistencemodel.WriteOperation{
 			ID: persistencemodel.PersistenceID{
 				ID:        "device123",
-				Name:      "Reported",
+				Name:      "HomeHub",
 				ModelType: persistencemodel.ModelTypeReported,
 			},
 			Model: map[string]any{
@@ -511,7 +511,7 @@ func TestDeleteByNameForIdenticalID(t *testing.T) {
 		persistencemodel.WriteOperation{
 			ID: persistencemodel.PersistenceID{
 				ID:        "device123",
-				Name:      "Desired",
+				Name:      "Car",
 				ModelType: persistencemodel.ModelTypeDesired,
 			},
 			Model: map[string]any{
@@ -523,7 +523,7 @@ func TestDeleteByNameForIdenticalID(t *testing.T) {
 	deleteResults := persistence.Delete(context.TODO(), persistencemodel.WriteOptions{}, persistencemodel.WriteOperation{
 		ID: persistencemodel.PersistenceID{
 			ID:        "device123",
-			Name:      "Reported",
+			Name:      "HomeHub",
 			ModelType: persistencemodel.ModelTypeReported,
 		},
 	})
@@ -538,7 +538,7 @@ func TestDeleteByNameForIdenticalID(t *testing.T) {
 	assert.NoError(t, err, "List should not return an error")
 
 	assert.Len(t, listResults, 1, "There should be one model remaining")
-	assert.Equal(t, "Desired", listResults[0].ID.Name, "Remaining model should have Name 'Desired'")
+	assert.Equal(t, "Car", listResults[0].ID.Name, "Remaining model should have Name 'Desired'")
 	assert.Equal(t, persistencemodel.ModelTypeDesired, listResults[0].ID.ModelType, "Remaining model should have ModelType 'Desired'")
 }
 
@@ -549,7 +549,7 @@ func TestWriteUpdatesOnlySpecifiedModel(t *testing.T) {
 		persistencemodel.WriteOperation{
 			ID: persistencemodel.PersistenceID{
 				ID:        "device123",
-				Name:      "Reported",
+				Name:      "HomeHub",
 				ModelType: persistencemodel.ModelTypeReported,
 			},
 			Model: map[string]any{
@@ -559,7 +559,7 @@ func TestWriteUpdatesOnlySpecifiedModel(t *testing.T) {
 		persistencemodel.WriteOperation{
 			ID: persistencemodel.PersistenceID{
 				ID:        "device123",
-				Name:      "Desired",
+				Name:      "Car",
 				ModelType: persistencemodel.ModelTypeDesired,
 			},
 			Model: map[string]any{
@@ -571,13 +571,13 @@ func TestWriteUpdatesOnlySpecifiedModel(t *testing.T) {
 	writeResults := persistence.Write(context.TODO(), persistencemodel.WriteOptions{}, persistencemodel.WriteOperation{
 		ID: persistencemodel.PersistenceID{
 			ID:        "device123",
-			Name:      "Reported",
+			Name:      "HomeHub",
 			ModelType: persistencemodel.ModelTypeReported,
 		},
 		Model: map[string]any{
 			"temperature": 23.0, // New temperature
 		},
-		Version: 1, // Correct version for "Reported"
+		Version: 1, // Correct version for "HomeHub"
 	})
 
 	assert.Len(t, writeResults, 1, "There should be one result for the write operation")
@@ -587,14 +587,14 @@ func TestWriteUpdatesOnlySpecifiedModel(t *testing.T) {
 		persistencemodel.ReadOperation{
 			ID: persistencemodel.PersistenceID{
 				ID:        "device123",
-				Name:      "Reported",
+				Name:      "HomeHub",
 				ModelType: persistencemodel.ModelTypeReported,
 			},
 		},
 		persistencemodel.ReadOperation{
 			ID: persistencemodel.PersistenceID{
 				ID:        "device123",
-				Name:      "Desired",
+				Name:      "Car",
 				ModelType: persistencemodel.ModelTypeDesired,
 			},
 		},
@@ -614,7 +614,7 @@ func TestListNoMatchingID(t *testing.T) {
 		persistencemodel.WriteOperation{
 			ID: persistencemodel.PersistenceID{
 				ID:        "device123",
-				Name:      "Reported",
+				Name:      "HomeHub",
 				ModelType: persistencemodel.ModelTypeReported,
 			},
 			Model: map[string]any{
@@ -624,7 +624,7 @@ func TestListNoMatchingID(t *testing.T) {
 		persistencemodel.WriteOperation{
 			ID: persistencemodel.PersistenceID{
 				ID:        "device124",
-				Name:      "Desired",
+				Name:      "Car",
 				ModelType: persistencemodel.ModelTypeDesired,
 			},
 			Model: map[string]any{
