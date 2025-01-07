@@ -27,7 +27,7 @@ func (tmv *Value) GetValue() any {
 }
 
 func TestStringLogger(t *testing.T) {
-	sl := strlogger.NewStringLogger()
+	sl := strlogger.New()
 	now := time.Now().UTC()
 	nowMinusOneHour := now.Add(-1 * time.Hour)
 
