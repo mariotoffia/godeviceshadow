@@ -22,11 +22,13 @@ persistor := mempersistence.New()
 ctx := context.TODO()
 
 write := persistor.Write(ctx, persistencemodel.WriteOptions{}, persistencemodel.WriteOperation{ // <1>
+  ClientID: "my-random-uuid",
   ID: persistencemodel.PersistenceID{ // <2>
     ID:        "device123",
     Name:      "HomeHub",
     ModelType: persistencemodel.ModelTypeReported,
   },
+
   Model: map[string]any{ // <3>
     "temperature": 22.5,
   },

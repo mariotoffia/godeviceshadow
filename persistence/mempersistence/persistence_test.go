@@ -194,6 +194,7 @@ func TestDeleteWithoutVersionConstraint(t *testing.T) {
 	persistence := mempersistence.New()
 
 	writeResults := persistence.Write(context.TODO(), persistencemodel.WriteOptions{}, persistencemodel.WriteOperation{
+		ClientID: "my-random-uuid",
 		ID: persistencemodel.PersistenceID{
 			ID:        "device123",
 			Name:      "HomeHub",
