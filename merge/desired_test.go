@@ -10,6 +10,14 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+const (
+	noMatch             = "no-match"
+	desiredValue        = "desired-value"
+	desiredValue2       = "desired-value-2"
+	newValue            = "new-value"
+	shouldNotBeAccessed = "should-not-be-accessed"
+)
+
 type TestStruct struct {
 	Field1 model.ValueAndTimestamp `json:"field1"`
 	Field2 model.ValueAndTimestamp `json:"field2"`
@@ -31,11 +39,11 @@ func (m MockValueAndTimestamp) GetValue() any {
 func TestDesiredSimpleStruct(t *testing.T) {
 	reported := TestStruct{
 		Field1: MockValueAndTimestamp{Value: "match", Timestamp: time.Now()},
-		Field2: MockValueAndTimestamp{Value: "no-match", Timestamp: time.Now()},
+		Field2: MockValueAndTimestamp{Value: noMatch, Timestamp: time.Now()},
 	}
 	desired := TestStruct{
 		Field1: MockValueAndTimestamp{Value: "match", Timestamp: time.Now()},
-		Field2: MockValueAndTimestamp{Value: "desired-value", Timestamp: time.Now()},
+		Field2: MockValueAndTimestamp{Value: desiredValue, Timestamp: time.Now()},
 	}
 
 	mockLogger := &MockLogger{} // Using the pre-existing MockLogger
@@ -46,7 +54,7 @@ func TestDesiredSimpleStruct(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, TestStruct{
 		Field1: nil, // Removed due to match
-		Field2: MockValueAndTimestamp{Value: "desired-value", Timestamp: desired.Field2.GetTimestamp()},
+		Field2: MockValueAndTimestamp{Value: desiredValue, Timestamp: desired.Field2.GetTimestamp()},
 	}, result)
 	assert.ElementsMatch(t, []string{"field1"}, mockLogger.AcknowledgedPaths)
 }
@@ -101,14 +109,14 @@ func TestDesiredMapMerge(t *testing.T) {
 	reported := TestStruct{
 		Field1: map[string]model.ValueAndTimestamp{
 			"key1": MockValueAndTimestamp{Value: "match", Timestamp: time.Now()},
-			"key2": MockValueAndTimestamp{Value: "no-match", Timestamp: time.Now()},
+			"key2": MockValueAndTimestamp{Value: noMatch, Timestamp: time.Now()},
 		},
 	}
 	desired := TestStruct{
 		Field1: map[string]model.ValueAndTimestamp{
 			"key1": MockValueAndTimestamp{Value: "match", Timestamp: time.Now()},
-			"key2": MockValueAndTimestamp{Value: "desired-value", Timestamp: time.Now()},
-			"key3": MockValueAndTimestamp{Value: "new-value", Timestamp: time.Now()},
+			"key2": MockValueAndTimestamp{Value: desiredValue, Timestamp: time.Now()},
+			"key3": MockValueAndTimestamp{Value: newValue, Timestamp: time.Now()},
 		},
 	}
 
@@ -120,8 +128,8 @@ func TestDesiredMapMerge(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, TestStruct{
 		Field1: map[string]model.ValueAndTimestamp{
-			"key2": MockValueAndTimestamp{Value: "desired-value", Timestamp: desired.Field1["key2"].GetTimestamp()},
-			"key3": MockValueAndTimestamp{Value: "new-value", Timestamp: desired.Field1["key3"].GetTimestamp()},
+			"key2": MockValueAndTimestamp{Value: desiredValue, Timestamp: desired.Field1["key2"].GetTimestamp()},
+			"key3": MockValueAndTimestamp{Value: newValue, Timestamp: desired.Field1["key3"].GetTimestamp()},
 		},
 	}, result)
 	assert.ElementsMatch(t, []string{"field1.key1"}, mockLogger.AcknowledgedPaths)
@@ -139,13 +147,13 @@ func TestDesiredMixedDataTypes(t *testing.T) {
 		Field1: MockValueAndTimestamp{Value: "match", Timestamp: time.Now()},
 		Field2: "constant",
 		Field3: 42,
-		Field4: MockValueAndTimestamp{Value: "no-match", Timestamp: time.Now()},
+		Field4: MockValueAndTimestamp{Value: noMatch, Timestamp: time.Now()},
 	}
 	desired := TestStruct{
 		Field1: MockValueAndTimestamp{Value: "match", Timestamp: time.Now()},
 		Field2: "constant",
 		Field3: 42,
-		Field4: MockValueAndTimestamp{Value: "desired-value", Timestamp: time.Now()},
+		Field4: MockValueAndTimestamp{Value: desiredValue, Timestamp: time.Now()},
 	}
 
 	mockLogger := &MockLogger{}
@@ -158,7 +166,7 @@ func TestDesiredMixedDataTypes(t *testing.T) {
 		Field1: nil,        // Removed due to match
 		Field2: "constant", // Unchanged
 		Field3: 42,         // Unchanged
-		Field4: MockValueAndTimestamp{Value: "desired-value", Timestamp: desired.Field4.GetTimestamp()},
+		Field4: MockValueAndTimestamp{Value: desiredValue, Timestamp: desired.Field4.GetTimestamp()},
 	}, result)
 	assert.ElementsMatch(t, []string{"field1"}, mockLogger.AcknowledgedPaths)
 }
@@ -172,10 +180,10 @@ func TestDesiredNestedMaps(t *testing.T) {
 		Field1: map[string]map[string]model.ValueAndTimestamp{
 			"outer1": {
 				"inner1": MockValueAndTimestamp{Value: "match", Timestamp: time.Now()},
-				"inner2": MockValueAndTimestamp{Value: "no-match", Timestamp: time.Now()},
+				"inner2": MockValueAndTimestamp{Value: noMatch, Timestamp: time.Now()},
 			},
 			"outer2": {
-				"inner3": MockValueAndTimestamp{Value: "no-match", Timestamp: time.Now()},
+				"inner3": MockValueAndTimestamp{Value: noMatch, Timestamp: time.Now()},
 			},
 		},
 	}
@@ -183,13 +191,13 @@ func TestDesiredNestedMaps(t *testing.T) {
 		Field1: map[string]map[string]model.ValueAndTimestamp{
 			"outer1": {
 				"inner1": MockValueAndTimestamp{Value: "match", Timestamp: time.Now()},
-				"inner2": MockValueAndTimestamp{Value: "desired-value", Timestamp: time.Now()},
+				"inner2": MockValueAndTimestamp{Value: desiredValue, Timestamp: time.Now()},
 			},
 			"outer2": {
-				"inner3": MockValueAndTimestamp{Value: "desired-value-2", Timestamp: time.Now()},
+				"inner3": MockValueAndTimestamp{Value: desiredValue2, Timestamp: time.Now()},
 			},
 			"outer3": {
-				"inner4": MockValueAndTimestamp{Value: "new-value", Timestamp: time.Now()},
+				"inner4": MockValueAndTimestamp{Value: newValue, Timestamp: time.Now()},
 			},
 		},
 	}
@@ -203,13 +211,13 @@ func TestDesiredNestedMaps(t *testing.T) {
 	assert.Equal(t, TestStruct{
 		Field1: map[string]map[string]model.ValueAndTimestamp{
 			"outer1": {
-				"inner2": MockValueAndTimestamp{Value: "desired-value", Timestamp: desired.Field1["outer1"]["inner2"].GetTimestamp()},
+				"inner2": MockValueAndTimestamp{Value: desiredValue, Timestamp: desired.Field1["outer1"]["inner2"].GetTimestamp()},
 			},
 			"outer2": {
-				"inner3": MockValueAndTimestamp{Value: "desired-value-2", Timestamp: desired.Field1["outer2"]["inner3"].GetTimestamp()},
+				"inner3": MockValueAndTimestamp{Value: desiredValue2, Timestamp: desired.Field1["outer2"]["inner3"].GetTimestamp()},
 			},
 			"outer3": {
-				"inner4": MockValueAndTimestamp{Value: "new-value", Timestamp: desired.Field1["outer3"]["inner4"].GetTimestamp()},
+				"inner4": MockValueAndTimestamp{Value: newValue, Timestamp: desired.Field1["outer3"]["inner4"].GetTimestamp()},
 			},
 		},
 	}, result)
@@ -225,12 +233,12 @@ func TestDesiredEmptyAndNullFields(t *testing.T) {
 
 	reported := TestStruct{
 		Field1: MockValueAndTimestamp{Value: "match", Timestamp: time.Now()},
-		Field2: MockValueAndTimestamp{Value: "no-match", Timestamp: time.Now()},
+		Field2: MockValueAndTimestamp{Value: noMatch, Timestamp: time.Now()},
 		Field3: nil, // Field3 is reported as nil
 	}
 	desired := TestStruct{
 		Field1: MockValueAndTimestamp{Value: "match", Timestamp: time.Now()},
-		Field2: MockValueAndTimestamp{Value: "desired-value", Timestamp: time.Now()},
+		Field2: MockValueAndTimestamp{Value: desiredValue, Timestamp: time.Now()},
 		Field3: nil, // Field3 is desired as nil
 	}
 
@@ -242,7 +250,7 @@ func TestDesiredEmptyAndNullFields(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, TestStruct{
 		Field1: nil, // Removed due to match
-		Field2: MockValueAndTimestamp{Value: "desired-value", Timestamp: desired.Field2.GetTimestamp()},
+		Field2: MockValueAndTimestamp{Value: desiredValue, Timestamp: desired.Field2.GetTimestamp()},
 		Field3: nil, // Field3 remains nil
 	}, result)
 	assert.ElementsMatch(t, []string{"field1"}, mockLogger.AcknowledgedPaths)
@@ -257,13 +265,13 @@ func TestDesiredUnexportedFields(t *testing.T) {
 
 	reported := TestStruct{
 		Field1: MockValueAndTimestamp{Value: "match", Timestamp: time.Now()},
-		Field2: MockValueAndTimestamp{Value: "no-match", Timestamp: time.Now()},
-		field3: MockValueAndTimestamp{Value: "should-not-be-accessed", Timestamp: time.Now()},
+		Field2: MockValueAndTimestamp{Value: noMatch, Timestamp: time.Now()},
+		field3: MockValueAndTimestamp{Value: shouldNotBeAccessed, Timestamp: time.Now()},
 	}
 	desired := TestStruct{
 		Field1: MockValueAndTimestamp{Value: "match", Timestamp: time.Now()},
-		Field2: MockValueAndTimestamp{Value: "desired-value", Timestamp: time.Now()},
-		field3: MockValueAndTimestamp{Value: "should-not-be-accessed", Timestamp: time.Now()},
+		Field2: MockValueAndTimestamp{Value: desiredValue, Timestamp: time.Now()},
+		field3: MockValueAndTimestamp{Value: shouldNotBeAccessed, Timestamp: time.Now()},
 	}
 
 	mockLogger := &MockLogger{}
@@ -274,8 +282,8 @@ func TestDesiredUnexportedFields(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, TestStruct{
 		Field1: nil, // Removed due to match
-		Field2: MockValueAndTimestamp{Value: "desired-value", Timestamp: desired.Field2.GetTimestamp()},
-		field3: MockValueAndTimestamp{Value: "should-not-be-accessed", Timestamp: desired.field3.GetTimestamp()}, // Should remain unchanged
+		Field2: MockValueAndTimestamp{Value: desiredValue, Timestamp: desired.Field2.GetTimestamp()},
+		field3: MockValueAndTimestamp{Value: shouldNotBeAccessed, Timestamp: desired.field3.GetTimestamp()}, // Should remain unchanged
 	}, result)
 	assert.ElementsMatch(t, []string{"field1"}, mockLogger.AcknowledgedPaths)
 }
@@ -297,11 +305,11 @@ func TestDesiredMultipleMatchesInNestedStructs(t *testing.T) {
 		Field1: MockValueAndTimestamp{Value: "match1", Timestamp: time.Now()},
 		Field2: NestedStruct{
 			SubField1: MockValueAndTimestamp{Value: "match2", Timestamp: time.Now()},
-			SubField2: MockValueAndTimestamp{Value: "no-match", Timestamp: time.Now()},
+			SubField2: MockValueAndTimestamp{Value: noMatch, Timestamp: time.Now()},
 		},
 		Field3: NestedStruct{
 			SubField1: MockValueAndTimestamp{Value: "match3", Timestamp: time.Now()},
-			SubField2: MockValueAndTimestamp{Value: "no-match", Timestamp: time.Now()},
+			SubField2: MockValueAndTimestamp{Value: noMatch, Timestamp: time.Now()},
 		},
 	}
 
@@ -309,11 +317,11 @@ func TestDesiredMultipleMatchesInNestedStructs(t *testing.T) {
 		Field1: MockValueAndTimestamp{Value: "match1", Timestamp: time.Now()},
 		Field2: NestedStruct{
 			SubField1: MockValueAndTimestamp{Value: "match2", Timestamp: time.Now()},
-			SubField2: MockValueAndTimestamp{Value: "desired-value", Timestamp: time.Now()},
+			SubField2: MockValueAndTimestamp{Value: desiredValue, Timestamp: time.Now()},
 		},
 		Field3: NestedStruct{
 			SubField1: MockValueAndTimestamp{Value: "match3", Timestamp: time.Now()},
-			SubField2: MockValueAndTimestamp{Value: "desired-value-2", Timestamp: time.Now()},
+			SubField2: MockValueAndTimestamp{Value: desiredValue2, Timestamp: time.Now()},
 		},
 	}
 
@@ -327,11 +335,11 @@ func TestDesiredMultipleMatchesInNestedStructs(t *testing.T) {
 		Field1: nil, // Removed due to match
 		Field2: NestedStruct{
 			SubField1: nil, // Removed due to match
-			SubField2: MockValueAndTimestamp{Value: "desired-value", Timestamp: desired.Field2.SubField2.GetTimestamp()},
+			SubField2: MockValueAndTimestamp{Value: desiredValue, Timestamp: desired.Field2.SubField2.GetTimestamp()},
 		},
 		Field3: NestedStruct{
 			SubField1: nil, // Removed due to match
-			SubField2: MockValueAndTimestamp{Value: "desired-value-2", Timestamp: desired.Field3.SubField2.GetTimestamp()},
+			SubField2: MockValueAndTimestamp{Value: desiredValue2, Timestamp: desired.Field3.SubField2.GetTimestamp()},
 		},
 	}, result)
 	assert.ElementsMatch(t, []string{
@@ -382,12 +390,12 @@ func TestDesiredMissingFieldsInDesired(t *testing.T) {
 
 	reported := TestStruct{
 		Field1: MockValueAndTimestamp{Value: "match", Timestamp: time.Now()},
-		Field2: MockValueAndTimestamp{Value: "no-match", Timestamp: time.Now()},
+		Field2: MockValueAndTimestamp{Value: noMatch, Timestamp: time.Now()},
 		Field3: MockValueAndTimestamp{Value: "reported-only", Timestamp: time.Now()},
 	}
 	desired := TestStruct{
 		Field1: MockValueAndTimestamp{Value: "match", Timestamp: time.Now()},
-		Field2: MockValueAndTimestamp{Value: "desired-value", Timestamp: time.Now()},
+		Field2: MockValueAndTimestamp{Value: desiredValue, Timestamp: time.Now()},
 		// Field3 is missing in desired
 	}
 
@@ -399,7 +407,7 @@ func TestDesiredMissingFieldsInDesired(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, TestStruct{
 		Field1: nil, // Removed due to match
-		Field2: MockValueAndTimestamp{Value: "desired-value", Timestamp: desired.Field2.GetTimestamp()},
+		Field2: MockValueAndTimestamp{Value: desiredValue, Timestamp: desired.Field2.GetTimestamp()},
 	}, result)
 	assert.ElementsMatch(t, []string{"field1"}, mockLogger.AcknowledgedPaths)
 }
@@ -420,7 +428,7 @@ func TestDesiredMultiLevelNestedStructs(t *testing.T) {
 		Level2: Level2{
 			Level3: Level3{
 				FieldA: MockValueAndTimestamp{Value: "match", Timestamp: time.Now()},
-				FieldB: MockValueAndTimestamp{Value: "no-match", Timestamp: time.Now()},
+				FieldB: MockValueAndTimestamp{Value: noMatch, Timestamp: time.Now()},
 			},
 		},
 	}
@@ -428,7 +436,7 @@ func TestDesiredMultiLevelNestedStructs(t *testing.T) {
 		Level2: Level2{
 			Level3: Level3{
 				FieldA: MockValueAndTimestamp{Value: "match", Timestamp: time.Now()},
-				FieldB: MockValueAndTimestamp{Value: "desired-value", Timestamp: time.Now()},
+				FieldB: MockValueAndTimestamp{Value: desiredValue, Timestamp: time.Now()},
 			},
 		},
 	}
@@ -443,7 +451,7 @@ func TestDesiredMultiLevelNestedStructs(t *testing.T) {
 		Level2: Level2{
 			Level3: Level3{
 				FieldA: nil, // Removed due to match
-				FieldB: MockValueAndTimestamp{Value: "desired-value", Timestamp: desired.Level2.Level3.FieldB.GetTimestamp()},
+				FieldB: MockValueAndTimestamp{Value: desiredValue, Timestamp: desired.Level2.Level3.FieldB.GetTimestamp()},
 			},
 		},
 	}, result)
@@ -462,14 +470,14 @@ func TestDesiredMapWithComplexKeys(t *testing.T) {
 	reported := TestStruct{
 		Field1: map[ComplexKey]model.ValueAndTimestamp{
 			{ID: "1", Group: "A"}: MockValueAndTimestamp{Value: "match", Timestamp: time.Now()},
-			{ID: "2", Group: "B"}: MockValueAndTimestamp{Value: "no-match", Timestamp: time.Now()},
+			{ID: "2", Group: "B"}: MockValueAndTimestamp{Value: noMatch, Timestamp: time.Now()},
 		},
 	}
 	desired := TestStruct{
 		Field1: map[ComplexKey]model.ValueAndTimestamp{
 			{ID: "1", Group: "A"}: MockValueAndTimestamp{Value: "match", Timestamp: time.Now()},
-			{ID: "2", Group: "B"}: MockValueAndTimestamp{Value: "desired-value", Timestamp: time.Now()},
-			{ID: "3", Group: "C"}: MockValueAndTimestamp{Value: "new-value", Timestamp: time.Now()},
+			{ID: "2", Group: "B"}: MockValueAndTimestamp{Value: desiredValue, Timestamp: time.Now()},
+			{ID: "3", Group: "C"}: MockValueAndTimestamp{Value: newValue, Timestamp: time.Now()},
 		},
 	}
 
@@ -481,8 +489,8 @@ func TestDesiredMapWithComplexKeys(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, TestStruct{
 		Field1: map[ComplexKey]model.ValueAndTimestamp{
-			{ID: "2", Group: "B"}: MockValueAndTimestamp{Value: "desired-value", Timestamp: desired.Field1[ComplexKey{ID: "2", Group: "B"}].GetTimestamp()},
-			{ID: "3", Group: "C"}: MockValueAndTimestamp{Value: "new-value", Timestamp: desired.Field1[ComplexKey{ID: "3", Group: "C"}].GetTimestamp()},
+			{ID: "2", Group: "B"}: MockValueAndTimestamp{Value: desiredValue, Timestamp: desired.Field1[ComplexKey{ID: "2", Group: "B"}].GetTimestamp()},
+			{ID: "3", Group: "C"}: MockValueAndTimestamp{Value: newValue, Timestamp: desired.Field1[ComplexKey{ID: "3", Group: "C"}].GetTimestamp()},
 		},
 	}, result)
 	assert.ElementsMatch(t, []string{"field1.{ID:1,Group:A}"}, mockLogger.AcknowledgedPaths)
@@ -500,15 +508,15 @@ func TestDesiredMixedKeyTypesInMap(t *testing.T) {
 	reported := MixedKeyMap{
 		Field1: map[interface{}]model.ValueAndTimestamp{
 			"key1":                          MockValueAndTimestamp{Value: "match", Timestamp: time.Now()},
-			42:                              MockValueAndTimestamp{Value: "no-match", Timestamp: time.Now()},
-			ComplexKey{ID: "1", Group: "A"}: MockValueAndTimestamp{Value: "no-match", Timestamp: time.Now()},
+			42:                              MockValueAndTimestamp{Value: noMatch, Timestamp: time.Now()},
+			ComplexKey{ID: "1", Group: "A"}: MockValueAndTimestamp{Value: noMatch, Timestamp: time.Now()},
 		},
 	}
 	desired := MixedKeyMap{
 		Field1: map[interface{}]model.ValueAndTimestamp{
 			"key1":                          MockValueAndTimestamp{Value: "match", Timestamp: time.Now()},
-			42:                              MockValueAndTimestamp{Value: "desired-value", Timestamp: time.Now()},
-			ComplexKey{ID: "1", Group: "A"}: MockValueAndTimestamp{Value: "new-value", Timestamp: time.Now()},
+			42:                              MockValueAndTimestamp{Value: desiredValue, Timestamp: time.Now()},
+			ComplexKey{ID: "1", Group: "A"}: MockValueAndTimestamp{Value: newValue, Timestamp: time.Now()},
 		},
 	}
 
@@ -520,8 +528,8 @@ func TestDesiredMixedKeyTypesInMap(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, MixedKeyMap{
 		Field1: map[interface{}]model.ValueAndTimestamp{
-			42:                              MockValueAndTimestamp{Value: "desired-value", Timestamp: desired.Field1[42].GetTimestamp()},
-			ComplexKey{ID: "1", Group: "A"}: MockValueAndTimestamp{Value: "new-value", Timestamp: desired.Field1[ComplexKey{ID: "1", Group: "A"}].GetTimestamp()},
+			42:                              MockValueAndTimestamp{Value: desiredValue, Timestamp: desired.Field1[42].GetTimestamp()},
+			ComplexKey{ID: "1", Group: "A"}: MockValueAndTimestamp{Value: newValue, Timestamp: desired.Field1[ComplexKey{ID: "1", Group: "A"}].GetTimestamp()},
 		},
 	}, result)
 	assert.ElementsMatch(t, []string{"field1.key1"}, mockLogger.AcknowledgedPaths)
@@ -535,10 +543,10 @@ func TestDesiredStructWithPointerFields(t *testing.T) {
 	}
 
 	field1Reported := MockValueAndTimestamp{Value: "match", Timestamp: time.Now()}
-	field2Reported := MockValueAndTimestamp{Value: "no-match", Timestamp: time.Now()}
+	field2Reported := MockValueAndTimestamp{Value: noMatch, Timestamp: time.Now()}
 
 	field1Desired := MockValueAndTimestamp{Value: "match", Timestamp: time.Now()}
-	field2Desired := MockValueAndTimestamp{Value: "desired-value", Timestamp: time.Now()}
+	field2Desired := MockValueAndTimestamp{Value: desiredValue, Timestamp: time.Now()}
 
 	reported := TestStruct{
 		Field1: &field1Reported,
@@ -569,9 +577,9 @@ func TestDesiredNilPointersInStructs(t *testing.T) {
 		Field3 model.ValueAndTimestamp `json:"field3"`
 	}
 
-	field2Reported := MockValueAndTimestamp{Value: "no-match", Timestamp: time.Now()}
+	field2Reported := MockValueAndTimestamp{Value: noMatch, Timestamp: time.Now()}
 
-	field2Desired := MockValueAndTimestamp{Value: "desired-value", Timestamp: time.Now()}
+	field2Desired := MockValueAndTimestamp{Value: desiredValue, Timestamp: time.Now()}
 
 	reported := TestStruct{
 		Field1: nil, // Field1 is nil in reported
