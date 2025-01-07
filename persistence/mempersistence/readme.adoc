@@ -21,7 +21,7 @@ but a reader may do this and since it is a straight assignment share - it will b
 persistor := mempersistence.New()
 ctx := context.TODO()
 
-write := persistence.Write(ctx, persistencemodel.WriteOptions{}, persistencemodel.WriteOperation{ // <1>
+write := persistor.Write(ctx, persistencemodel.WriteOptions{}, persistencemodel.WriteOperation{ // <1>
   ID: persistencemodel.PersistenceID{ // <2>
     ID:        "device123",
     Name:      "HomeHub",
@@ -36,7 +36,7 @@ if write[0].Error != nil { // <4>
   return write[0].Error
 }
 
-read := persistence.Read(ctx, persistencemodel.ReadOptions{}, persistencemodel.ReadOperation{ // <5>
+read := persistor.Read(ctx, persistencemodel.ReadOptions{}, persistencemodel.ReadOperation{ // <5>
   ID: persistencemodel.PersistenceID{ // <6>
     ID:        "device123",
     Name:      "HomeHub",
