@@ -289,7 +289,7 @@ func mergeMap(baseVal, overrideVal reflect.Value, opts MergeObject) (reflect.Val
 		switch opts.Mode {
 		case ClientIsMaster:
 			for _, key := range baseVal.MapKeys() {
-				opts.CurrentPath = concatPath(basePath, key.String())
+				opts.CurrentPath = concatPath(basePath, formatKey(key))
 
 				notifyRecursive(baseVal.MapIndex(key), model.MergeOperationRemove, opts)
 			}
@@ -297,7 +297,7 @@ func mergeMap(baseVal, overrideVal reflect.Value, opts MergeObject) (reflect.Val
 			return overrideVal, nil
 		case ServerIsMaster:
 			for _, key := range baseVal.MapKeys() {
-				opts.CurrentPath = concatPath(basePath, key.String())
+				opts.CurrentPath = concatPath(basePath, formatKey(key))
 
 				notifyRecursive(baseVal.MapIndex(key), model.MergeOperationNotChanged, opts)
 			}
@@ -312,14 +312,14 @@ func mergeMap(baseVal, overrideVal reflect.Value, opts MergeObject) (reflect.Val
 	baseKeys := make(map[string]reflect.Value, baseVal.Len())
 
 	for _, key := range baseVal.MapKeys() {
-		baseKeys[key.String()] = key
+		baseKeys[formatKey(key)] = key
 	}
 
 	for _, key := range overrideVal.MapKeys() {
 		overrideVal := overrideVal.MapIndex(key)
 		baseValForKey := baseVal.MapIndex(key)
 
-		opts.CurrentPath = concatPath(basePath, key.String())
+		opts.CurrentPath = concatPath(basePath, formatKey(key))
 
 		if !baseValForKey.IsValid() {
 			result.SetMapIndex(key, overrideVal) // add
@@ -330,7 +330,7 @@ func mergeMap(baseVal, overrideVal reflect.Value, opts MergeObject) (reflect.Val
 		}
 
 		// Remove key from base
-		delete(baseKeys, key.String())
+		delete(baseKeys, formatKey(key))
 
 		// Merge recursively
 		merged, err := mergeRecursive(baseValForKey, overrideVal, opts)

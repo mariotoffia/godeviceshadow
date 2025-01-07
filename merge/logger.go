@@ -9,6 +9,15 @@ import (
 // MergeLoggers is a slice of MergeLogger.
 type MergeLoggers []model.MergeLogger
 
+// DesiredLoggers is a slice of DesiredLogger.
+type DesiredLoggers []model.DesiredLogger
+
+func (dl DesiredLoggers) NotifyAcknowledge(path string, value model.ValueAndTimestamp) {
+	for _, l := range dl {
+		l.Acknowledge(path, value)
+	}
+}
+
 func (ml MergeLoggers) NotifyPrepare() error {
 	for _, l := range ml {
 		if p, ok := l.(model.MergeLoggerPrepare); ok {

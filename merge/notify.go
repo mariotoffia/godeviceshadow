@@ -54,7 +54,7 @@ func notifyRecursive(val reflect.Value, op model.MergeOperation, obj MergeObject
 		}
 	case reflect.Map:
 		for _, key := range val.MapKeys() {
-			obj.CurrentPath = concatPath(basePath, key.String())
+			obj.CurrentPath = concatPath(basePath, formatKey(key))
 
 			notifyRecursive(val.MapIndex(key), op, obj)
 		}

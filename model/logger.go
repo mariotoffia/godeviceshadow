@@ -4,6 +4,12 @@ import (
 	"time"
 )
 
+type DesiredLogger interface {
+	// Acknowledge is called each time a reported value is equal to the desired and it is removed
+	// from the desired model.
+	Acknowledge(path string, value ValueAndTimestamp)
+}
+
 // MergeLogger is a interface that will be called in the different merge
 // operations that has been performed.
 type MergeLogger interface {

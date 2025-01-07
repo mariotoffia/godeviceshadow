@@ -13,6 +13,11 @@ import (
 
 type MockLogger struct {
 	mock.Mock
+	AcknowledgedPaths []string
+}
+
+func (m *MockLogger) Acknowledge(path string, value model.ValueAndTimestamp) {
+	m.AcknowledgedPaths = append(m.AcknowledgedPaths, path)
 }
 
 func (m *MockLogger) Managed(path string, operation model.MergeOperation, oldValue, newValue model.ValueAndTimestamp, oldTimeStamp, newTimeStamp time.Time) {
