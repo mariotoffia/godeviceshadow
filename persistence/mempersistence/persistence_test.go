@@ -16,7 +16,7 @@ func TestListEmptyStore(t *testing.T) {
 
 	results, err := persistence.List(context.TODO(), persistencemodel.ListOptions{})
 
-	assert.NoError(t, err, "List should not return an error")
+	assert.NoError(t, err)
 	assert.Empty(t, results, "Results should be empty when the store is empty")
 }
 
@@ -34,14 +34,14 @@ func TestWriteAndListSingleModel(t *testing.T) {
 		},
 	})
 
-	assert.Len(t, writeResults, 1, "There should be one result for the write operation")
-	assert.NoError(t, writeResults[0].Error, "Write operation should not return an error")
+	assert.Len(t, writeResults, 1)
+	assert.NoError(t, writeResults[0].Error)
 
 	listResults, err := persistence.List(context.TODO(), persistencemodel.ListOptions{
 		ID: "device123",
 	})
 
-	assert.NoError(t, err, "List should not return an error")
+	assert.NoError(t, err)
 
 	assert.Len(t, listResults, 1, "There should be one model listed")
 	assert.Equal(t, "device123", listResults[0].ID.ID, "ID should match")
@@ -64,8 +64,8 @@ func TestWriteAndReadSingleModel(t *testing.T) {
 		},
 	})
 
-	assert.Len(t, writeResults, 1, "There should be one result for the write operation")
-	assert.NoError(t, writeResults[0].Error, "Write operation should not return an error")
+	assert.Len(t, writeResults, 1)
+	assert.NoError(t, writeResults[0].Error)
 
 	readResults := persistence.Read(context.TODO(), persistencemodel.ReadOptions{}, persistencemodel.ReadOperation{
 		ID: persistencemodel.PersistenceID{
@@ -75,7 +75,7 @@ func TestWriteAndReadSingleModel(t *testing.T) {
 		},
 	})
 
-	assert.Len(t, readResults, 1, "There should be one result for the read operation")
+	assert.Len(t, readResults, 1)
 	assert.NoError(t, readResults[0].Error, "Read operation should not return an error")
 	assert.Equal(t, "device123", readResults[0].ID.ID, "ID should match")
 	assert.Equal(t, "HomeHub", readResults[0].ID.Name, "Name should match")
@@ -98,8 +98,8 @@ func TestWriteAndDeleteSingleModel(t *testing.T) {
 		},
 	})
 
-	assert.Len(t, writeResults, 1, "There should be one result for the write operation")
-	assert.NoError(t, writeResults[0].Error, "Write operation should not return an error")
+	assert.Len(t, writeResults, 1)
+	assert.NoError(t, writeResults[0].Error)
 
 	deleteResults := persistence.Delete(context.TODO(), persistencemodel.WriteOptions{}, persistencemodel.WriteOperation{
 		ID: persistencemodel.PersistenceID{
@@ -109,8 +109,8 @@ func TestWriteAndDeleteSingleModel(t *testing.T) {
 		},
 	})
 
-	assert.Len(t, deleteResults, 1, "There should be one result for the delete operation")
-	assert.NoError(t, deleteResults[0].Error, "Delete operation should not return an error")
+	assert.Len(t, deleteResults, 1)
+	assert.NoError(t, deleteResults[0].Error)
 
 	readResults := persistence.Read(context.TODO(), persistencemodel.ReadOptions{}, persistencemodel.ReadOperation{
 		ID: persistencemodel.PersistenceID{
@@ -120,9 +120,9 @@ func TestWriteAndDeleteSingleModel(t *testing.T) {
 		},
 	})
 
-	assert.Len(t, readResults, 1, "There should be one result for the read operation")
+	assert.Len(t, readResults, 1)
 	assert.Error(t, readResults[0].Error, "Read operation should return an error for a deleted model")
-	assert.Equal(t, 404, readResults[0].Error.(persistencemodel.PersistenceError).Code, "Error code should be 404 (Not Found)")
+	assert.Equal(t, 404, readResults[0].Error.(persistencemodel.PersistenceError).Code)
 }
 
 func TestWriteVersionConflict(t *testing.T) {
@@ -139,8 +139,8 @@ func TestWriteVersionConflict(t *testing.T) {
 		},
 	})
 
-	assert.Len(t, writeResults, 1, "There should be one result for the write operation")
-	assert.NoError(t, writeResults[0].Error, "Write operation should not return an error")
+	assert.Len(t, writeResults, 1)
+	assert.NoError(t, writeResults[0].Error)
 
 	conflictResults := persistence.Write(context.TODO(), persistencemodel.WriteOptions{}, persistencemodel.WriteOperation{
 		ID: persistencemodel.PersistenceID{
@@ -173,8 +173,8 @@ func TestDeleteVersionConflict(t *testing.T) {
 		},
 	})
 
-	assert.Len(t, writeResults, 1, "There should be one result for the write operation")
-	assert.NoError(t, writeResults[0].Error, "Write operation should not return an error")
+	assert.Len(t, writeResults, 1)
+	assert.NoError(t, writeResults[0].Error)
 
 	deleteResults := persistence.Delete(context.TODO(), persistencemodel.WriteOptions{}, persistencemodel.WriteOperation{
 		ID: persistencemodel.PersistenceID{
@@ -185,7 +185,7 @@ func TestDeleteVersionConflict(t *testing.T) {
 		Version: 99, // Incorrect version
 	})
 
-	assert.Len(t, deleteResults, 1, "There should be one result for the delete operation")
+	assert.Len(t, deleteResults, 1)
 	assert.Error(t, deleteResults[0].Error, "Delete operation should return an error for version conflict")
 	assert.Equal(t, 409, deleteResults[0].Error.(persistencemodel.PersistenceError).Code, "Error code should be 409 (Conflict)")
 }
@@ -204,8 +204,8 @@ func TestDeleteWithoutVersionConstraint(t *testing.T) {
 		},
 	})
 
-	assert.Len(t, writeResults, 1, "There should be one result for the write operation")
-	assert.NoError(t, writeResults[0].Error, "Write operation should not return an error")
+	assert.Len(t, writeResults, 1)
+	assert.NoError(t, writeResults[0].Error)
 
 	deleteResults := persistence.Delete(context.TODO(), persistencemodel.WriteOptions{}, persistencemodel.WriteOperation{
 		ID: persistencemodel.PersistenceID{
@@ -216,8 +216,8 @@ func TestDeleteWithoutVersionConstraint(t *testing.T) {
 		Version: 0, // No version constraint
 	})
 
-	assert.Len(t, deleteResults, 1, "There should be one result for the delete operation")
-	assert.NoError(t, deleteResults[0].Error, "Delete operation should not return an error")
+	assert.Len(t, deleteResults, 1)
+	assert.NoError(t, deleteResults[0].Error)
 
 	readResults := persistence.Read(context.TODO(), persistencemodel.ReadOptions{}, persistencemodel.ReadOperation{
 		ID: persistencemodel.PersistenceID{
@@ -227,9 +227,9 @@ func TestDeleteWithoutVersionConstraint(t *testing.T) {
 		},
 	})
 
-	assert.Len(t, readResults, 1, "There should be one result for the read operation")
+	assert.Len(t, readResults, 1)
 	assert.Error(t, readResults[0].Error, "Read operation should return an error for a deleted model")
-	assert.Equal(t, 404, readResults[0].Error.(persistencemodel.PersistenceError).Code, "Error code should be 404 (Not Found)")
+	assert.Equal(t, 404, readResults[0].Error.(persistencemodel.PersistenceError).Code)
 }
 
 func TestListMultipleModels(t *testing.T) {
@@ -260,12 +260,12 @@ func TestListMultipleModels(t *testing.T) {
 
 	assert.Len(t, writeResults, 2, "There should be two results for the write operations")
 	for _, result := range writeResults {
-		assert.NoError(t, result.Error, "Write operation should not return an error")
+		assert.NoError(t, result.Error)
 	}
 
 	listResults, err := persistence.List(context.TODO(), persistencemodel.ListOptions{})
 
-	assert.NoError(t, err, "List should not return an error")
+	assert.NoError(t, err)
 
 	assert.Len(t, listResults, 2, "There should be two models listed")
 	assert.ElementsMatch(t, []string{"device123", "device124"}, []string{
@@ -306,7 +306,7 @@ func TestListWithIDFilter(t *testing.T) {
 		ID: "device123",
 	})
 
-	assert.NoError(t, err, "List should not return an error")
+	assert.NoError(t, err)
 
 	assert.Len(t, listResults, 1, "There should be one model listed")
 	assert.Equal(t, "device123", listResults[0].ID.ID, "Listed model ID should match the filter")
@@ -325,9 +325,9 @@ func TestReadNonExistentModel(t *testing.T) {
 		},
 	})
 
-	assert.Len(t, readResults, 1, "There should be one result for the read operation")
+	assert.Len(t, readResults, 1)
 	assert.Error(t, readResults[0].Error, "Read operation should return an error for a non-existent model")
-	assert.Equal(t, 404, readResults[0].Error.(persistencemodel.PersistenceError).Code, "Error code should be 404 (Not Found)")
+	assert.Equal(t, 404, readResults[0].Error.(persistencemodel.PersistenceError).Code)
 	assert.Equal(t, "nonexistent123", readResults[0].ID.ID, "Returned ID should match the requested ID")
 	assert.Equal(t, "HomeHub", readResults[0].ID.Name, "Returned Name should match the requested Name")
 	assert.Equal(t, persistencemodel.ModelTypeReported, readResults[0].ID.ModelType, "Returned ModelType should match the requested ModelType")
@@ -374,7 +374,7 @@ func TestWriteUpdateExistingModel(t *testing.T) {
 		},
 	})
 
-	assert.Len(t, readResults, 1, "There should be one result for the read operation")
+	assert.Len(t, readResults, 1)
 	assert.NoError(t, readResults[0].Error, "Read operation should not return an error")
 	assert.Equal(t, map[string]any{"temperature": 25.0}, readResults[0].Model, "Updated model data should match")
 	assert.Equal(t, readResults[0].Version, int64(2), "Since written twice")
@@ -391,9 +391,9 @@ func TestDeleteNonExistentModel(t *testing.T) {
 		},
 	})
 
-	assert.Len(t, deleteResults, 1, "There should be one result for the delete operation")
+	assert.Len(t, deleteResults, 1)
 	assert.Error(t, deleteResults[0].Error, "Delete operation should return an error for a non-existent model")
-	assert.Equal(t, 404, deleteResults[0].Error.(persistencemodel.PersistenceError).Code, "Error code should be 404 (Not Found)")
+	assert.Equal(t, 404, deleteResults[0].Error.(persistencemodel.PersistenceError).Code)
 	assert.Equal(t, "nonexistent123", deleteResults[0].ID.ID, "Returned ID should match the requested ID")
 	assert.Equal(t, "HomeHub", deleteResults[0].ID.Name, "Returned Name should match the requested Name")
 	assert.Equal(t, persistencemodel.ModelTypeReported, deleteResults[0].ID.ModelType, "Returned ModelType should match the requested ModelType")
@@ -448,7 +448,7 @@ func TestListAfterDeletingAllModels(t *testing.T) {
 
 	listResults, err = persistence.List(context.TODO(), persistencemodel.ListOptions{})
 
-	assert.NoError(t, err, "List should not return an error")
+	assert.NoError(t, err)
 	assert.Empty(t, listResults, "Results should be empty after deleting all models")
 }
 
@@ -480,14 +480,14 @@ func TestWriteIdenticalIDDifferentNames(t *testing.T) {
 
 	assert.Len(t, writeResults, 2, "There should be two results for the write operations")
 	for _, result := range writeResults {
-		assert.NoError(t, result.Error, "Write operation should not return an error")
+		assert.NoError(t, result.Error)
 	}
 
 	listResults, err := persistence.List(context.TODO(), persistencemodel.ListOptions{
 		ID: "device123",
 	})
 
-	assert.NoError(t, err, "List should not return an error")
+	assert.NoError(t, err)
 	assert.Len(t, listResults, 2, "There should be two models listed")
 	assert.ElementsMatch(t, []string{"HomeHub", "Car"}, []string{
 		listResults[0].ID.Name, listResults[1].ID.Name,
@@ -528,14 +528,14 @@ func TestDeleteByNameForIdenticalID(t *testing.T) {
 		},
 	})
 
-	assert.Len(t, deleteResults, 1, "There should be one result for the delete operation")
-	assert.NoError(t, deleteResults[0].Error, "Delete operation should not return an error")
+	assert.Len(t, deleteResults, 1)
+	assert.NoError(t, deleteResults[0].Error)
 
 	listResults, err := persistence.List(context.TODO(), persistencemodel.ListOptions{
 		ID: "device123",
 	})
 
-	assert.NoError(t, err, "List should not return an error")
+	assert.NoError(t, err)
 
 	assert.Len(t, listResults, 1, "There should be one model remaining")
 	assert.Equal(t, "Car", listResults[0].ID.Name, "Remaining model should have Name 'Desired'")
@@ -580,8 +580,8 @@ func TestWriteUpdatesOnlySpecifiedModel(t *testing.T) {
 		Version: 1, // Correct version for "HomeHub"
 	})
 
-	assert.Len(t, writeResults, 1, "There should be one result for the write operation")
-	assert.NoError(t, writeResults[0].Error, "Write operation should not return an error")
+	assert.Len(t, writeResults, 1)
+	assert.NoError(t, writeResults[0].Error)
 
 	readResults := persistence.Read(context.TODO(), persistencemodel.ReadOptions{},
 		persistencemodel.ReadOperation{
@@ -637,6 +637,6 @@ func TestListNoMatchingID(t *testing.T) {
 		ID: "device999", // ID that does not exist
 	})
 
-	assert.NoError(t, err, "List should not return an error")
+	assert.NoError(t, err)
 	assert.Empty(t, listResults, "Results should be empty for a non-matching ID")
 }
