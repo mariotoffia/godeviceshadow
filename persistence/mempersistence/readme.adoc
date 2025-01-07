@@ -7,6 +7,8 @@ ifndef::icons[:icons: font]
 ifndef::imagesdir[:imagesdir: ../meta/assets]
 
 = In-Memory Optimistic Locking Persistence
+
+== Introduction
 This `Persistence` is a non transactional persistence that uses the `Version` field to do optimistic locking. It is guarded by a mutex and hence is thread safe. It is primarily meant for testing purposes but may be used as a in memory persister.
 
 == Sample Usage
