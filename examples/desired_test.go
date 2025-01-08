@@ -3,7 +3,8 @@ package examples
 import "testing"
 
 func HandleDesiredReported(t *testing.T) {
-	hub := HomeTemperatureHub{ // <1>
+	// Initial device shadow state of the hub (e.g. from db)
+	hubZero := HomeTemperatureHub{
 		DeviceShadow: DeviceShadow{
 			TimeZone: "Europe/Stockholm",
 			Owner:    "mariotoffia",
@@ -36,6 +37,6 @@ func HandleDesiredReported(t *testing.T) {
 		},
 	}
 
-	_ = hub
+	_ = hubZero
 
 }

@@ -1,7 +1,6 @@
 package merge_test
 
 import (
-	"fmt"
 	"testing"
 	"time"
 
@@ -12,24 +11,24 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const (
+	circuits0ID       = "Circuits.0.ID"
+	circuits1ID       = "Circuits.1.ID"
+	circuits0Sensors0 = "Circuits.0.Sensors.0"
+	circuits1Sensors0 = "Circuits.1.Sensors.0"
+	circuits0Sensors1 = "Circuits.0.Sensors.1"
+	mKey1             = "M.key1"
+	mKey2             = "M.key2"
+	mKey3             = "M.key3"
+)
+
 type MockLogger struct {
 	mock.Mock
 	AcknowledgedPaths []string
-	AddedPaths        []string
-	UpdatePaths       []string
 }
 
-func (m *MockLogger) Desired(path string, operation model.MergeOperation, value model.ValueAndTimestamp) {
-	switch operation {
-	case model.MergeOperationRemove:
-		m.AcknowledgedPaths = append(m.AcknowledgedPaths, path)
-	case model.MergeOperationAdd:
-		m.AddedPaths = append(m.AddedPaths, path)
-	case model.MergeOperationUpdate:
-		m.UpdatePaths = append(m.UpdatePaths, path)
-	default:
-		panic(fmt.Sprintf("unexpected operation: %s", operation.String()))
-	}
+func (m *MockLogger) Acknowledge(path string, value model.ValueAndTimestamp) {
+	m.AcknowledgedPaths = append(m.AcknowledgedPaths, path)
 }
 
 func (m *MockLogger) Managed(path string, operation model.MergeOperation, oldValue, newValue model.ValueAndTimestamp, oldTimeStamp, newTimeStamp time.Time) {
@@ -67,8 +66,8 @@ func TestLoggerProcessedCalled(t *testing.T) {
 
 	mockLogger.
 		On("Plain", "Name", model.MergeOperationUpdate, "OldDevice", "NewDevice").Once().
-		On("Plain", "Circuits.0.ID", model.MergeOperationNotChanged, 1, 1).Once().
-		On("Managed", "Circuits.0.Sensors.0", model.MergeOperationUpdate,
+		On("Plain", circuits0ID, model.MergeOperationNotChanged, 1, 1).Once().
+		On("Managed", circuits0Sensors0, model.MergeOperationUpdate,
 			&oldDevice.Circuits[0].Sensors[0],
 			&newDevice.Circuits[0].Sensors[0],
 			oneHourAgo, now).Once()
@@ -108,11 +107,11 @@ func TestLoggerPlainCalledForUnchangedValue(t *testing.T) {
 	// Expect the Plain method to be called for unchanged values
 	mockLogger.
 		On("Plain", "Name", model.MergeOperationNotChanged, "SameDevice", "SameDevice").Once().
-		On("Plain", "Circuits.0.ID", model.MergeOperationNotChanged, 1, 1).Once()
+		On("Plain", circuits0ID, model.MergeOperationNotChanged, 1, 1).Once()
 
 	// Expect Processed to be called for Circuits.Sensors
 	mockLogger.
-		On("Managed", "Circuits.0.Sensors.0", model.MergeOperationNotChanged,
+		On("Managed", circuits0Sensors0, model.MergeOperationNotChanged,
 			&oldDevice.Circuits[0].Sensors[0], &newDevice.Circuits[0].Sensors[0],
 			now, now).Once()
 
@@ -149,11 +148,11 @@ func TestLoggerProcessedCalledForAddedValue(t *testing.T) {
 	// Expect the Plain method to be called for updated plain fields
 	mockLogger.
 		On("Plain", "Name", model.MergeOperationUpdate, "OldDevice", "NewDevice").Once().
-		On("Plain", "Circuits.0.ID", model.MergeOperationNotChanged, 1, 1).Once()
+		On("Plain", circuits0ID, model.MergeOperationNotChanged, 1, 1).Once()
 
 	// Expect the Processed method to be called for the added sensor
 	mockLogger.
-		On("Managed", "Circuits.0.Sensors.0", model.MergeOperationAdd,
+		On("Managed", circuits0Sensors0, model.MergeOperationAdd,
 			nil, &newDevice.Circuits[0].Sensors[0],
 			time.Time{}, now).Once()
 
@@ -193,11 +192,11 @@ func TestLoggerProcessedCalledForUpdatedValue(t *testing.T) {
 	// Expect the Plain method to be called for the updated Name field
 	mockLogger.
 		On("Plain", "Name", model.MergeOperationUpdate, "OldDevice", "NewDevice").Once().
-		On("Plain", "Circuits.0.ID", model.MergeOperationNotChanged, 1, 1).Once()
+		On("Plain", circuits0ID, model.MergeOperationNotChanged, 1, 1).Once()
 
 	// Expect the Processed method to be called for the updated sensor
 	mockLogger.
-		On("Managed", "Circuits.0.Sensors.0", model.MergeOperationUpdate,
+		On("Managed", circuits0Sensors0, model.MergeOperationUpdate,
 			&oldDevice.Circuits[0].Sensors[0], &newDevice.Circuits[0].Sensors[0],
 			oneHourAgo, now).Once()
 
@@ -234,11 +233,11 @@ func TestLoggerProcessedCalledForRemovedValue(t *testing.T) {
 	// Expect the Plain method to be called for the updated Name field
 	mockLogger.
 		On("Plain", "Name", model.MergeOperationUpdate, "OldDevice", "NewDevice").Once().
-		On("Plain", "Circuits.0.ID", model.MergeOperationNotChanged, 1, 1).Once()
+		On("Plain", circuits0ID, model.MergeOperationNotChanged, 1, 1).Once()
 
 	// Expect the Processed method to be called for the removed sensor
 	mockLogger.
-		On("Managed", "Circuits.0.Sensors.0", model.MergeOperationRemove,
+		On("Managed", circuits0Sensors0, model.MergeOperationRemove,
 			&oldDevice.Circuits[0].Sensors[0], nil,
 			now, time.Time{}).Once()
 
@@ -284,15 +283,15 @@ func TestLoggerProcessedCalledForNestedValues(t *testing.T) {
 	// Expect the Plain method to be called for the updated Name field
 	mockLogger.
 		On("Plain", "Name", model.MergeOperationUpdate, "OldDevice", "NewDevice").Once().
-		On("Plain", "Circuits.0.ID", model.MergeOperationNotChanged, 1, 1).Once().
-		On("Plain", "Circuits.1.ID", model.MergeOperationNotChanged, 2, 2).Once()
+		On("Plain", circuits0ID, model.MergeOperationNotChanged, 1, 1).Once().
+		On("Plain", circuits1ID, model.MergeOperationNotChanged, 2, 2).Once()
 
 	// Expect the Processed method for nested managed values
 	mockLogger.
-		On("Managed", "Circuits.0.Sensors.0", model.MergeOperationUpdate,
+		On("Managed", circuits0Sensors0, model.MergeOperationUpdate,
 			&oldDevice.Circuits[0].Sensors[0], &newDevice.Circuits[0].Sensors[0],
 			oneHourAgo, now).Once().
-		On("Managed", "Circuits.1.Sensors.0", model.MergeOperationNotChanged,
+		On("Managed", circuits1Sensors0, model.MergeOperationNotChanged,
 			&oldDevice.Circuits[1].Sensors[0], &newDevice.Circuits[1].Sensors[0],
 			oneHourAgo, oneHourAgo).Once()
 
@@ -326,11 +325,11 @@ func TestLoggerPlainCalledForAddedPlainValue(t *testing.T) {
 	// Expect the Plain method to be called for the updated Name field and first circuit entry
 	mockLogger.
 		On("Plain", "Name", model.MergeOperationUpdate, "OldDevice", "NewDevice").Once().
-		On("Plain", "Circuits.0.ID", model.MergeOperationNotChanged, 1, 1).Once()
+		On("Plain", circuits0ID, model.MergeOperationNotChanged, 1, 1).Once()
 
 	// Expect the Plain method for the added circuit
 	mockLogger.
-		On("Plain", "Circuits.1.ID", model.MergeOperationAdd, nil, 2).Once()
+		On("Plain", circuits1ID, model.MergeOperationAdd, nil, 2).Once()
 
 	_, err := merge.Merge(oldDevice, newDevice, merge.MergeOptions{
 		Loggers: merge.MergeLoggers{mockLogger},
@@ -362,11 +361,11 @@ func TestLoggerPlainCalledForRemovedPlainValue(t *testing.T) {
 	// Expect the Plain method to be called for the updated Name field and first circuit entry
 	mockLogger.
 		On("Plain", "Name", model.MergeOperationUpdate, "OldDevice", "NewDevice").Once().
-		On("Plain", "Circuits.0.ID", model.MergeOperationNotChanged, 1, 1).Once()
+		On("Plain", circuits0ID, model.MergeOperationNotChanged, 1, 1).Once()
 
 	// Expect the Plain method for the removed circuit
 	mockLogger.
-		On("Plain", "Circuits.1.ID", model.MergeOperationRemove, 2, nil).Once()
+		On("Plain", circuits1ID, model.MergeOperationRemove, 2, nil).Once()
 
 	_, err := merge.Merge(oldDevice, newDevice, merge.MergeOptions{
 		Loggers: merge.MergeLoggers{mockLogger},
@@ -406,21 +405,21 @@ func TestLoggerProcessedAndPlainForMixedUpdates(t *testing.T) {
 	// Expect the Plain method to be called for the updated Name field and first circuit entry
 	mockLogger.
 		On("Plain", "Name", model.MergeOperationUpdate, "OldDevice", "NewDevice").Once().
-		On("Plain", "Circuits.0.ID", model.MergeOperationNotChanged, 1, 1).Once()
+		On("Plain", circuits0ID, model.MergeOperationNotChanged, 1, 1).Once()
 
 	// Expect the Plain method for the removed circuit
 	mockLogger.
-		On("Plain", "Circuits.1.ID", model.MergeOperationRemove, 2, nil).Once()
+		On("Plain", circuits1ID, model.MergeOperationRemove, 2, nil).Once()
 
 	// Expect the Processed method for the updated sensor
 	mockLogger.
-		On("Managed", "Circuits.0.Sensors.0", model.MergeOperationUpdate,
+		On("Managed", circuits0Sensors0, model.MergeOperationUpdate,
 			&oldDevice.Circuits[0].Sensors[0], &newDevice.Circuits[0].Sensors[0],
 			oneHourAgo, now).Once()
 
 	// Expect the Processed method for the added sensor
 	mockLogger.
-		On("Managed", "Circuits.0.Sensors.1", model.MergeOperationAdd,
+		On("Managed", circuits0Sensors1, model.MergeOperationAdd,
 			nil, &newDevice.Circuits[0].Sensors[1],
 			time.Time{}, oneHourAgo).Once()
 
@@ -459,11 +458,11 @@ func TestLoggerProcessedForEqualTimestamps(t *testing.T) {
 	// Expect the Plain method to be called for unchanged Name
 	mockLogger.
 		On("Plain", "Name", model.MergeOperationNotChanged, "Device", "Device").Once().
-		On("Plain", "Circuits.0.ID", model.MergeOperationNotChanged, 1, 1).Once()
+		On("Plain", circuits0ID, model.MergeOperationNotChanged, 1, 1).Once()
 
 	// Expect the Processed method to indicate no change for the sensor
 	mockLogger.
-		On("Managed", "Circuits.0.Sensors.0", model.MergeOperationNotChanged,
+		On("Managed", circuits0Sensors0, model.MergeOperationNotChanged,
 			&oldDevice.Circuits[0].Sensors[0], &newDevice.Circuits[0].Sensors[0],
 			now, now).Once()
 
@@ -511,18 +510,18 @@ func TestLoggerProcessedForMultipleNestedChanges(t *testing.T) {
 	// Expect the Plain method for the updated Name field
 	mockLogger.
 		On("Plain", "Name", model.MergeOperationUpdate, "OldDevice", "NewDevice").Once().
-		On("Plain", "Circuits.0.ID", model.MergeOperationNotChanged, 1, 1).Once().
-		On("Plain", "Circuits.1.ID", model.MergeOperationNotChanged, 2, 2).Once()
+		On("Plain", circuits0ID, model.MergeOperationNotChanged, 1, 1).Once().
+		On("Plain", circuits1ID, model.MergeOperationNotChanged, 2, 2).Once()
 
 	// Expect the Processed method for sensor updates and additions
 	mockLogger.
-		On("Managed", "Circuits.0.Sensors.0", model.MergeOperationUpdate,
+		On("Managed", circuits0Sensors0, model.MergeOperationUpdate,
 			&oldDevice.Circuits[0].Sensors[0], &newDevice.Circuits[0].Sensors[0],
 			oneHourAgo, now).Once().
-		On("Managed", "Circuits.0.Sensors.1", model.MergeOperationAdd,
+		On("Managed", circuits0Sensors1, model.MergeOperationAdd,
 			nil, &newDevice.Circuits[0].Sensors[1],
 			time.Time{}, oneHourAgo).Once().
-		On("Managed", "Circuits.1.Sensors.0", model.MergeOperationUpdate,
+		On("Managed", circuits1Sensors0, model.MergeOperationUpdate,
 			&oldDevice.Circuits[1].Sensors[0], &newDevice.Circuits[1].Sensors[0],
 			twoHoursAgo, now).Once()
 
@@ -561,14 +560,14 @@ func TestLoggerProcessedForMultipleAdditions(t *testing.T) {
 	// Expect the Plain method for updated Name
 	mockLogger.
 		On("Plain", "Name", model.MergeOperationUpdate, "OldDevice", "NewDevice").Once().
-		On("Plain", "Circuits.0.ID", model.MergeOperationNotChanged, 1, 1).Once()
+		On("Plain", circuits0ID, model.MergeOperationNotChanged, 1, 1).Once()
 
 	// Expect the Processed method for added sensors
 	mockLogger.
-		On("Managed", "Circuits.0.Sensors.0", model.MergeOperationAdd,
+		On("Managed", circuits0Sensors0, model.MergeOperationAdd,
 			nil, &newDevice.Circuits[0].Sensors[0],
 			time.Time{}, now).Once().
-		On("Managed", "Circuits.0.Sensors.1", model.MergeOperationAdd,
+		On("Managed", circuits0Sensors1, model.MergeOperationAdd,
 			nil, &newDevice.Circuits[0].Sensors[1],
 			time.Time{}, now).Once().
 		On("Managed", "Circuits.0.Sensors.2", model.MergeOperationAdd,
@@ -611,14 +610,14 @@ func TestLoggerProcessedForMultipleRemovals(t *testing.T) {
 	// Expect the Plain method for the updated Name
 	mockLogger.
 		On("Plain", "Name", model.MergeOperationUpdate, "OldDevice", "NewDevice").Once().
-		On("Plain", "Circuits.0.ID", model.MergeOperationNotChanged, 1, 1).Once()
+		On("Plain", circuits0ID, model.MergeOperationNotChanged, 1, 1).Once()
 
 	// Expect the Processed method for removed sensors
 	mockLogger.
-		On("Managed", "Circuits.0.Sensors.0", model.MergeOperationRemove,
+		On("Managed", circuits0Sensors0, model.MergeOperationRemove,
 			&oldDevice.Circuits[0].Sensors[0], nil,
 			oneHourAgo, time.Time{}).Once().
-		On("Managed", "Circuits.0.Sensors.1", model.MergeOperationRemove,
+		On("Managed", circuits0Sensors1, model.MergeOperationRemove,
 			&oldDevice.Circuits[0].Sensors[1], nil,
 			oneHourAgo, time.Time{}).Once().
 		On("Managed", "Circuits.0.Sensors.2", model.MergeOperationRemove,
@@ -671,21 +670,21 @@ func TestLoggerProcessedForMixedOperationsAcrossCircuits(t *testing.T) {
 	// Expect the Plain method for the updated Name field
 	mockLogger.
 		On("Plain", "Name", model.MergeOperationUpdate, "OldDevice", "NewDevice").Once().
-		On("Plain", "Circuits.0.ID", model.MergeOperationNotChanged, 1, 1).Once().
-		On("Plain", "Circuits.1.ID", model.MergeOperationNotChanged, 2, 2).Once()
+		On("Plain", circuits0ID, model.MergeOperationNotChanged, 1, 1).Once().
+		On("Plain", circuits1ID, model.MergeOperationNotChanged, 2, 2).Once()
 
 	// Circuit 1: Sensors
 	mockLogger.
-		On("Managed", "Circuits.0.Sensors.0", model.MergeOperationUpdate,
+		On("Managed", circuits0Sensors0, model.MergeOperationUpdate,
 			&oldDevice.Circuits[0].Sensors[0], &newDevice.Circuits[0].Sensors[0],
 			oneHourAgo, now).Once().
-		On("Managed", "Circuits.0.Sensors.1", model.MergeOperationRemove,
+		On("Managed", circuits0Sensors1, model.MergeOperationRemove,
 			&oldDevice.Circuits[0].Sensors[1], nil,
 			oneHourAgo, time.Time{}).Once()
 
 	// Circuit 2: Sensors
 	mockLogger.
-		On("Managed", "Circuits.1.Sensors.0", model.MergeOperationUpdate,
+		On("Managed", circuits1Sensors0, model.MergeOperationUpdate,
 			&oldDevice.Circuits[1].Sensors[0], &newDevice.Circuits[1].Sensors[0],
 			twoHoursAgo, now).Once().
 		On("Managed", "Circuits.1.Sensors.1", model.MergeOperationAdd,
@@ -723,8 +722,8 @@ func TestLoggerPlainForMultiplePlainValueUpdates(t *testing.T) {
 	// Expect the Plain method for updates in Name and Circuits IDs
 	mockLogger.
 		On("Plain", "Name", model.MergeOperationUpdate, "OldDevice", "NewDevice").Once().
-		On("Plain", "Circuits.0.ID", model.MergeOperationUpdate, 1, 10).Once().
-		On("Plain", "Circuits.1.ID", model.MergeOperationUpdate, 2, 20).Once()
+		On("Plain", circuits0ID, model.MergeOperationUpdate, 1, 10).Once().
+		On("Plain", circuits1ID, model.MergeOperationUpdate, 2, 20).Once()
 
 	_, err := merge.Merge(oldDevice, newDevice, merge.MergeOptions{
 		Loggers: merge.MergeLoggers{mockLogger},
@@ -790,14 +789,14 @@ func TestLoggerForAddingSensorsToEmptyList(t *testing.T) {
 	// Expect the Plain method for the updated Name
 	mockLogger.
 		On("Plain", "Name", model.MergeOperationUpdate, "OldDevice", "NewDevice").Once().
-		On("Plain", "Circuits.0.ID", model.MergeOperationNotChanged, 1, 1).Once()
+		On("Plain", circuits0ID, model.MergeOperationNotChanged, 1, 1).Once()
 
 	// Expect the Processed method for added sensors
 	mockLogger.
-		On("Managed", "Circuits.0.Sensors.0", model.MergeOperationAdd,
+		On("Managed", circuits0Sensors0, model.MergeOperationAdd,
 			nil, &newDevice.Circuits[0].Sensors[0],
 			time.Time{}, now).Once().
-		On("Managed", "Circuits.0.Sensors.1", model.MergeOperationAdd,
+		On("Managed", circuits0Sensors1, model.MergeOperationAdd,
 			nil, &newDevice.Circuits[0].Sensors[1],
 			time.Time{}, oneHourAgo).Once()
 
@@ -825,7 +824,7 @@ func TestLoggerProcessedForUpdatedMapValue(t *testing.T) {
 	mockLogger := &MockLogger{}
 
 	mockLogger.
-		On("Managed", "M.key1", model.MergeOperationUpdate,
+		On("Managed", mKey1, model.MergeOperationUpdate,
 			oldMap["key1"], newMap["key1"],
 			oneHourAgo, now).Once()
 
@@ -857,7 +856,7 @@ func TestLoggerProcessedForAddedMapKey(t *testing.T) {
 	mockLogger := &MockLogger{}
 
 	mockLogger.
-		On("Managed", "M.key1", model.MergeOperationAdd,
+		On("Managed", mKey1, model.MergeOperationAdd,
 			nil, newMap["key1"],
 			time.Time{}, now).Once()
 
@@ -889,7 +888,7 @@ func TestLoggerProcessedForRemovedMapKey(t *testing.T) {
 	mockLogger := &MockLogger{}
 
 	mockLogger.
-		On("Managed", "M.key1", model.MergeOperationRemove,
+		On("Managed", mKey1, model.MergeOperationRemove,
 			oldMap["key1"], nil,
 			now, time.Time{}).Once()
 
@@ -923,7 +922,7 @@ func TestLoggerProcessedForUnchangedMapValue(t *testing.T) {
 	mockLogger := &MockLogger{}
 
 	mockLogger.
-		On("Managed", "M.key1", model.MergeOperationNotChanged,
+		On("Managed", mKey1, model.MergeOperationNotChanged,
 			oldMap["key1"], newMap["key1"],
 			now, now).Once()
 
@@ -962,13 +961,13 @@ func TestLoggerProcessedForMixedMapOperations(t *testing.T) {
 
 	// Expect the Processed method for each operation
 	mockLogger.
-		On("Managed", "M.key1", model.MergeOperationUpdate,
+		On("Managed", mKey1, model.MergeOperationUpdate,
 			oldMap["key1"], newMap["key1"],
 			twoHoursAgo, now).Once().
-		On("Managed", "M.key2", model.MergeOperationRemove,
+		On("Managed", mKey2, model.MergeOperationRemove,
 			oldMap["key2"], nil,
 			oneHourAgo, time.Time{}).Once().
-		On("Managed", "M.key3", model.MergeOperationAdd,
+		On("Managed", mKey3, model.MergeOperationAdd,
 			nil, newMap["key3"],
 			time.Time{}, oneHourAgo).Once()
 
@@ -1007,10 +1006,10 @@ func TestLoggerProcessedForMultipleMapUpdates(t *testing.T) {
 
 	// Expect the Processed method for each updated key
 	mockLogger.
-		On("Managed", "M.key1", model.MergeOperationUpdate,
+		On("Managed", mKey1, model.MergeOperationUpdate,
 			oldMap["key1"], newMap["key1"],
 			twoHoursAgo, now).Once().
-		On("Managed", "M.key2", model.MergeOperationUpdate,
+		On("Managed", mKey2, model.MergeOperationUpdate,
 			oldMap["key2"], newMap["key2"],
 			oneHourAgo, now).Once()
 
@@ -1048,16 +1047,16 @@ func TestLoggerProcessedForAdditionsAndRemovalsInMap(t *testing.T) {
 
 	// Expect the Processed method for removed keys
 	mockLogger.
-		On("Managed", "M.key1", model.MergeOperationRemove,
+		On("Managed", mKey1, model.MergeOperationRemove,
 			oldMap["key1"], nil,
 			oneHourAgo, time.Time{}).Once().
-		On("Managed", "M.key2", model.MergeOperationRemove,
+		On("Managed", mKey2, model.MergeOperationRemove,
 			oldMap["key2"], nil,
 			oneHourAgo, time.Time{}).Once()
 
 	// Expect the Processed method for added keys
 	mockLogger.
-		On("Managed", "M.key3", model.MergeOperationAdd,
+		On("Managed", mKey3, model.MergeOperationAdd,
 			nil, newMap["key3"],
 			time.Time{}, now).Once().
 		On("Managed", "M.key4", model.MergeOperationAdd,
@@ -1101,19 +1100,19 @@ func TestLoggerProcessedForMixedOperationsAndUnchangedValuesInMap(t *testing.T) 
 
 	// Expect the Processed method for updated key
 	mockLogger.
-		On("Managed", "M.key1", model.MergeOperationUpdate,
+		On("Managed", mKey1, model.MergeOperationUpdate,
 			oldMap["key1"], newMap["key1"],
 			twoHoursAgo, now).Once()
 
 	// Expect the Processed method for unchanged key
 	mockLogger.
-		On("Managed", "M.key2", model.MergeOperationNotChanged,
+		On("Managed", mKey2, model.MergeOperationNotChanged,
 			oldMap["key2"], newMap["key2"],
 			oneHourAgo, oneHourAgo).Once()
 
 	// Expect the Processed method for removed key
 	mockLogger.
-		On("Managed", "M.key3", model.MergeOperationRemove,
+		On("Managed", mKey3, model.MergeOperationRemove,
 			oldMap["key3"], nil,
 			oneHourAgo, time.Time{}).Once()
 
@@ -1155,13 +1154,13 @@ func TestLoggerProcessedForOnlyAdditionsInMap(t *testing.T) {
 
 	// Expect the Processed method for each added key
 	mockLogger.
-		On("Managed", "M.key1", model.MergeOperationAdd,
+		On("Managed", mKey1, model.MergeOperationAdd,
 			nil, newMap["key1"],
 			time.Time{}, now).Once().
-		On("Managed", "M.key2", model.MergeOperationAdd,
+		On("Managed", mKey2, model.MergeOperationAdd,
 			nil, newMap["key2"],
 			time.Time{}, oneHourAgo).Once().
-		On("Managed", "M.key3", model.MergeOperationAdd,
+		On("Managed", mKey3, model.MergeOperationAdd,
 			nil, newMap["key3"],
 			time.Time{}, now).Once()
 
@@ -1198,13 +1197,13 @@ func TestLoggerProcessedForOnlyRemovalsInMap(t *testing.T) {
 
 	// Expect the Processed method for each removed key
 	mockLogger.
-		On("Managed", "M.key1", model.MergeOperationRemove,
+		On("Managed", mKey1, model.MergeOperationRemove,
 			oldMap["key1"], nil,
 			twoHoursAgo, time.Time{}).Once().
-		On("Managed", "M.key2", model.MergeOperationRemove,
+		On("Managed", mKey2, model.MergeOperationRemove,
 			oldMap["key2"], nil,
 			oneHourAgo, time.Time{}).Once().
-		On("Managed", "M.key3", model.MergeOperationRemove,
+		On("Managed", mKey3, model.MergeOperationRemove,
 			oldMap["key3"], nil,
 			now, time.Time{}).Once()
 

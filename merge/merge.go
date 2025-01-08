@@ -14,9 +14,9 @@ type MergeMode int
 const (
 	// ClientIsMaster is when a client is considered the master
 	// and deletions are propagated.
-	ClientIsMaster MergeMode = 0
+	ClientIsMaster MergeMode = 1
 	// ServerIsMaster, only updates and additions are propagated.
-	ServerIsMaster = 1
+	ServerIsMaster = 2
 )
 
 // MergeOptions holds configuration for how the merge should be performed.

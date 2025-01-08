@@ -21,6 +21,7 @@
     "strlogger",
     "toclevels",
     "Toffia",
-    "unaddressable"
+    "unaddressable",
+    "vtsutils"
   ]
 }

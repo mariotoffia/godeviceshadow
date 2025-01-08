@@ -12,9 +12,9 @@ type MergeLoggers []model.MergeLogger
 // DesiredLoggers is a slice of DesiredLogger.
 type DesiredLoggers []model.DesiredLogger
 
-func (dl DesiredLoggers) NotifyDesired(path string, op model.MergeOperation, value model.ValueAndTimestamp) {
+func (dl DesiredLoggers) NotifyAcknowledge(path string, value model.ValueAndTimestamp) {
 	for _, l := range dl {
-		l.Desired(path, op, value)
+		l.Acknowledge(path, value)
 	}
 }
 

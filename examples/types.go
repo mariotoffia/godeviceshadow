@@ -64,6 +64,22 @@ func (ots *OutdoorTemperatureSensor) GetValue() any {
 	}
 }
 
+type IndoorTemperatureSetPoint struct {
+	model.ValueAndTimestamp
+	SetPoint  float64   `json:"sp"`
+	UpdatedAt time.Time `json:"ts"`
+}
+
+func (sp *IndoorTemperatureSetPoint) GetTimestamp() time.Time {
+	return sp.UpdatedAt
+}
+
+func (sp *IndoorTemperatureSetPoint) GetValue() any {
+	return map[string]any{
+		"sp": sp.SetPoint,
+	}
+}
+
 type ClimateSensors struct {
 	Outdoor map[string]OutdoorTemperatureSensor `json:"outdoor,omitempty"`
 	Indoor  map[string]IndoorTemperatureSensor  `json:"indoor,omitempty"`
@@ -71,5 +87,6 @@ type ClimateSensors struct {
 
 type HomeTemperatureHub struct {
 	DeviceShadow   `json:"shadow"`
-	ClimateSensors ClimateSensors `json:"climate"`
+	ClimateSensors ClimateSensors            `json:"climate"`
+	IndoorTempSP   IndoorTemperatureSetPoint `json:"indoor_temp_sp,omitempty"` // Important omitempty when used in desired
 }
