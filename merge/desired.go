@@ -3,12 +3,16 @@ package merge
 import (
 	"fmt"
 	"reflect"
+
+	"github.com/mariotoffia/godeviceshadow/model"
 )
 
 // DesiredOptions holds configuration such as `MergeLoggers`.
 type DesiredOptions struct {
 	// Loggers will be notified on add, updated, remove, not-changed operations while merging.
 	Loggers DesiredLoggers
+	// OnlyNewerTimeStamps is a flag to indicate when values is about to be updated, only update if the reported value is newer.
+	OnlyNewerTimeStamps bool
 }
 
 type DesiredObject struct {
@@ -16,11 +20,16 @@ type DesiredObject struct {
 	CurrentPath string
 }
 
-// Desired is a special merge where a desired model is used to be merged with a reported model.
+// Desired is a special merge where a report model is analyses if it matches the desired model. All matched
+// are removed or set to `nil` in the desired model. All non matched are added/set. The result is the desired model with the changes.
 //
-// It will only merge `model.ValueAndTimestamp` where `model.ValueAndTimestamp.GetValue()` are equal in
-// the reported model. WHen that happens, it will remove the value from the desired model and report
+// NOTE: Removal of a struct field needs to hav the _json_ tag as _omitempty_ to work properly. All other works without this special requirement.
+//
+// It will only remove from _desiredModel_  when `model.ValueAndTimestamp` and where `model.ValueAndTimestamp.GetValue()` are equal in
+// the reported model. When that happens, it will remove the value from the desired model and report
 // to `DesiredOptions.DesiredLoggers`.
+//
+// If add/update of a `ValueAndTimeStamp`, i.e. it exist in the reportModel but not in the desiredModel, it will be added/updated to the desiredModel.
 func Desired[T any](reportedModel, desiredModel T, opts DesiredOptions) (T, error) {
 	//
 	reportedVal := reflect.ValueOf(reportedModel)
@@ -38,7 +47,13 @@ func Desired[T any](reportedModel, desiredModel T, opts DesiredOptions) (T, erro
 }
 
 func desiredRecursive(reportedVal, desiredVal reflect.Value, obj DesiredObject) reflect.Value {
-	if !reportedVal.IsValid() || !desiredVal.IsValid() {
+	if !desiredVal.IsValid() {
+		// add operation in e.g. map
+		if rvt, ok := unwrapValueAndTimestamp(reportedVal); ok {
+			obj.Loggers.NotifyDesired(obj.CurrentPath, model.MergeOperationAdd, rvt)
+			return reportedVal
+		}
+
 		return reflect.Value{}
 	}
 
@@ -47,6 +62,12 @@ func desiredRecursive(reportedVal, desiredVal reflect.Value, obj DesiredObject) 
 		return reflect.Value{}
 	}
 	if (desiredVal.Kind() == reflect.Ptr || desiredVal.Kind() == reflect.Interface) && desiredVal.IsNil() {
+		if rvt, ok := unwrapValueAndTimestamp(reportedVal); ok {
+			// Added in reported -> add desired
+			obj.Loggers.NotifyDesired(obj.CurrentPath, model.MergeOperationAdd, rvt)
+			return reportedVal
+		}
+
 		return reflect.Value{}
 	}
 
@@ -56,14 +77,31 @@ func desiredRecursive(reportedVal, desiredVal reflect.Value, obj DesiredObject) 
 	}
 
 	if rvt, ok := unwrapValueAndTimestamp(reportedVal); ok {
-		if dvt, ok := unwrapValueAndTimestamp(desiredVal); ok && rvt.GetValue() == dvt.GetValue() {
-			obj.Loggers.NotifyAcknowledge(obj.CurrentPath, rvt)
-
-			// Remove from desired model
-			return reflect.Zero(desiredVal.Type())
+		if dvt, ok := unwrapValueAndTimestamp(desiredVal); ok {
+			if rvt.GetValue() == dvt.GetValue() {
+				obj.Loggers.NotifyDesired(obj.CurrentPath, model.MergeOperationRemove /*acknowledge*/, rvt)
+				// Remove from desired model
+				return reflect.Zero(desiredVal.Type())
+			} else {
+				if obj.OnlyNewerTimeStamps {
+					if rvt.GetTimestamp().After(dvt.GetTimestamp()) {
+						// timestamp is newer -> update
+						obj.Loggers.NotifyDesired(obj.CurrentPath, model.MergeOperationUpdate, rvt)
+						return reportedVal
+					} else {
+						// Keep old desired value (even if different)
+						return desiredVal
+					}
+				} else {
+					// OnlyNewerTimeStamps is false -> always update
+					obj.Loggers.NotifyDesired(obj.CurrentPath, model.MergeOperationUpdate, rvt)
+					return reportedVal
+				}
+			}
 		}
 
-		return desiredVal
+		obj.Loggers.NotifyDesired(obj.CurrentPath, model.MergeOperationAdd, rvt)
+		return reportedVal
 	}
 
 	reportedVal = unwrapReflectValue(reportedVal)

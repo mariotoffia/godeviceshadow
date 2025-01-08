@@ -1,6 +1,7 @@
 package merge_test
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
@@ -14,10 +15,21 @@ import (
 type MockLogger struct {
 	mock.Mock
 	AcknowledgedPaths []string
+	AddedPaths        []string
+	UpdatePaths       []string
 }
 
-func (m *MockLogger) Acknowledge(path string, value model.ValueAndTimestamp) {
-	m.AcknowledgedPaths = append(m.AcknowledgedPaths, path)
+func (m *MockLogger) Desired(path string, operation model.MergeOperation, value model.ValueAndTimestamp) {
+	switch operation {
+	case model.MergeOperationRemove:
+		m.AcknowledgedPaths = append(m.AcknowledgedPaths, path)
+	case model.MergeOperationAdd:
+		m.AddedPaths = append(m.AddedPaths, path)
+	case model.MergeOperationUpdate:
+		m.UpdatePaths = append(m.UpdatePaths, path)
+	default:
+		panic(fmt.Sprintf("unexpected operation: %s", operation.String()))
+	}
 }
 
 func (m *MockLogger) Managed(path string, operation model.MergeOperation, oldValue, newValue model.ValueAndTimestamp, oldTimeStamp, newTimeStamp time.Time) {

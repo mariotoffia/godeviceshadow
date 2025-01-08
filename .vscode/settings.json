@@ -15,6 +15,7 @@
     "Persistable",
     "persistencemodel",
     "persistor",
+    "Println",
     "processmodel",
     "stretchr",
     "strlogger",

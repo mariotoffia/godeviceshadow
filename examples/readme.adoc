@@ -18,16 +18,7 @@ This shows how to use and expect from the merge package.
 [source,go]
 ----
 func TestMerge(t *testing.T) {
-	parse := func(s string) time.Time {
-		if tm, err := time.Parse(time.RFC3339, s); err == nil {
-			return tm
-		} else {
-			t.Fatal(err)
-
-			return time.Time{}
-		}
-	}
-
+	// See types.go for the structs below
 	hubZero := HomeTemperatureHub{ // <1>
 		DeviceShadow: DeviceShadow{
 			TimeZone: "Europe/Stockholm",
@@ -96,4 +87,4 @@ func TestMerge(t *testing.T) {
 <3> Simple logger that logs each merge event in a single row (good for debugging)
 <4> No deletion is possible only: add, update and no change are permitted (use `ClientIsMaster` to allow deletions)
 <5> It is possible to have multiple merge loggers attached e.g. one to log, one to update _Amazon Aurora DSQL_ table and so on.
-<6> In this case we are in suync with latest, but where there any deletes in _res_, those would not been propagated.
+<6> In this case we are in sync with latest, but where there any deletes in _res_, those would not been propagated.

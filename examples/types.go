@@ -40,7 +40,6 @@ func (idt *IndoorTemperatureSensor) GetValue() any {
 		"direction":   idt.Direction,
 		"temperature": idt.Temperature,
 		"humidity":    idt.Humidity,
-		"ts":          idt.UpdatedAt,
 	}
 }
 
@@ -62,7 +61,6 @@ func (ots *OutdoorTemperatureSensor) GetValue() any {
 		"direction":   ots.Direction,
 		"temperature": ots.Temperature,
 		"humidity":    ots.Humidity,
-		"ts":          ots.UpdatedAt,
 	}
 }
 

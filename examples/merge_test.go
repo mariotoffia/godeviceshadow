@@ -3,7 +3,6 @@ package examples
 import (
 	"fmt"
 	"testing"
-	"time"
 
 	"github.com/mariotoffia/godeviceshadow/loggers/strlogger"
 	"github.com/mariotoffia/godeviceshadow/merge"
@@ -13,15 +12,6 @@ import (
 )
 
 func TestMerge(t *testing.T) {
-	parse := func(s string) time.Time {
-		if tm, err := time.Parse(time.RFC3339, s); err == nil {
-			return tm
-		} else {
-			t.Fatal(err)
-
-			return time.Time{}
-		}
-	}
 
 	hubZero := HomeTemperatureHub{ // <1>
 		DeviceShadow: DeviceShadow{
@@ -88,8 +78,8 @@ func TestMerge(t *testing.T) {
 	// Operation  Old Timestamp              New Timestamp              Path                           OldValue                                 NewValue
 	// noop                                                             shadow.tz                      Europe/Stockholm                         Europe/Stockholm
 	// noop                                                             shadow.owner                   mariotoffia                              mariotoffia
-	// add        0001-01-01T00:00:00Z       2023-01-01T12:00:00+01:00  climate.outdoor.garden         nil                                      map[direction:north humidity:17 temperature:-27 ts:2023-01-01 12:00:00 +0100 CET]
-	// update     2023-01-01T10:00:00+01:00  2023-01-01T11:55:00+01:00  climate.indoor.living_room     map[direction:north floor:1 humidity:32 temperature:22.6 ts:2023-01-01 10:00:00 +0100 CET] map[direction:north floor:1 humidity:32 temperature:22.6 ts:2023-01-01 11:55:00 +0100 CET]
-	// add        0001-01-01T00:00:00Z       2023-01-01T11:00:00+01:00  climate.indoor.basement        nil                                      map[direction:south floor:0 humidity:40 temperature:18 ts:2023-01-01 11:00:00 +0100 CET]
+	// add        0001-01-01T00:00:00Z       2023-01-01T12:00:00+01:00  climate.outdoor.garden         nil                                      map[direction:north humidity:17 temperature:-27]
+	// update     2023-01-01T10:00:00+01:00  2023-01-01T11:55:00+01:00  climate.indoor.living_room     map[direction:north floor:1 humidity:32 temperature:22.6] map[direction:north floor:1 humidity:32 temperature:22.6]
+	// add        0001-01-01T00:00:00Z       2023-01-01T11:00:00+01:00  climate.indoor.basement        nil                                      map[direction:south floor:0 humidity:40 temperature:18]
 
 }

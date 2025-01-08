@@ -5,9 +5,12 @@ import (
 )
 
 type DesiredLogger interface {
-	// Acknowledge is called each time a reported value is equal to the desired and it is removed
-	// from the desired model.
-	Acknowledge(path string, value ValueAndTimestamp)
+	// Desired is called each time a reported value is:
+	//
+	// - `MergeOperationRemove` from the desired model (acknowledge that reported and desired are now in sync)
+	// - `MergeOperationAdd` to the desired model (reported value is added to the desired model)
+	// - `MergeOperationUpdate` to the desired model (reported value is updated in the desired model)
+	Desired(path string, operation MergeOperation, value ValueAndTimestamp)
 }
 
 // MergeLogger is a interface that will be called in the different merge
