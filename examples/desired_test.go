@@ -94,7 +94,7 @@ func TestDesiredReported(t *testing.T) {
 	fmt.Println(string(data))
 	// Output:
 	// {
-	//   "shadow": {"tz": "Europe/Stockholm", "owner": "mariotoffia"},
+	//   "meta": {"tz": "Europe/Stockholm", "owner": "mariotoffia"},
 	//   "climate": {
 	//     "outdoor": {
 	//       "garden": {

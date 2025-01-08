@@ -14,6 +14,12 @@ Some examples how to use the library and it's functionality.
 == Merge Package
 This shows how to use and expect from the merge package.
 
+=== Plain Merge
+
+This is the `merge.Merge` function that allows for merging two models together and have one or more loggers attached to the merge operation. Two modes
+of merge is possible, `merge.ServerIsMaster` and `merge.ClientIsMaster`. The first one is the default and does not allow for deletions, the latter
+allows for deletions.
+
 .Merging
 [source,go]
 ----
@@ -89,6 +95,12 @@ func TestMerge(t *testing.T) {
 <5> It is possible to have multiple merge loggers attached e.g. one to log, one to update _Amazon Aurora DSQL_ table and so on.
 <6> In this case we are in sync with latest, but where there any deletes in _res_, those would not been propagated.
 
+=== Desired & Reported Handling
+
+This is a more complex example where we have a device shadow and a desired state. The device shadow is the reported state and the desired state is the
+state we want to have. The `merge.Desired` function is used to acknowledge the reported state and remove any actuation that has been done.
+
+
 .Desired & Reported Handling
 [source,go]
 ----
@@ -136,6 +148,7 @@ func TestDesiredReported(t *testing.T) {
 			UpdatedAt: parse("2023-01-01T13:00:00+01:00"),
 		},
 	}, merge.MergeOptions{})
+
 	require.NoError(t, err)
 	require.Equal(t, 22.0, desired.IndoorTempSP.SetPoint)
 
@@ -192,6 +205,7 @@ func TestDesiredReported(t *testing.T) {
 	require.Equal(t, 22.0, reported.IndoorTempSP.SetPoint)
 
 	desired, err = merge.Desired(reported, desired, merge.DesiredOptions{}) // <6>
+
 	require.NoError(t, err)
 	assert.Nil(t, desired.IndoorTempSP, "Is removed from desired since reported")
 
@@ -203,7 +217,7 @@ func TestDesiredReported(t *testing.T) {
 ----
 <1> Initial device shadow state of the reported (e.g. from db)
 <2> Initial desired state of the hub (e.g. from db)
-<3> Simulate new actuation --> plain merge
+<3> Simulate new actuation -> plain merge
 <4> Report back to the device shadow
 <5> Must be added or newer ts than the "old" reported, older will be ignored
-<6> Acknowledge in the desired model --> removed from model
+<6> Acknowledge in the desired model -> removed from model

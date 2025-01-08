@@ -79,7 +79,7 @@ type ClimateSensors struct {
 }
 
 type HomeTemperatureHub struct {
-	*DeviceShadow  `json:"shadow,omitempty"`
+	*DeviceShadow  `json:"meta,omitempty"`
 	ClimateSensors *ClimateSensors            `json:"climate,omitempty"`
 	IndoorTempSP   *IndoorTemperatureSetPoint `json:"indoor_temp_sp,omitempty"` // Important omitempty when used in desired
 }
