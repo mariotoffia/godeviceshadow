@@ -12,9 +12,8 @@ import (
 )
 
 func TestMerge(t *testing.T) {
-
 	hubZero := HomeTemperatureHub{ // <1>
-		DeviceShadow: &DeviceShadow{
+		MetaInfo: &MetaInfo{
 			TimeZone: "Europe/Stockholm",
 			Owner:    "mariotoffia",
 		},
@@ -32,7 +31,7 @@ func TestMerge(t *testing.T) {
 	}
 
 	hub := HomeTemperatureHub{ // <2>
-		DeviceShadow: &DeviceShadow{
+		MetaInfo: &MetaInfo{
 			TimeZone: "Europe/Stockholm",
 			Owner:    "mariotoffia",
 		},

@@ -4,7 +4,13 @@ import (
 	"time"
 )
 
-type DeviceShadow struct {
+type HomeTemperatureHub struct {
+	*MetaInfo      `json:"meta,omitempty"`
+	ClimateSensors *ClimateSensors            `json:"climate,omitempty"`
+	IndoorTempSP   *IndoorTemperatureSetPoint `json:"indoor_temp_sp,omitempty"` // Important omitempty when used in desired
+}
+
+type MetaInfo struct {
 	TimeZone string `json:"tz,omitempty"`
 	Owner    string `json:"owner,omitempty"`
 }
@@ -76,10 +82,4 @@ func (sp *IndoorTemperatureSetPoint) GetValue() any {
 type ClimateSensors struct {
 	Outdoor map[string]OutdoorTemperatureSensor `json:"outdoor,omitempty"`
 	Indoor  map[string]IndoorTemperatureSensor  `json:"indoor,omitempty"`
-}
-
-type HomeTemperatureHub struct {
-	*DeviceShadow  `json:"meta,omitempty"`
-	ClimateSensors *ClimateSensors            `json:"climate,omitempty"`
-	IndoorTempSP   *IndoorTemperatureSetPoint `json:"indoor_temp_sp,omitempty"` // Important omitempty when used in desired
 }

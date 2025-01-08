@@ -14,7 +14,7 @@ import (
 func TestDesiredReported(t *testing.T) {
 	// Initial device shadow state of the reported (e.g. from db)
 	reported := HomeTemperatureHub{
-		DeviceShadow: &DeviceShadow{
+		MetaInfo: &MetaInfo{
 			TimeZone: "Europe/Stockholm",
 			Owner:    "mariotoffia",
 		},
