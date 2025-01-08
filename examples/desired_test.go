@@ -1,15 +1,24 @@
 package examples
 
-import "testing"
+import (
+	"encoding/json"
+	"fmt"
+	"testing"
 
-func HandleDesiredReported(t *testing.T) {
-	// Initial device shadow state of the hub (e.g. from db)
-	hubZero := HomeTemperatureHub{
-		DeviceShadow: DeviceShadow{
+	"github.com/mariotoffia/godeviceshadow/merge"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+func TestDesiredReported(t *testing.T) {
+	// Initial device shadow state of the reported (e.g. from db)
+	reported := HomeTemperatureHub{
+		DeviceShadow: &DeviceShadow{
 			TimeZone: "Europe/Stockholm",
 			Owner:    "mariotoffia",
 		},
-		ClimateSensors: ClimateSensors{
+		ClimateSensors: &ClimateSensors{
 			Outdoor: map[string]OutdoorTemperatureSensor{
 				"garden": {
 					Direction:   DirectionNorth,
@@ -37,6 +46,81 @@ func HandleDesiredReported(t *testing.T) {
 		},
 	}
 
-	_ = hubZero
+	// Initial desired state of the hub (e.g. from db)
+	desired := HomeTemperatureHub{}
 
+	var err error
+
+	// Simulate new actuation -> plain merge
+	desired, err = merge.Merge(desired, HomeTemperatureHub{
+		IndoorTempSP: &IndoorTemperatureSetPoint{
+			SetPoint:  22.0,
+			UpdatedAt: parse("2023-01-01T13:00:00+01:00"),
+		},
+	}, merge.MergeOptions{})
+	require.NoError(t, err)
+	require.Equal(t, 22.0, desired.IndoorTempSP.SetPoint)
+
+	data, _ := json.Marshal(desired)
+	fmt.Println(string(data))
+	// Output:
+	// {"indoor_temp_sp":{"sp":22,"ts":"2023-01-01T13:00:00+01:00"}}
+
+	// Report back to the device shadow
+	reported, err = merge.Merge(reported, HomeTemperatureHub{
+		IndoorTempSP: &IndoorTemperatureSetPoint{
+			SetPoint: 22.0,
+			// Must be added or newer ts than the "old" reported
+			UpdatedAt: parse("2023-01-01T13:05:00+01:00"),
+		},
+	}, merge.MergeOptions{
+		Mode: merge.ServerIsMaster,
+	})
+
+	require.NoError(t, err)
+	require.Equal(t, 22.0, reported.IndoorTempSP.SetPoint)
+
+	// Acknowledge in the desired model -> removed from model
+	desired, err = merge.Desired(reported, desired, merge.DesiredOptions{})
+	require.NoError(t, err)
+	assert.Nil(t, desired.IndoorTempSP, "Is removed from desired since reported")
+
+	data, _ = json.Marshal(desired)
+	fmt.Println(string(data))
+	// Output:
+	// {}
+
+	data, _ = json.Marshal(reported)
+	fmt.Println(string(data))
+	// Output:
+	// {
+	//   "shadow": {"tz": "Europe/Stockholm", "owner": "mariotoffia"},
+	//   "climate": {
+	//     "outdoor": {
+	//       "garden": {
+	//         "direction": "north",
+	//         "t": -27,
+	//         "h": 17,
+	//         "ts": "2023-01-01T12:00:00+01:00"
+	//       }
+	//     },
+	//     "indoor": {
+	//       "basement": {
+	//         "floor": 0,
+	//         "direction": "south",
+	//         "t": 18,
+	//         "h": 40,
+	//         "ts": "2023-01-01T11:00:00+01:00"
+	//       },
+	//       "living_room": {
+	//         "floor": 1,
+	//         "direction": "north",
+	//         "t": 22.6,
+	//         "h": 32,
+	//         "ts": "2023-01-01T11:55:00+01:00"
+	//       }
+	//     }
+	//   },
+	//   "indoor_temp_sp": {"sp": 22, "ts": "2023-01-01T13:00:00+01:00"}
+	// }
 }

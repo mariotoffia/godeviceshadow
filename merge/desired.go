@@ -3,6 +3,8 @@ package merge
 import (
 	"fmt"
 	"reflect"
+
+	"github.com/mariotoffia/godeviceshadow/utils/vtsutils"
 )
 
 // DesiredOptions holds configuration such as `MergeLoggers`.
@@ -57,7 +59,7 @@ func desiredRecursive(reportedVal, desiredVal reflect.Value, obj DesiredObject) 
 	}
 
 	if rvt, ok := unwrapValueAndTimestamp(reportedVal); ok {
-		if dvt, ok := unwrapValueAndTimestamp(desiredVal); ok && rvt.GetValue() == dvt.GetValue() {
+		if dvt, ok := unwrapValueAndTimestamp(desiredVal); ok && vtsutils.Equals(rvt, dvt) {
 			obj.Loggers.NotifyAcknowledge(obj.CurrentPath, rvt)
 
 			// Remove from desired model

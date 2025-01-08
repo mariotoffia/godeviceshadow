@@ -132,6 +132,14 @@ func mergeRecursive(base, override reflect.Value, obj MergeObject) (reflect.Valu
 		return mergeSlice(baseVal, overrideVal, obj)
 	// Basic types (int, string, ...)
 	default:
+		if obj.Mode == ServerIsMaster {
+			if isEmptyValue(overrideVal) {
+				obj.Loggers.NotifyPlain(obj.CurrentPath, model.MergeOperationNotChanged, baseVal.Interface(), overrideVal.Interface())
+
+				return base, nil
+			}
+		}
+
 		if obj.DoOverrideWithEmpty && isEmptyValue(overrideVal) {
 			return override, nil
 		}
@@ -253,6 +261,7 @@ func mergeStruct(baseVal, overrideVal reflect.Value, opts MergeObject) (reflect.
 	for i := 0; i < numFields; i++ {
 		fieldValue := baseVal.Field(i)
 		fieldType := baseVal.Type().Field(i)
+		overrideFieldValue := overrideVal.Field(i)
 
 		if fieldType.PkgPath != "" {
 			continue // Unexported field -> skip
@@ -263,13 +272,33 @@ func mergeStruct(baseVal, overrideVal reflect.Value, opts MergeObject) (reflect.
 		}
 
 		opts.CurrentPath = concatPath(basePath, getJSONTag(fieldType))
-		merged, err := mergeRecursive(fieldValue, overrideVal.Field(i), opts)
 
-		if err != nil {
-			return reflect.Value{}, err
+		if fieldValue.Kind() == reflect.Ptr {
+			// Handle pointer fields
+			if fieldValue.IsNil() && overrideFieldValue.IsNil() {
+				result.Field(i).Set(reflect.Zero(fieldValue.Type()))
+			} else if fieldValue.IsNil() {
+				result.Field(i).Set(overrideFieldValue)
+			} else if overrideFieldValue.IsNil() {
+				result.Field(i).Set(fieldValue)
+			} else {
+				// Merge the dereferenced values
+				mergedValue, err := mergeRecursive(fieldValue.Elem(), overrideFieldValue.Elem(), opts)
+				if err != nil {
+					return reflect.Value{}, err
+				}
+				mergedPointer := reflect.New(fieldValue.Type().Elem())
+				mergedPointer.Elem().Set(mergedValue)
+				result.Field(i).Set(mergedPointer)
+			}
+		} else {
+			// Handle non-pointer fields
+			merged, err := mergeRecursive(fieldValue, overrideFieldValue, opts)
+			if err != nil {
+				return reflect.Value{}, err
+			}
+			result.Field(i).Set(merged)
 		}
-
-		result.Field(i).Set(merged)
 	}
 
 	return result, nil

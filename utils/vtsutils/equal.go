@@ -6,7 +6,7 @@ import (
 	"github.com/mariotoffia/godeviceshadow/model"
 )
 
-// ValueAndTimeStampEqual compares _a_, _b_ using `ValueAndTimestamp.GetValue()` function.
+// Equals compares _a_, _b_ using `ValueAndTimestamp.GetValue()` function.
 //
 // It will check if they are same type, if not, it will return `false`. It it is a scalar
 // value it will just perform == check. If it is a map[string]any it will iterate over
@@ -15,7 +15,7 @@ import (
 // it will return `false`.
 //
 // All other, it will do a reflect.DeepEqual(a, b) and return the result.
-func ValueAndTimeStampEqual(a, b model.ValueAndTimestamp) bool {
+func Equals(a, b model.ValueAndTimestamp) bool {
 	// Check for nil values
 	if a == nil || b == nil {
 		return a == b
@@ -68,7 +68,7 @@ func compareValues(valA, valB any) bool {
 	}
 
 	if scalarVal, ok := valA.(model.ValueAndTimestamp); ok {
-		return ValueAndTimeStampEqual(scalarVal, valB.(model.ValueAndTimestamp))
+		return Equals(scalarVal, valB.(model.ValueAndTimestamp))
 	}
 
 	return valA == valB

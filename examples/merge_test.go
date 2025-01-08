@@ -14,11 +14,11 @@ import (
 func TestMerge(t *testing.T) {
 
 	hubZero := HomeTemperatureHub{ // <1>
-		DeviceShadow: DeviceShadow{
+		DeviceShadow: &DeviceShadow{
 			TimeZone: "Europe/Stockholm",
 			Owner:    "mariotoffia",
 		},
-		ClimateSensors: ClimateSensors{
+		ClimateSensors: &ClimateSensors{
 			Indoor: map[string]IndoorTemperatureSensor{
 				"living_room": {
 					Floor:       1,
@@ -32,11 +32,11 @@ func TestMerge(t *testing.T) {
 	}
 
 	hub := HomeTemperatureHub{ // <2>
-		DeviceShadow: DeviceShadow{
+		DeviceShadow: &DeviceShadow{
 			TimeZone: "Europe/Stockholm",
 			Owner:    "mariotoffia",
 		},
-		ClimateSensors: ClimateSensors{
+		ClimateSensors: &ClimateSensors{
 			Outdoor: map[string]OutdoorTemperatureSensor{
 				"garden": {
 					Direction:   DirectionNorth,

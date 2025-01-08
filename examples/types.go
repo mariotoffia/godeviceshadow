@@ -2,8 +2,6 @@ package examples
 
 import (
 	"time"
-
-	"github.com/mariotoffia/godeviceshadow/model"
 )
 
 type DeviceShadow struct {
@@ -21,8 +19,6 @@ const (
 )
 
 type IndoorTemperatureSensor struct {
-	model.ValueAndTimestamp
-
 	Floor       int       `json:"floor"`
 	Direction   Direction `json:"direction"`
 	Temperature float64   `json:"t"`
@@ -44,8 +40,6 @@ func (idt *IndoorTemperatureSensor) GetValue() any {
 }
 
 type OutdoorTemperatureSensor struct {
-	model.ValueAndTimestamp
-
 	Direction   Direction `json:"direction"`
 	Temperature float64   `json:"t"`
 	Humidity    float64   `json:"h"`
@@ -65,7 +59,6 @@ func (ots *OutdoorTemperatureSensor) GetValue() any {
 }
 
 type IndoorTemperatureSetPoint struct {
-	model.ValueAndTimestamp
 	SetPoint  float64   `json:"sp"`
 	UpdatedAt time.Time `json:"ts"`
 }
@@ -86,7 +79,7 @@ type ClimateSensors struct {
 }
 
 type HomeTemperatureHub struct {
-	DeviceShadow   `json:"shadow"`
-	ClimateSensors ClimateSensors            `json:"climate"`
-	IndoorTempSP   IndoorTemperatureSetPoint `json:"indoor_temp_sp,omitempty"` // Important omitempty when used in desired
+	*DeviceShadow  `json:"shadow,omitempty"`
+	ClimateSensors *ClimateSensors            `json:"climate,omitempty"`
+	IndoorTempSP   *IndoorTemperatureSetPoint `json:"indoor_temp_sp,omitempty"` // Important omitempty when used in desired
 }
