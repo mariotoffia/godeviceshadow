@@ -11,8 +11,16 @@ type Config struct {
 	// write request `Config` using _separation_ key.
 	//
 	// If `CombinedModels` and not both reported, desired models are passed in `Write`, it will return 400 (Bad Request).
+	//
+	// NOTE: This may be overridden in `WriteOptions` for all `WriteOperations` or per `WriteOperation` by setting the _Config_
+	// with key `persistencemodel.ModelSeparationConfigKey` and value of `persistencemodel.ModelSeparation`.
 	ModelSeparation persistencemodel.ModelSeparation `json:"separate"`
 	// MaxReadBatchSize is the maximum number of items to read in a single batch. If read exceeds this number, it
 	// will be split into multiple requests.
 	MaxReadBatchSize int `json:"batch"`
+	// MaxParallelism is the maximum number of parallel requests to make to DynamoDB. If the number of items to write
+	// exceeds this, it will be queued up and processed in parallel.
+	//
+	// It defaults to 1, i.e. no parallelism.
+	MaxParallelism int `json:"parallel"`
 }

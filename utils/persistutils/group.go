@@ -10,7 +10,12 @@ type GroupedWriteOperation struct {
 	// Operations is a slice of `WriteOperation` that is grouped by the `ID` and `Name`.
 	Operations []persistencemodel.WriteOperation
 	// ModelSeparation is the separation type for the model. If not set it will use the default in the `Persistor`.
+	//
+	// This is extracted from the `WriteOperation.Config` _separation_ key. All operations in same group must have the
+	// same separation type (or nothing set).
 	ModelSeparation persistencemodel.ModelSeparation
+	// Error is set when something went wrong during the grouping and the whole grouping should be discarded.
+	Error error
 }
 
 // Group will group all write operations based on the ID and Name of the model.
@@ -28,7 +33,16 @@ func Group(operations []persistencemodel.WriteOperation) []GroupedWriteOperation
 			}
 		}
 
-		operationsByModel[key].Operations = append(operationsByModel[key].Operations, op)
+		opm := operationsByModel[key]
+		if sep, ok := FromConfig[persistencemodel.ModelSeparation](op.Config, persistencemodel.ModelSeparationConfigKey); ok {
+			if opm.ModelSeparation == 0 {
+				opm.ModelSeparation = sep
+			} else if opm.ModelSeparation != sep {
+				opm.Error = persistencemodel.Error400("all operations in same group must have the same separation type")
+			}
+		}
+
+		opm.Operations = append(opm.Operations, op)
 	}
 
 	groupedOperations := make([]GroupedWriteOperation, 0, len(operationsByModel))

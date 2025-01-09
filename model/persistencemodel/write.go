@@ -38,6 +38,8 @@ type WriteOperation struct {
 	//
 	// The version will always be updated with 1 when the model was successfully written.
 	Version int64
+	// Config are custom setting/config specific for the current `WriteOperation` and `Persistence`.
+	Config map[string]any
 }
 
 type WriteResult struct {

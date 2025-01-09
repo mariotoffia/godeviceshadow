@@ -28,3 +28,6 @@ const (
 	// Combined specifies that the models (reported, desired) should be stored together in a single DynamoDB item
 	CombinedModels ModelSeparation = 2
 )
+
+// ModelSeparationConfigKey is the common  key to use when a `Write` request specifies the separation type in its `WriteOperation.Config`.
+const ModelSeparationConfigKey = "separation"

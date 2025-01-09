@@ -11,6 +11,7 @@ ifndef::imagesdir[:imagesdir: ../meta/assets]
 = DynamoDB Persistence
 
 == Overview
+
 This `Persistence` implementation uses DynamoDB and conditionals with version to ensure consistency.
 
 NOTE: When reported and desired is stored together, the `Write` operation must receive both `Reported` and `Desired` documents, otherwise this implementation will return an error!
@@ -21,6 +22,58 @@ When stored separately, the `Write` function will store them atomically when the
 
 When read, it always strives to use batch reads to minimize the number of requests to DynamoDB, it will automatically split the requests into `Config.MaxReadBatchSize` (with default 25) to avoid exceeding the limit items per read request.
 
-For single documents, when writing, it uses conditional writes to ensure consistency. This is done by checking if write version = db version, if so it will increase the version in the DB in the _Put_ operation. If the version is different, it will return 409 (Conflict) for that item. If the document do not exist it will create it and set the version to 1. Each document will be written in parallel to maximize throughput.
+Writes are always upsert, i.e. either create or update. Where it guards the consistency by a version int64 that is atomically incremented each time a conditional write is successful. If the version is different, it will return a 409 (Conflict) error.
 
-When multiple documents, it will be bundled into a transaction where each item will be checked for version consistency and updated if possible. The grouping of transactions is done by The `Persistence.ID` + `Persistence.Name` into same group (i.e. max two document: Report, Desired). It will then execute all transactions in parallel.
+=== Write SeparateModels
+
+When separate models, the updates are always done separately and it is possible to do a _Desired_ write without a _Reported_ (and vice versa) in the `Write` function. If both are present, it will be done in a transaction and hence it will be a atomic operation.
+
+It will still use the version to ensure consistency, but it will be done separately for each document in the transaction  (and update it by 1 if successful - in same operation).
+
+This is much more efficient when e.g. most of the time it is only _Reported_ that is updated and very seldom the _Desired_ model. When only one of the models are updated, it will only update that document and hence no transaction is needed just a plain conditional write.
+
+It will parallelize the transactions to perform the writes in parallel, but it will wait for all to be done before returning. This is controlled by `Config.SeparateModels` (with default of 1).
+
+=== Write CombinedModels
+
+When combined models, the updates are always done together and it is not possible to do a _Desired_ write without a _Reported_ in the `Write` function. If
+both are present, it will be done as a standard conditional write since both are in the same document.
+
+It will parallelize the writes to perform the writes in parallel, but it will wait for all to be done before returning.
+
+=== Partition Key (PK) and Sort Key (SK)
+
+The PK, SK keys are rendered as follows:
+
+.Outline PK and SK
+[cols="1,1,4", options="header"]
+|===
+|PK                 |SK               |Description
+|DS#{ID}            |DSR#{Name}       |Reported Model
+|DS#{ID}            |DSD#{Name}       |Desired Model
+|DS#{ID}            |DSC#{Name}       |Combined Reported, Desired Models
+|===
+
+Where ID is the `PersistenceID.ID` and Name is the `PersistenceID.Name`.
+
+=== PersistenceObject
+
+It will store the models using a `PersistenceObject` that wraps the model and adds the versioning information. Thus if separated documents,
+each of them will contain handle versioning separately and the need to a transaction is required since either both are committed or none.
+
+.PersistenceObject
+[source, go]
+----
+type PersistenceObject struct {
+	Version int64 `json:"version"` // <1>
+	TimeStamp int64 `json:"timestamp"` // <2>
+	ClientToken string `json:"clientToken,omitempty"` // <3>
+	Desired any `json:"desired,omitempty"` // <4>
+	Reported any `json:"reported,omitempty"` // <5>
+}
+----
+<1> Version is the version of the document where the conditional upsert are based on (and atomically incremented on success).
+<2> TimeStamp is the time the document was last updated (unix64 nano timestamp with UTC time).
+<3> ClientToken is a unique token for the client that initiated the request. 
+<4> Desired is the desired model (if such is present). Depending on how the persistence is configured, this may be stored separately from the reported model.
+<5> Reported is the reported model (if such is present). Depending on how the persistence is configured, this may be stored separately from the desired model.
