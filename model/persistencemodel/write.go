@@ -36,10 +36,7 @@ type WriteOperation struct {
 	// will fail with a `PersistenceError` with code 409 (Conflict). This is the version read from the
 	// `Persistence.Read` operation.
 	//
-	// If a "real" transaction is used by the `Persistence` implementation, this is not the main distiguisher
-	// if the model will be created/updated but the semantics is still upheld.
-	//
-	// This is primarily for implementations that uses optimistic locking.
+	// The version will always be updated with 1 when the model was successfully written.
 	Version int64
 }
 

@@ -58,7 +58,7 @@ import "context"
 type Transactional interface {
 	Persistence
 	// Begin will start a new transaction.
-	Begin(ctx context.Context) (*Transaction, error)
+	Begin(ctx context.Context, opts ...BeginTxOptions) (*Transaction, error)
 	// Release will either commit or rollback the transaction.
 	//
 	// If the transaction is already committed or aborted, it will not return an error so it is possible to do a
@@ -68,9 +68,24 @@ type Transactional interface {
 	Abort(ctx context.Context, tx *Transaction) error
 }
 
+type BeginTxOptions struct {
+	// ModelIDs is a list of `PersistenceID`s that the transaction will be working with. Some
+	// `Persistence` implementations may do not know this in advance to perform a transaction but some
+	// do and can optimize the transaction.
+	//
+	// For example a `Persistence` may implement a "straight" locking mechanism to ensure that the models working
+	// on is not touched whereas a sql provider may not need to do this (just ad-hoc handle all models) and all in between.
+	//
+	// Either way, the `Persistence` can use this information to optimize the transaction and some *REQUIRES* it.
+	ModelIDs []PersistenceID
+}
+
 type Transaction struct {
 	// ID is the unique identifier of the transaction.
 	ID string
+	// EnlistedIDs is the list of `PersistenceID`s that the transaction is currently working with. If
+	// set in `BeginTxOptions`, it will be the same as `BeginTxOptions.ModelIDs` (at the beginning at least).
+	EnlistedIDs []PersistenceID
 	// Custom is where the `Persistence` can store custom data such as
 	// sessions or other data that is needed to be shared.
 	//

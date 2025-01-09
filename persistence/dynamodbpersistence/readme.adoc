@@ -1,0 +1,26 @@
+:author_name: Mario Toffia
+:author_email: no.spam@please
+:author: {author_name}
+:email: {author_email}
+:source-highlighter: highlightjs
+ifndef::icons[:icons: font]
+ifndef::imagesdir[:imagesdir: ../meta/assets]
+:toc:
+:toclevels: 3
+
+= DynamoDB Persistence
+
+== Overview
+This `Persistence` implementation uses DynamoDB and conditionals with version to ensure consistency.
+
+NOTE: When reported and desired is stored together, the `Write` operation must receive both `Reported` and `Desired` documents, otherwise this implementation will return an error!
+
+When stored separately, the `Write` function will store them atomically when they appear in same `Write` operation by a transaction.
+
+== Internals
+
+When read, it always strives to use batch reads to minimize the number of requests to DynamoDB, it will automatically split the requests into `Config.MaxReadBatchSize` (with default 25) to avoid exceeding the limit items per read request.
+
+For single documents, when writing, it uses conditional writes to ensure consistency. This is done by checking if write version = db version, if so it will increase the version in the DB in the _Put_ operation. If the version is different, it will return 409 (Conflict) for that item. If the document do not exist it will create it and set the version to 1. Each document will be written in parallel to maximize throughput.
+
+When multiple documents, it will be bundled into a transaction where each item will be checked for version consistency and updated if possible. The grouping of transactions is done by The `Persistence.ID` + `Persistence.Name` into same group (i.e. max two document: Report, Desired). It will then execute all transactions in parallel.

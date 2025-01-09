@@ -18,3 +18,13 @@ const (
 	// ModelTypeDesired is the desired portion.
 	ModelTypeDesired ModelType = 2
 )
+
+// ModelSeparation is typically used in persistence to determine how to store the models.
+type ModelSeparation int
+
+const (
+	// SeparateModels specifies that the models (reported, desired) should be stored separately
+	SeparateModels ModelSeparation = 1
+	// Combined specifies that the models (reported, desired) should be stored together in a single DynamoDB item
+	CombinedModels ModelSeparation = 2
+)

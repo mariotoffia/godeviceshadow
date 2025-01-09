@@ -1,6 +1,7 @@
 {
   "cSpell.words": [
     "distiguisher",
+    "dynamodbpersistence",
     "godeviceshadow",
     "highlightjs",
     "ifndef",
@@ -15,6 +16,7 @@
     "Persistable",
     "persistencemodel",
     "persistor",
+    "persistutils",
     "Println",
     "processmodel",
     "stretchr",
