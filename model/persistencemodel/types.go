@@ -21,6 +21,17 @@ const (
 	ModelTypeDesired ModelType = 2
 )
 
+func (mt ModelType) String() string {
+	switch mt {
+	case ModelTypeReported:
+		return "reported"
+	case ModelTypeDesired:
+		return "desired"
+	}
+
+	return fmt.Sprintf("model type id: %d", int(mt))
+}
+
 // ModelSeparation is typically used in persistence to determine how to store the models.
 type ModelSeparation int
 
