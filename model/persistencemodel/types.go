@@ -1,5 +1,7 @@
 package persistencemodel
 
+import "fmt"
+
 type PersistenceID struct {
 	// Is a unique identifier e.g. MyCar 22 or a UUID.
 	ID string
@@ -28,6 +30,17 @@ const (
 	// Combined specifies that the models (reported, desired) should be stored together in a single DynamoDB item
 	CombinedModels ModelSeparation = 2
 )
+
+func (ms ModelSeparation) String() string {
+	switch ms {
+	case SeparateModels:
+		return "separate"
+	case CombinedModels:
+		return "combined"
+	}
+
+	return fmt.Sprintf("model separation id: %d", int(ms))
+}
 
 // ModelSeparationConfigKey is the common  key to use when a `Write` request specifies the separation type in its `WriteOperation.Config`.
 const ModelSeparationConfigKey = "separation"

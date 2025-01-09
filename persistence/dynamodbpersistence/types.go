@@ -1,6 +1,41 @@
 package dynamodbpersistence
 
+import (
+	"context"
+
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
+	"github.com/mariotoffia/godeviceshadow/model/persistencemodel"
+)
+
 type Persistence struct {
+	config Config
+	client *dynamodb.Client
+}
+
+// New creates a new DynamoDB persistence plugin.
+func New(ctx context.Context, config Config) (*Persistence, error) {
+	cfg := config
+
+	if cfg.MaxParallelism <= 0 {
+		cfg.MaxParallelism = 1
+	}
+
+	if cfg.MaxReadBatchSize <= 0 {
+		cfg.MaxReadBatchSize = 25
+	}
+
+	if cfg.ModelSeparation == 0 {
+		cfg.ModelSeparation = persistencemodel.CombinedModels
+	}
+
+	if cfg.AwsConfig.Region == "" {
+		return nil, persistencemodel.Error400("not a valid AWS configuration")
+	}
+
+	return &Persistence{
+		config: cfg,
+		client: dynamodb.NewFromConfig(config.AwsConfig),
+	}, nil
 }
 
 // PersistenceObject is the object that is stored in the persistence layer.

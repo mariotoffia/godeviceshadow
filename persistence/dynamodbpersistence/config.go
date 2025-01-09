@@ -1,6 +1,9 @@
 package dynamodbpersistence
 
-import "github.com/mariotoffia/godeviceshadow/model/persistencemodel"
+import (
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/mariotoffia/godeviceshadow/model/persistencemodel"
+)
 
 type Config struct {
 	// Table is the name of the DynamoDB table to use.
@@ -23,4 +26,6 @@ type Config struct {
 	//
 	// It defaults to 1, i.e. no parallelism.
 	MaxParallelism int `json:"parallel"`
+	// AwsConfig to use when creating the client.
+	AwsConfig aws.Config `json:"aws"`
 }

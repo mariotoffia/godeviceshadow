@@ -18,6 +18,21 @@ type GroupedWriteOperation struct {
 	Error error
 }
 
+// GetByModelType will return the first `WriteOperation` that matches the `model` type. If not found it will return `nil`.
+func (group *GroupedWriteOperation) GetByModelType(model persistencemodel.ModelType) *persistencemodel.WriteOperation {
+	if group == nil {
+		return nil
+	}
+
+	for _, v := range group.Operations {
+		if v.ID.ModelType == model {
+			return &v
+		}
+	}
+
+	return nil
+}
+
 // Group will group all write operations based on the ID and Name of the model.
 func Group(operations []persistencemodel.WriteOperation) []GroupedWriteOperation {
 	operationsByModel := make(map[string]*GroupedWriteOperation, len(operations)/2)

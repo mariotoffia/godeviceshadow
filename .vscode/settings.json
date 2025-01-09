@@ -1,6 +1,8 @@
 {
   "cSpell.words": [
+    "attributevalue",
     "distiguisher",
+    "dynamodbattribute",
     "dynamodbpersistence",
     "godeviceshadow",
     "highlightjs",
@@ -10,6 +12,7 @@
     "mariotoffia",
     "mempersistence",
     "nocng",
+    "NOSONAR",
     "Nygatan",
     "omitempty",
     "Östra",
