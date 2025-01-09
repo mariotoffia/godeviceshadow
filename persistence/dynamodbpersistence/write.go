@@ -56,8 +56,6 @@ func (p *Persistence) Write(
 
 	if maxParallelism == 1 {
 		// Single thread
-		var gc int
-
 		for i := range groups {
 			if groups[i].Error != nil {
 				for j := range groups[i].Operations {
@@ -66,8 +64,6 @@ func (p *Persistence) Write(
 						Version: groups[i].Operations[j].Version,
 						Error:   groups[i].Error,
 					})
-
-					gc++
 				}
 
 				continue
@@ -75,13 +71,11 @@ func (p *Persistence) Write(
 
 			// Write the operation group
 			wr := p.WriteOperationGroup(ctx, opt, groups[i])
-
-			res = append(res, make([]persistencemodel.WriteResult, len(groups[i].Operations))...)
-			gc += len(wr)
+			res = append(res, wr...)
 		}
 	} else {
 		// Parallel execution
-		return p.parallelWrite(ctx, opt, groups, maxParallelism)
+		return p.writeParallel(ctx, opt, groups, maxParallelism)
 	}
 
 	return res
