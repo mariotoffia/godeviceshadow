@@ -32,8 +32,8 @@ func (p *Persistence) Write(
 	sep := p.config.ModelSeparation
 
 	// Do we have a write operation override?
-	if os, ok := persistutils.FromConfig[persistencemodel.ModelSeparation](opt.Config, persistencemodel.ModelSeparationConfigKey); ok {
-		sep = os
+	if opt.Config.Separation != 0 {
+		sep = opt.Config.Separation
 	}
 
 	groups := persistutils.Group(operations)

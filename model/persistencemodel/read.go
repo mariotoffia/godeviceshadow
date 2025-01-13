@@ -31,11 +31,23 @@ type ReadOperation struct {
 	Version int64
 }
 
+// ReadConfig is the configuration for the `Persistence.Read` operation.
+type ReadConfig struct {
+	// AdditionalProperties are custom setting/config specific for the `Persistence` operation.
+	AdditionalProperties map[string]any
+}
+
 type ReadOptions struct {
 	// Tx is a optional transaction that the read operation shall be performed in.
 	Tx *Transaction
-	// Config are custom setting/config specific for the `Persistence` operation.
-	Config map[string]any
+	// Config is where any common or `Persistence` specific configuration is set.
+	Config ReadConfig
+}
+
+// ListConfig is the configuration for the `Persistence.List` operation.
+type ListConfig struct {
+	// AdditionalProperties are custom setting/config specific for the `Persistence` operation.
+	AdditionalProperties map[string]any
 }
 
 type ListOptions struct {
@@ -47,8 +59,8 @@ type ListOptions struct {
 	SearchExpr string
 	// Token is a ID that the `Persistence` did return when there's a additional page to be fetched of results.
 	Token string
-	// Config are custom setting/config specific for the `Persistence` operation.
-	Config map[string]any
+	// Config is where any common or `Persistence` specific configuration is set.
+	Config ListConfig
 }
 
 // ListResult is returned when  list operation is performed.

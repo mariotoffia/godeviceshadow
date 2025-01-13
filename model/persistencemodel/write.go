@@ -17,11 +17,21 @@ type Persistence interface {
 	Delete(ctx context.Context, opt WriteOptions, operation ...WriteOperation) []WriteResult
 }
 
+// WriteConfig is the configuration for the `Persistence.Write` operation.
+type WriteConfig struct {
+	// Separation is the model separation that will be used for the write operation. The `CombinedModels` is the
+	// default separation if not set.
+	Separation ModelSeparation `json:"separation,omitempty"`
+
+	// AdditionalProperties are custom setting/config specific for the `Persistence` operation.
+	AdditionalProperties map[string]any
+}
+
 type WriteOptions struct {
 	// Tx is a optional transaction that the write operation shall be performed in.
 	Tx *Transaction
-	// Config are custom setting/config specific for the `Persistence` operation.
-	Config map[string]any
+	// Config is where any common or `Persistence` specific configuration is set.
+	Config WriteConfig
 }
 
 type WriteOperation struct {
@@ -38,8 +48,8 @@ type WriteOperation struct {
 	//
 	// The version will always be updated with 1 when the model was successfully written.
 	Version int64
-	// Config are custom setting/config specific for the current `WriteOperation` and `Persistence`.
-	Config map[string]any
+	// AdditionalProperties are custom setting/config specific for the current `WriteOperation` and `Persistence`.
+	AdditionalProperties map[string]any
 }
 
 type WriteResult struct {

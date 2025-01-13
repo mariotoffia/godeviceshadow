@@ -49,7 +49,7 @@ func Group(operations []persistencemodel.WriteOperation) []GroupedWriteOperation
 		}
 
 		opm := operationsByModel[key]
-		if sep, ok := FromConfig[persistencemodel.ModelSeparation](op.Config, persistencemodel.ModelSeparationConfigKey); ok {
+		if sep, ok := FromConfig[persistencemodel.ModelSeparation](op.AdditionalProperties, persistencemodel.ModelSeparationConfigKey); ok {
 			if opm.ModelSeparation == 0 {
 				opm.ModelSeparation = sep
 			} else if opm.ModelSeparation != sep {
