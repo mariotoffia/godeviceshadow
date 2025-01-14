@@ -1,6 +1,9 @@
 package persistutils
 
-import "github.com/mariotoffia/godeviceshadow/model/persistencemodel"
+import (
+	"github.com/mariotoffia/godeviceshadow/model/persistencemodel"
+	"github.com/mariotoffia/godeviceshadow/utils"
+)
 
 type GroupedWriteOperation struct {
 	// ID is from the `WriteOperation.ID.ID` field.
@@ -37,26 +40,32 @@ func (group *GroupedWriteOperation) GetByModelType(model persistencemodel.ModelT
 func Group(operations []persistencemodel.WriteOperation) []GroupedWriteOperation {
 	operationsByModel := make(map[string]*GroupedWriteOperation, len(operations)/2)
 
+	var sep persistencemodel.ModelSeparation
+
+	if op, ok := utils.FindPtr(operations, func(op *persistencemodel.WriteOperation) bool {
+		return op.Config.Separation != 0
+	}); ok {
+		sep = op.Config.Separation
+	}
+
+	// Default to combined models
+	if sep == 0 {
+		sep = persistencemodel.CombinedModels
+	}
+
 	for _, op := range operations {
 		key := op.ID.ID + op.ID.Name
 
 		if _, ok := operationsByModel[key]; !ok {
 			operationsByModel[key] = &GroupedWriteOperation{
-				ID:         op.ID.ID,
-				Name:       op.ID.Name,
-				Operations: make([]persistencemodel.WriteOperation, 0, 2),
+				ID:              op.ID.ID,
+				Name:            op.ID.Name,
+				ModelSeparation: sep,
+				Operations:      make([]persistencemodel.WriteOperation, 0, 2),
 			}
 		}
 
 		opm := operationsByModel[key]
-		if sep, ok := FromConfig[persistencemodel.ModelSeparation](op.AdditionalProperties, persistencemodel.ModelSeparationConfigKey); ok {
-			if opm.ModelSeparation == 0 {
-				opm.ModelSeparation = sep
-			} else if opm.ModelSeparation != sep {
-				opm.Error = persistencemodel.Error400("all operations in same group must have the same separation type")
-			}
-		}
-
 		opm.Operations = append(opm.Operations, op)
 	}
 

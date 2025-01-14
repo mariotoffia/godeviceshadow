@@ -34,6 +34,15 @@ type WriteOptions struct {
 	Config WriteConfig
 }
 
+type WriteOperationConfig struct {
+	// Separation is the model separation that will be used for the write operation. If not set, it will use
+	// the `WriteOptions.Config.Separation` or the default in the `Persistence`. If neither, it will use
+	// `CombinedModels`.
+	Separation ModelSeparation `json:"separation,omitempty"`
+	// AdditionalProperties are custom setting/config specific for the current `WriteOperation` and `Persistence`.
+	AdditionalProperties map[string]any
+}
+
 type WriteOperation struct {
 	// ClientID is a optional clientID (if `Persistence` supports it). When client sets,
 	// this it is often needed to be a unique identifier for each transaction or write operation.
@@ -48,8 +57,8 @@ type WriteOperation struct {
 	//
 	// The version will always be updated with 1 when the model was successfully written.
 	Version int64
-	// AdditionalProperties are custom setting/config specific for the current `WriteOperation` and `Persistence`.
-	AdditionalProperties map[string]any
+	// Config is where any common or `Persistence` specific configuration is set.
+	Config WriteOperationConfig
 }
 
 type WriteResult struct {
