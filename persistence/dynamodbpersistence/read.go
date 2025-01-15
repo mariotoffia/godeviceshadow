@@ -43,8 +43,7 @@ func (p *Persistence) Read(
 			// all have errors
 			for _, op := range req.Operations {
 				results[op.ID.String()] = persistencemodel.ReadResult{
-					ID:    op.ID,
-					Error: readBatchErrorFixup(err),
+					ID: op.ID, Error: readBatchErrorFixup(err),
 				}
 			}
 
@@ -56,17 +55,16 @@ func (p *Persistence) Read(
 
 		for _, item := range retrieved {
 			// Extract PK & SK from the item
-			id := sortKeyToName(item["PK"].(*types.AttributeValueMemberS).Value)
-			name := primaryKeyToID(item["SK"].(*types.AttributeValueMemberS).Value)
-			op := req.FromID(id, name)
+			id := primaryKeyToID(item["PK"].(*types.AttributeValueMemberS).Value)
+			name := sortKeyToName(item["SK"].(*types.AttributeValueMemberS).Value)
+			op := req.OperationFromIDName(id, name)
 
 			var stored PartialPersistenceObject
 
 			if err := attributevalue.UnmarshalMap(item, &stored); err != nil {
 				results[op.ID.String()] = persistencemodel.ReadResult{
 					ID: persistencemodel.PersistenceID{
-						ID:   op.ID.ID,
-						Name: name,
+						ID: op.ID.ID, Name: name,
 					},
 					Error: fmt.Errorf("unmarshal persist object failed: %w", err),
 				}
@@ -74,11 +72,11 @@ func (p *Persistence) Read(
 				continue
 			}
 
-			// Ensure version matches -> 404
+			// Ensure version matches -> 409
 			if op.Version > 0 && op.Version != stored.Version {
 				results[op.ID.String()] = persistencemodel.ReadResult{
 					ID: persistencemodel.PersistenceID{ID: op.ID.ID, Name: name},
-					Error: persistencemodel.Error404(
+					Error: persistencemodel.Error409(
 						fmt.Sprintf("mismatching version, requested: %d, stored: %d", op.Version, stored.Version),
 					),
 				}
@@ -89,8 +87,7 @@ func (p *Persistence) Read(
 			if item["Desired"] != nil {
 				if res, err := unmarshalFromMap(item["Desired"], op.Model); err != nil {
 					results[op.ID.String()] = persistencemodel.ReadResult{
-						ID:    op.ID.ToPersistenceID(persistencemodel.ModelTypeDesired),
-						Error: fmt.Errorf("unmarshal desired failed: %w", err),
+						ID: op.ID.ToPersistenceID(persistencemodel.ModelTypeDesired), Error: fmt.Errorf("unmarshal desired failed: %w", err),
 					}
 				} else {
 					results[op.ID.String()] = persistencemodel.ReadResult{
@@ -106,8 +103,7 @@ func (p *Persistence) Read(
 			if item["Reported"] != nil {
 				if res, err := unmarshalFromMap(item["Reported"], op.Model); err != nil {
 					results[op.ID.String()] = persistencemodel.ReadResult{
-						ID:    op.ID.ToPersistenceID(persistencemodel.ModelTypeReported),
-						Error: fmt.Errorf("unmarshal reported failed: %w", err),
+						ID: op.ID.ToPersistenceID(persistencemodel.ModelTypeReported), Error: fmt.Errorf("unmarshal reported failed: %w", err),
 					}
 				} else {
 					results[op.ID.String()] = persistencemodel.ReadResult{
@@ -136,9 +132,9 @@ type ReadBatch struct {
 	Keys       map[string]types.KeysAndAttributes
 }
 
-func (rb *ReadBatch) FromID(pk, sk string) persistencemodel.ReadOperation {
+func (rb *ReadBatch) OperationFromIDName(id, name string) persistencemodel.ReadOperation {
 	for _, op := range rb.Operations {
-		if op.ID.ID == pk && op.ID.Name == sk {
+		if op.ID.ID == id && op.ID.Name == name {
 			return op
 		}
 	}
