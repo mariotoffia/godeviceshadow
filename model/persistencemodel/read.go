@@ -22,6 +22,8 @@ type ReadonlyPersistence interface {
 // ReadOperation is a read operation that will be performed.
 type ReadOperation struct {
 	// ID is a unique identifier e.g. MyCar 22 or a UUID.
+	//
+	// TIP: When the `PersistenceID.ModelType` is zero, it assumed combined model type.
 	ID PersistenceID
 	// Model is the model `type` that will be read.
 	Model reflect.Type

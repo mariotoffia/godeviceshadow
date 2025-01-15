@@ -3,6 +3,7 @@ package dynamodbpersistence
 import (
 	"errors"
 	"fmt"
+	"reflect"
 
 	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
@@ -59,4 +60,38 @@ func conditionalWriteErrorFixup(err error) error {
 
 	// Return the original error if not handled
 	return err
+}
+
+func readBatchErrorFixup(err error) error {
+	if err == nil {
+		return nil
+	}
+
+	var resourceNotFound *types.ResourceNotFoundException
+
+	if errors.As(err, &resourceNotFound) {
+		return persistencemodel.Error404("item not found")
+	}
+
+	return err
+}
+
+func unmarshalFromMap(m types.AttributeValue, t reflect.Type) (any, error) {
+	value := reflect.New(t)
+
+	if !value.IsValid() {
+		return nil, fmt.Errorf("invalid type: %s", t.String())
+	}
+
+	inst := value.Interface()
+
+	if des, ok := m.(*types.AttributeValueMemberM); ok && des != nil {
+		if err := attributevalue.UnmarshalMap(des.Value, inst); err != nil {
+			return nil, fmt.Errorf("unmarshal failed: %w", err)
+		} else {
+			return inst, nil
+		}
+	}
+
+	return nil, fmt.Errorf("expected AttributeValueMemberM but got: %T", m)
 }

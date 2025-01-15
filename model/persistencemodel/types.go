@@ -8,7 +8,18 @@ type PersistenceID struct {
 	// Name is the persistence name so it is possible to have multiple device shadows (model types).
 	Name string
 	// ModelType is the model type that this `PersistenceID` refers to.
+	//
+	// When in a read operation, if this is zero, it is assumed to be a combined model type.
 	ModelType ModelType
+}
+
+func (pid PersistenceID) String() string {
+	return fmt.Sprintf("%s#%s/%s", pid.ID, pid.Name, pid.ModelType.String())
+}
+
+func (pid PersistenceID) ToPersistenceID(modelType ModelType) PersistenceID {
+	pid.ModelType = modelType
+	return pid
 }
 
 // ModelType stipulates the model type in e.g. a `PersistenceID`.

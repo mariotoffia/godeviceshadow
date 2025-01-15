@@ -19,7 +19,7 @@ type Config struct {
 	// with key `persistencemodel.ModelSeparationConfigKey` and value of `persistencemodel.ModelSeparation`.
 	ModelSeparation persistencemodel.ModelSeparation `json:"separate"`
 	// MaxReadBatchSize is the maximum number of items to read in a single batch. If read exceeds this number, it
-	// will be split into multiple requests.
+	// will be split into multiple requests. Default is 100.
 	MaxReadBatchSize int `json:"batch"`
 	// MaxParallelism is the maximum number of parallel requests to make to DynamoDB. If the number of items to write
 	// exceeds this, it will be queued up and processed in parallel.

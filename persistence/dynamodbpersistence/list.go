@@ -137,20 +137,23 @@ func (p *Persistence) parseListResponse(
 	results := make([]persistencemodel.ListResult, 0, len(items))
 
 	for _, it := range items {
-		// Extract PK => "DS#{ID}"
+		// Partition Key
 		pkAttr, ok := it["PK"].(*types.AttributeValueMemberS)
 		if !ok || !strings.HasPrefix(pkAttr.Value, "DS#") {
 			// Skip if PK is missing or doesn't match DS#
 			continue
 		}
-		idPart := pkAttr.Value[3:]
 
-		// Extract SK => "DSR#{Name}" | "DSD#{Name}" | "DSC#{Name}"
+		id := pkAttr.Value[3:]
+
+		// Sort Key
 		skAttr, ok := it["SK"].(*types.AttributeValueMemberS)
+
 		if !ok {
 			continue
 		}
-		skVal := skAttr.Value
+
+		sk := skAttr.Value
 
 		var (
 			name      string
@@ -158,28 +161,21 @@ func (p *Persistence) parseListResponse(
 			combined  bool
 		)
 		switch {
-		case strings.HasPrefix(skVal, "DSR#"):
-			name = skVal[4:]
+		case strings.HasPrefix(sk, "DSR#"):
+			name = sk[4:]
 			modelType = persistencemodel.ModelTypeReported
-		case strings.HasPrefix(skVal, "DSD#"):
-			name = skVal[4:]
+		case strings.HasPrefix(sk, "DSD#"):
+			name = sk[4:]
 			modelType = persistencemodel.ModelTypeDesired
-		case strings.HasPrefix(skVal, "DSC#"):
-			name = skVal[4:]
+		case strings.HasPrefix(sk, "DSC#"):
+			name = sk[4:]
 			combined = true
 		default:
 			// Skip unknown SK patterns
 			continue
 		}
 
-		// Use minimal struct to unmarshal only fields needed
-		type persistObj struct {
-			Version     int64  `json:"version"`
-			TimeStamp   int64  `json:"timestamp"`
-			ClientToken string `json:"clientToken"`
-		}
-
-		var obj persistObj
+		var obj PartialPersistenceObject
 
 		if err := attributevalue.UnmarshalMap(it, &obj); err != nil {
 			return nil, fmt.Errorf("failed to unmarshal partialObject: %w", err)
@@ -191,7 +187,7 @@ func (p *Persistence) parseListResponse(
 			// Desired
 			results = append(results, persistencemodel.ListResult{
 				ID: persistencemodel.PersistenceID{
-					ID:        idPart,
+					ID:        id,
 					Name:      name,
 					ModelType: persistencemodel.ModelTypeDesired,
 				},
@@ -202,7 +198,7 @@ func (p *Persistence) parseListResponse(
 			// Reported
 			results = append(results, persistencemodel.ListResult{
 				ID: persistencemodel.PersistenceID{
-					ID:        idPart,
+					ID:        id,
 					Name:      name,
 					ModelType: persistencemodel.ModelTypeReported,
 				},
@@ -213,7 +209,7 @@ func (p *Persistence) parseListResponse(
 		} else {
 			results = append(results, persistencemodel.ListResult{
 				ID: persistencemodel.PersistenceID{
-					ID:        idPart,
+					ID:        id,
 					Name:      name,
 					ModelType: modelType,
 				},
