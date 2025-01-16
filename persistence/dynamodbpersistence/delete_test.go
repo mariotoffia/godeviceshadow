@@ -9,6 +9,7 @@ import (
 	"github.com/mariotoffia/godeviceshadow/persistence/dynamodbpersistence"
 	"github.com/mariotoffia/godeviceshadow/persistence/dynamodbpersistence/dynamodbutils"
 	"github.com/mariotoffia/godeviceshadow/utils/persistutils"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
