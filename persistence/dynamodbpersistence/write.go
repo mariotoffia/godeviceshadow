@@ -36,7 +36,7 @@ func (p *Persistence) Write(
 		sep = opt.Config.Separation
 	}
 
-	groups := persistutils.Group(operations)
+	groups := persistutils.Group(operations, sep)
 
 	for i := range groups {
 		os := sep

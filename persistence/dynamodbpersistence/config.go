@@ -21,7 +21,7 @@ type Config struct {
 	// with key `persistencemodel.ModelSeparationConfigKey` and value of `persistencemodel.ModelSeparation`.
 	ModelSeparation persistencemodel.ModelSeparation `json:"separation,omitempty"`
 	// MaxReadBatchSize is the maximum number of items to read in a single batch. If read exceeds this number, it
-	// will be split into multiple requests. Default is 100.
+	// will be split into multiple requests. Default is 100. This is also used in list.
 	MaxReadBatchSize int `json:"read_batch,omitempty"`
 	// MaxReadRetries is the maximum number of retries to make when reading from DynamoDB. Default is 3.
 	//

@@ -37,7 +37,7 @@ func (group *GroupedWriteOperation) GetByModelType(model persistencemodel.ModelT
 }
 
 // Group will group all write operations based on the ID and Name of the model.
-func Group(operations []persistencemodel.WriteOperation) []GroupedWriteOperation {
+func Group(operations []persistencemodel.WriteOperation, defaultSeparation persistencemodel.ModelSeparation) []GroupedWriteOperation {
 	operationsByModel := make(map[string]*GroupedWriteOperation, len(operations)/2)
 
 	var sep persistencemodel.ModelSeparation
@@ -50,7 +50,7 @@ func Group(operations []persistencemodel.WriteOperation) []GroupedWriteOperation
 
 	// Default to combined models
 	if sep == 0 {
-		sep = persistencemodel.CombinedModels
+		sep = defaultSeparation
 	}
 
 	for _, op := range operations {

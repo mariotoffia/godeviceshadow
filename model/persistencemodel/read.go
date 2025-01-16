@@ -10,7 +10,7 @@ type ReadonlyPersistence interface {
 	// List will list models from the persistent storage. It will only return an error
 	// if there was a problem in the persistence or if the `Persistence` does not support
 	// `ListOptions.SearchExpr` or incorrect `ListOptions.Token` is set.
-	List(ctx context.Context, opt ListOptions) ([]ListResult, error)
+	List(ctx context.Context, opt ListOptions) (ListResults, error)
 	// Read will read one or more models from the persistent storage. If not found, it will return
 	// a `PersistenceError` with code 404 (Not Found). If a model do exist but the version requested is not
 	// found, it will return a `PersistenceError` with code 409 (Conflict), i.e. found but incorrect version.
@@ -85,6 +85,12 @@ type ListResult struct {
 	//
 	// NOTE: if no client token has been used in the write operation, it will not be persisted and hence not visible here either.
 	ClientToken string
+}
+
+// ListResults is a list of results returned from the `List` operation.
+type ListResults struct {
+	// Items are the list of results.
+	Items []ListResult
 	// Token is set to "something" when there's a additional page to be fetched of results.
 	Token string
 }

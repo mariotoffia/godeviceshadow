@@ -24,13 +24,19 @@ import (
 func (p *Persistence) List(
 	ctx context.Context,
 	opt persistencemodel.ListOptions,
-) ([]persistencemodel.ListResult, error) {
+) (*persistencemodel.ListResults, error) {
 
 	var (
 		results      []persistencemodel.ListResult
 		exclusiveKey map[string]types.AttributeValue
+		pageSize     int32 = 100
+		token        string
 		err          error
 	)
+
+	if p.config.MaxReadBatchSize > 0 {
+		pageSize = int32(p.config.MaxReadBatchSize)
+	}
 
 	// token -> decode it into ExclusiveStartKey
 	if opt.Token != "" {
@@ -51,14 +57,6 @@ func (p *Persistence) List(
 			ExclusiveStartKey: exclusiveKey,
 		}
 
-		// SearchExpr provided -> filter on SK
-		if opt.SearchExpr != "" {
-			input.FilterExpression = aws.String("(SK = :dsr) OR (SK = :dsd) OR (SK = :dsc)")
-			input.ExpressionAttributeValues[":dsr"] = &types.AttributeValueMemberS{Value: "DSR#" + opt.SearchExpr}
-			input.ExpressionAttributeValues[":dsd"] = &types.AttributeValueMemberS{Value: "DSD#" + opt.SearchExpr}
-			input.ExpressionAttributeValues[":dsc"] = &types.AttributeValueMemberS{Value: "DSC#" + opt.SearchExpr}
-		}
-
 		out, err := p.client.Query(ctx, input)
 		if err != nil {
 			return nil, fmt.Errorf("query failed: %w", err)
@@ -77,7 +75,7 @@ func (p *Persistence) List(
 				return nil, fmt.Errorf("encodeToken failed: %w", err)
 			}
 
-			results[len(results)-1].Token = tok
+			token = tok
 		}
 
 	} else {
@@ -85,6 +83,7 @@ func (p *Persistence) List(
 		input := &dynamodb.ScanInput{
 			TableName:         aws.String(p.config.Table),
 			ExclusiveStartKey: exclusiveKey,
+			Limit:             &pageSize,
 		}
 
 		if opt.SearchExpr != "" {
@@ -114,11 +113,14 @@ func (p *Persistence) List(
 				return nil, fmt.Errorf("encodeToken failed: %w", err)
 			}
 
-			results[len(results)-1].Token = tok
+			token = tok
 		}
 	}
 
-	return results, nil
+	return &persistencemodel.ListResults{
+		Items: results,
+		Token: token,
+	}, nil
 }
 
 // parseListResponse converts a slice of DynamoDB items into ListResult entries.
@@ -250,10 +252,16 @@ func (p *Persistence) decodeToken(tok string) (map[string]types.AttributeValue, 
 		return nil, err
 	}
 
-	out := make(map[string]types.AttributeValue)
+	var first map[string]*types.AttributeValueMemberS
 
-	if err := json.Unmarshal(b, &out); err != nil {
+	if err := json.Unmarshal(b, &first); err != nil {
 		return nil, err
+	}
+
+	out := make(map[string]types.AttributeValue, len(first))
+
+	for k, v := range first {
+		out[k] = v
 	}
 
 	return out, nil
