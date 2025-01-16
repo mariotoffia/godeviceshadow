@@ -11,7 +11,7 @@ type ReadonlyPersistence interface {
 	// if there was a problem in the persistence or if the `Persistence` does not support
 	// `ListOptions.SearchExpr` or incorrect `ListOptions.Token` is set.
 	List(ctx context.Context, opt ListOptions) ([]ListResult, error)
-	// Read will read a model from the persistent storage. If not found, it will return
+	// Read will read one or more models from the persistent storage. If not found, it will return
 	// a `PersistenceError` with code 404 (Not Found). If a model do exist but the version requested is not
 	// found, it will return a `PersistenceError` with code 409 (Conflict), i.e. found but incorrect version.
 	//
@@ -19,6 +19,8 @@ type ReadonlyPersistence interface {
 	//
 	// NOTE: It will return a separate error for each _operation_ even if e.g. the storage is completely down and
 	// thus each _id_ will return the same error.
+	//
+	// If the model is combined use the `ModelType` of 0 in the `PersistenceID.ModelType`.
 	Read(ctx context.Context, opt ReadOptions, operation ...ReadOperation) []ReadResult
 }
 

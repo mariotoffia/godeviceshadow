@@ -2,8 +2,11 @@ package dynamodbpersistence
 
 import (
 	"context"
+	"fmt"
 
+	awsconfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
+
 	"github.com/mariotoffia/godeviceshadow/model/persistencemodel"
 )
 
@@ -29,13 +32,19 @@ func New(ctx context.Context, config Config) (*Persistence, error) {
 		cfg.ModelSeparation = persistencemodel.CombinedModels
 	}
 
-	if cfg.AwsConfig.Region == "" {
-		return nil, persistencemodel.Error400("not a valid AWS configuration")
+	if cfg.Client == nil {
+		awscfg, err := awsconfig.LoadDefaultConfig(ctx)
+
+		if err != nil {
+			return nil, fmt.Errorf("failed to load AWS config: %w", err)
+		}
+
+		cfg.Client = dynamodb.NewFromConfig(awscfg)
 	}
 
 	return &Persistence{
 		config: cfg,
-		client: dynamodb.NewFromConfig(config.AwsConfig),
+		client: config.Client,
 	}, nil
 }
 

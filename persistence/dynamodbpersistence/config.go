@@ -1,13 +1,15 @@
 package dynamodbpersistence
 
 import (
-	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/mariotoffia/godeviceshadow/model/persistencemodel"
 )
 
 type Config struct {
 	// Table is the name of the DynamoDB table to use. It is *required* to be a valid table.
 	Table string `json:"table"`
+	// Client to use when interacting with DynamoDB. If not set, it will create one from the default config.
+	Client *dynamodb.Client `json:"-"`
 	// ModelSeparation determines whether the desired and reported models should be stored separately or not.
 	//
 	// If nothing is set it will default `CombinedModels`. This may be overridden by the `separate` key in the
@@ -37,6 +39,4 @@ type Config struct {
 	//
 	// This is when it return unprocessed keys and it will retry the request. All other errors are not retried.
 	MaxWriteRetries int `json:"write_retries,omitempty"`
-	// AwsConfig to use when creating the client.
-	AwsConfig aws.Config `json:"-"`
 }

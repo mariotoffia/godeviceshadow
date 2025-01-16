@@ -1,9 +1,13 @@
 {
   "cSpell.words": [
     "attributevalue",
+    "awscfg",
+    "awsconfig",
+    "deviceshadow",
     "distiguisher",
     "dynamodbattribute",
     "dynamodbpersistence",
+    "dynamodbutils",
     "godeviceshadow",
     "highlightjs",
     "ifndef",
