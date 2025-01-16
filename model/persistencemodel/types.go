@@ -9,7 +9,7 @@ type PersistenceID struct {
 	Name string
 	// ModelType is the model type that this `PersistenceID` refers to.
 	//
-	// When in a read operation, if this is zero, it is assumed to be a combined model type.
+	// When in a read/delete operation, if this is zero, it is assumed to be a combined model type.
 	ModelType ModelType
 }
 

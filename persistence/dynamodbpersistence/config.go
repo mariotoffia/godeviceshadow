@@ -30,6 +30,13 @@ type Config struct {
 	//
 	// It defaults to 1, i.e. no parallelism.
 	MaxWriteParallelism int `json:"write_parallelism,omitempty"`
+	// MaxWriteBatchSize is the maximum number of items to write in a single batch. If write exceeds this number, it
+	// will be split into multiple requests. Default is 25. This is also used for delete operations.
+	MaxWriteBatchSize int `json:"write_batch,omitempty"`
+	// MaxWriteRetries is the maximum number of retries to make when writing to DynamoDB. Default is 3.
+	//
+	// This is when it return unprocessed keys and it will retry the request. All other errors are not retried.
+	MaxWriteRetries int `json:"write_retries,omitempty"`
 	// AwsConfig to use when creating the client.
 	AwsConfig aws.Config `json:"-"`
 }

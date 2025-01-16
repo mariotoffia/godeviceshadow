@@ -25,11 +25,17 @@ func (p *Persistence) Delete(
 		return nil
 	}
 
-	// We’ll define a maxBatchSize and maxRetries (similar to Read).
-	// Adjust or load from p.config as needed.
 	maxBatchSize := 25 // DynamoDB BatchWriteItem limit is 25
-	maxRetries := 3    // or pull from p.config.MaxWriteRetries if that exists
+	maxRetries := 3
 	table := p.config.Table
+
+	if p.config.MaxWriteParallelism > 0 {
+		maxBatchSize = p.config.MaxWriteBatchSize
+	}
+
+	if p.config.MaxWriteRetries > 0 {
+		maxRetries = p.config.MaxWriteRetries
+	}
 
 	// Prepare the batch requests
 	batches, prepErrors := prepareDelete(operations, table, maxBatchSize)

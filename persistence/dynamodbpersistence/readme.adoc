@@ -20,7 +20,7 @@ When stored separately, the `Write` function will store them atomically when the
 
 == Internals
 
-When read, it always strives to use batch reads to minimize the number of requests to DynamoDB, it will automatically split the requests into `Config.MaxReadBatchSize` (with default 25) to avoid exceeding the limit items per read request.
+When read, it always strives to use batch reads to minimize the number of requests to DynamoDB, it will automatically split the requests into `Config.MaxReadBatchSize` (with default 100) to avoid exceeding the limit items per read request.
 
 Writes are always upsert, i.e. either create or update. Where it guards the consistency by a version int64 that is atomically incremented each time a conditional write is successful. If the version is different, it will return a 409 (Conflict) error.
 
