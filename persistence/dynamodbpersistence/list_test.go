@@ -197,7 +197,7 @@ func TestListPagination(t *testing.T) {
 	res := dynamodbutils.NewTestTableResource(ctx, TestTableName)
 	defer res.Dispose(ctx, dynamodbutils.DisposeOpts{DeleteItems: true})
 
-	pageSize := 5
+	pageSize := 11
 
 	// Initialize our DynamoDB persistence
 	p, err := dynamodbpersistence.New(ctx, dynamodbpersistence.Config{
@@ -207,22 +207,34 @@ func TestListPagination(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	const totalItems = 10
 	var writeOps []persistencemodel.WriteOperation
 
-	for i := 1; i <= totalItems; i++ {
+	clientId := persistutils.Id("test-")
+	for i := 1; i <= 10; i++ {
 		deviceID := persistutils.Id("device-")
 		writeOps = append(writeOps,
 			persistencemodel.WriteOperation{
-				ClientID: persistutils.Id("test-"),
+				ClientID: clientId,
 				ID: persistencemodel.PersistenceID{
 					ID:        deviceID,
 					Name:      "shadow",
 					ModelType: persistencemodel.ModelTypeReported,
 				},
 				Model: TestModel{
-					TimeZone: "UTC",
+					TimeZone: "Europe/Stockholm",
+					Sensors: map[string]Sensor{
+						"temp": {Value: 23.4, TimeStamp: time.Now().UTC()},
+					},
 				},
+			},
+			persistencemodel.WriteOperation{
+				ClientID: clientId,
+				ID: persistencemodel.PersistenceID{
+					ID:        deviceID,
+					Name:      "shadow",
+					ModelType: persistencemodel.ModelTypeDesired,
+				},
+				Model: TestModel{},
 			},
 		)
 	}
@@ -232,7 +244,7 @@ func TestListPagination(t *testing.T) {
 		Config: persistencemodel.WriteConfig{Separation: persistencemodel.SeparateModels},
 	}, writeOps...)
 
-	require.Len(t, writeResults, totalItems)
+	require.Len(t, writeResults, 20)
 
 	for _, w := range writeResults {
 		require.NoError(t, w.Error, "Expected each write operation to succeed")
@@ -243,8 +255,8 @@ func TestListPagination(t *testing.T) {
 	require.NotNil(t, firstPage)
 
 	// Ensure the first page has pageSize items and a continuation token
-	assert.Len(t, firstPage.Items, pageSize, "First page should contain 5 items")
-	assert.NotEmpty(t, firstPage.Token, "First page should provide a next page token")
+	assert.Len(t, firstPage.Items, pageSize)
+	assert.NotEmpty(t, firstPage.Token)
 
 	// Fetch the second page using the returned token
 	secondPage, err := p.List(ctx, persistencemodel.ListOptions{Token: firstPage.Token})
@@ -252,13 +264,8 @@ func TestListPagination(t *testing.T) {
 	require.NotNil(t, secondPage)
 
 	// Ensure second page has the remaining items
-	assert.Len(t, secondPage.Items, totalItems-pageSize, "Second page should contain the remaining items")
-	assert.NotEmpty(t, secondPage.Token, "Will be empty the next time")
-
-	thirdPage, err := p.List(ctx, persistencemodel.ListOptions{Token: secondPage.Token})
-	require.NoError(t, err)
-	assert.Len(t, thirdPage.Items, 0, "Third page should be empty")
-	assert.Empty(t, thirdPage.Token, "Third page should not have a continuation token")
+	assert.Len(t, secondPage.Items, 9)
+	assert.Empty(t, secondPage.Token)
 }
 
 func TestListMultipleShadowsOnSameID(t *testing.T) {
