@@ -17,8 +17,8 @@ type Persistence struct {
 func New(ctx context.Context, config Config) (*Persistence, error) {
 	cfg := config
 
-	if cfg.MaxParallelism <= 0 {
-		cfg.MaxParallelism = 1
+	if cfg.MaxWriteParallelism <= 0 {
+		cfg.MaxWriteParallelism = 1
 	}
 
 	if cfg.MaxReadBatchSize <= 0 {

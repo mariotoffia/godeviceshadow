@@ -3,6 +3,7 @@ package dynamodbpersistence
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
@@ -10,6 +11,8 @@ import (
 
 	"github.com/mariotoffia/godeviceshadow/model/persistencemodel"
 	"github.com/mariotoffia/godeviceshadow/utils"
+
+	"golang.org/x/exp/rand"
 )
 
 // Read uses BatchGetItem to fetch the items for each ReadOperation.
@@ -23,108 +26,206 @@ func (p *Persistence) Read(
 		return nil
 	}
 
-	results := make(map[string]persistencemodel.ReadResult, len(operations))
+	results := make([]persistencemodel.ReadResult, 0, len(operations))
 
 	table := p.config.Table
 	maxBatchSize := 100
+	maxRetries := 3
 
 	if p.config.MaxReadBatchSize > 0 {
 		maxBatchSize = p.config.MaxReadBatchSize
 	}
 
-	items := prepareRead(operations, results, table, maxBatchSize)
+	if p.config.MaxReadRetries > 0 {
+		maxRetries = p.config.MaxReadRetries
+	}
+
+	items, errors := prepareRead(operations, table, maxBatchSize)
+	results = append(results, errors...)
 
 	for _, req := range items {
-		res, err := p.client.BatchGetItem(ctx, &dynamodb.BatchGetItemInput{
-			RequestItems: req.Keys,
-		})
+		results = append(results, p.readBatch(ctx, req, table, maxRetries)...)
+	}
 
-		if err != nil {
-			// all have errors
-			for _, op := range req.Operations {
-				results[op.ID.String()] = persistencemodel.ReadResult{
-					ID: op.ID, Error: readBatchErrorFixup(err),
-				}
-			}
+	// Check for missing items
+	results = append(results, missing(operations, results)...)
+
+	return results
+}
+
+func (p *Persistence) readBatch(ctx context.Context, batch ReadBatch, table string, maxRetries int) []persistencemodel.ReadResult {
+	retrieved, errors := p.batchGetItems(ctx, batch, table, maxRetries)
+
+	// All errors -> return them
+	if len(errors) > 0 {
+		return errors
+	}
+
+	// Process retrieved items
+	results := make([]persistencemodel.ReadResult, 0, len(retrieved))
+
+	for _, item := range retrieved {
+		// Extract PK & SK from the item
+		id := primaryKeyToID(item["PK"].(*types.AttributeValueMemberS).Value)
+		name := sortKeyToName(item["SK"].(*types.AttributeValueMemberS).Value)
+		op := batch.OperationFromIDName(id, name)
+
+		var stored PartialPersistenceObject
+
+		if err := attributevalue.UnmarshalMap(item, &stored); err != nil {
+			results = append(results, persistencemodel.ReadResult{
+				ID: persistencemodel.PersistenceID{
+					ID: op.ID.ID, Name: name,
+				},
+				Error: fmt.Errorf("unmarshal persist object failed: %w", err),
+			})
 
 			continue
 		}
 
-		// Process retrieved items
-		retrieved := res.Responses[table]
+		// Ensure version matches -> 409
+		if op.Version > 0 && op.Version != stored.Version {
+			results = append(results, persistencemodel.ReadResult{
+				ID: persistencemodel.PersistenceID{ID: op.ID.ID, Name: name},
+				Error: persistencemodel.Error409(
+					fmt.Sprintf("mismatching version, requested: %d, stored: %d", op.Version, stored.Version),
+				),
+			})
 
-		for _, item := range retrieved {
-			// Extract PK & SK from the item
-			id := primaryKeyToID(item["PK"].(*types.AttributeValueMemberS).Value)
-			name := sortKeyToName(item["SK"].(*types.AttributeValueMemberS).Value)
-			op := req.OperationFromIDName(id, name)
+			continue
+		}
 
-			var stored PartialPersistenceObject
-
-			if err := attributevalue.UnmarshalMap(item, &stored); err != nil {
-				results[op.ID.String()] = persistencemodel.ReadResult{
-					ID: persistencemodel.PersistenceID{
-						ID: op.ID.ID, Name: name,
-					},
-					Error: fmt.Errorf("unmarshal persist object failed: %w", err),
-				}
-
-				continue
+		if item["Desired"] != nil {
+			if res, err := unmarshalFromMap(item["Desired"], op.Model); err != nil {
+				results = append(results, persistencemodel.ReadResult{
+					ID: op.ID.ToPersistenceID(persistencemodel.ModelTypeDesired), Error: fmt.Errorf("unmarshal desired failed: %w", err),
+				})
+			} else {
+				results = append(results, persistencemodel.ReadResult{
+					ID:          op.ID.ToPersistenceID(persistencemodel.ModelTypeDesired),
+					Model:       res,
+					Version:     stored.Version,
+					TimeStamp:   stored.TimeStamp,
+					ClientToken: stored.ClientToken,
+				})
 			}
+		}
 
-			// Ensure version matches -> 409
-			if op.Version > 0 && op.Version != stored.Version {
-				results[op.ID.String()] = persistencemodel.ReadResult{
-					ID: persistencemodel.PersistenceID{ID: op.ID.ID, Name: name},
-					Error: persistencemodel.Error409(
-						fmt.Sprintf("mismatching version, requested: %d, stored: %d", op.Version, stored.Version),
-					),
-				}
-
-				continue
-			}
-
-			if item["Desired"] != nil {
-				if res, err := unmarshalFromMap(item["Desired"], op.Model); err != nil {
-					results[op.ID.String()] = persistencemodel.ReadResult{
-						ID: op.ID.ToPersistenceID(persistencemodel.ModelTypeDesired), Error: fmt.Errorf("unmarshal desired failed: %w", err),
-					}
-				} else {
-					results[op.ID.String()] = persistencemodel.ReadResult{
-						ID:          op.ID.ToPersistenceID(persistencemodel.ModelTypeDesired),
-						Model:       res,
-						Version:     stored.Version,
-						TimeStamp:   stored.TimeStamp,
-						ClientToken: stored.ClientToken,
-					}
-				}
-			}
-
-			if item["Reported"] != nil {
-				if res, err := unmarshalFromMap(item["Reported"], op.Model); err != nil {
-					results[op.ID.String()] = persistencemodel.ReadResult{
-						ID: op.ID.ToPersistenceID(persistencemodel.ModelTypeReported), Error: fmt.Errorf("unmarshal reported failed: %w", err),
-					}
-				} else {
-					results[op.ID.String()] = persistencemodel.ReadResult{
-						ID:          op.ID.ToPersistenceID(persistencemodel.ModelTypeReported),
-						Model:       res,
-						Version:     stored.Version,
-						TimeStamp:   stored.TimeStamp,
-						ClientToken: stored.ClientToken,
-					}
-				}
+		if item["Reported"] != nil {
+			if res, err := unmarshalFromMap(item["Reported"], op.Model); err != nil {
+				results = append(results, persistencemodel.ReadResult{
+					ID: op.ID.ToPersistenceID(persistencemodel.ModelTypeReported), Error: fmt.Errorf("unmarshal reported failed: %w", err),
+				})
+			} else {
+				results = append(results, persistencemodel.ReadResult{
+					ID:          op.ID.ToPersistenceID(persistencemodel.ModelTypeReported),
+					Model:       res,
+					Version:     stored.Version,
+					TimeStamp:   stored.TimeStamp,
+					ClientToken: stored.ClientToken,
+				})
 			}
 		}
 	}
 
-	res := make([]persistencemodel.ReadResult, 0, len(operations))
+	return results
+}
 
-	for _, r := range results {
-		res = append(res, r)
+// batchGetItems will fetch the items from the database in batches.
+func (p *Persistence) batchGetItems(
+	ctx context.Context,
+	batch ReadBatch,
+	table string,
+	maxRetries int,
+) ([]map[string]types.AttributeValue, []persistencemodel.ReadResult) {
+	// the variable current will always be the ones to fetch (initially all the keys) and updated with the unprocessed keys.
+	current := &dynamodb.BatchGetItemInput{
+		RequestItems: batch.Keys,
 	}
 
-	return res
+	if keys, ok := batch.Keys[table]; !ok {
+		return nil, p.buildFailedResults(batch, nil, fmt.Errorf("no keys to fetch for table %s", table))
+	} else if len(keys.Keys) == 0 {
+		return nil, nil // No keys to fetch
+	}
+
+	// items to return
+	items := make([]map[string]types.AttributeValue, 0, len(batch.Keys[table].Keys))
+
+	for attempts := 1; attempts <= maxRetries; attempts++ {
+		// context canceled/deadline -> bail out
+		if err := ctx.Err(); err != nil {
+			return items, p.buildFailedResults(batch, current.RequestItems[table].Keys, err)
+		}
+
+		res, err := p.client.BatchGetItem(ctx, current)
+
+		if err != nil {
+			// Mark all "current" keys as failed
+			return items, p.buildFailedResults(batch, current.RequestItems[table].Keys, err)
+		}
+
+		if list, ok := res.Responses[table]; ok && len(list) > 0 {
+			items = append(items, list...)
+		}
+
+		// no unprocessed keys -> done
+		unprocessed, hasUnprocessed := res.UnprocessedKeys[table]
+
+		if !hasUnprocessed || len(unprocessed.Keys) == 0 {
+			return items, nil
+		}
+
+		// max retries -> all unprocessed keys marked as failed
+		if attempts == maxRetries {
+			return items, p.buildFailedResults(batch, unprocessed.Keys,
+				fmt.Errorf("unprocessed keys remain after %d retries", maxRetries))
+		}
+
+		// Retry with unprocessed keys
+		current.RequestItems = res.UnprocessedKeys
+
+		// exponential backoff with random jitter
+		backoff := (time.Duration(1<<attempts) * 100 * time.Millisecond) +
+			(time.Duration(rand.Int63n(int64(50 * time.Millisecond))))
+
+		if backoff > 30*time.Second {
+			backoff = 30 * time.Second
+		}
+
+		time.Sleep(backoff)
+	}
+
+	return items, nil
+}
+
+// buildFailedResults is used by `batchGetItems` to build the failed results.
+func (p *Persistence) buildFailedResults(
+	batch ReadBatch,
+	keys []map[string]types.AttributeValue,
+	err error,
+) []persistencemodel.ReadResult {
+	failed := make([]persistencemodel.ReadResult, 0, len(keys))
+
+	for _, key := range keys {
+		pkAttr, pkOk := key["PK"].(*types.AttributeValueMemberS)
+		skAttr, skOk := key["SK"].(*types.AttributeValueMemberS)
+
+		if !pkOk || !skOk {
+			continue // skip invalid keys
+		}
+
+		id := primaryKeyToID(pkAttr.Value)
+		name := sortKeyToName(skAttr.Value)
+		op := batch.OperationFromIDName(id, name)
+
+		failed = append(failed, persistencemodel.ReadResult{
+			ID:    op.ID,
+			Error: readBatchErrorFixup(err),
+		})
+	}
+
+	return failed
 }
 
 type ReadBatch struct {
@@ -144,9 +245,10 @@ func (rb *ReadBatch) OperationFromIDName(id, name string) persistencemodel.ReadO
 
 // prepareRead will prepare the items to read from the database. The _results_ map is used to store any
 // errors that did occur during the preparation.
-func prepareRead(operations []persistencemodel.ReadOperation, results map[string]persistencemodel.ReadResult, table string, maxBatchSize int) []ReadBatch {
+func prepareRead(operations []persistencemodel.ReadOperation, table string, maxBatchSize int) ([]ReadBatch, []persistencemodel.ReadResult) {
 	batches := utils.ToBatch(operations, maxBatchSize)
 	items := make([]ReadBatch, 0, len(batches))
+	var errors []persistencemodel.ReadResult
 
 	for _, batch := range batches {
 		keys := make([]map[string]types.AttributeValue, 0, len(batch))
@@ -168,10 +270,10 @@ func prepareRead(operations []persistencemodel.ReadOperation, results map[string
 			case persistencemodel.ModelTypeReported:
 				sk = "DSR#" + op.ID.Name
 			default:
-				results[op.ID.String()] = persistencemodel.ReadResult{
+				errors = append(errors, persistencemodel.ReadResult{
 					ID:    op.ID,
 					Error: persistencemodel.Error400("invalid model type"),
-				}
+				})
 
 				continue
 			}
@@ -193,7 +295,7 @@ func prepareRead(operations []persistencemodel.ReadOperation, results map[string
 		})
 	}
 
-	return items
+	return items, errors
 }
 
 // parseSKName is just a utility to strip off the prefix from SK.
@@ -211,4 +313,31 @@ func primaryKeyToID(pk string) string {
 	}
 
 	return pk[3:]
+}
+
+// missing will return a list of ReadResults that are missing from the results.
+func missing(operations []persistencemodel.ReadOperation, results []persistencemodel.ReadResult) []persistencemodel.ReadResult {
+	missing := make([]persistencemodel.ReadResult, 0, len(operations))
+
+	for _, op := range operations {
+		found := false
+
+		for _, res := range results {
+			if res.ID.ID == op.ID.ID && res.ID.Name == op.ID.Name {
+				if op.ID.ModelType == 0 || res.ID.ModelType == op.ID.ModelType {
+					found = true
+					break
+				}
+			}
+		}
+
+		if !found {
+			missing = append(missing, persistencemodel.ReadResult{
+				ID:    op.ID,
+				Error: persistencemodel.Error404("not found"),
+			})
+		}
+	}
+
+	return missing
 }

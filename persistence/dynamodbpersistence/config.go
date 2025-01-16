@@ -6,7 +6,7 @@ import (
 )
 
 type Config struct {
-	// Table is the name of the DynamoDB table to use.
+	// Table is the name of the DynamoDB table to use. It is *required* to be a valid table.
 	Table string `json:"table"`
 	// ModelSeparation determines whether the desired and reported models should be stored separately or not.
 	//
@@ -17,15 +17,19 @@ type Config struct {
 	//
 	// NOTE: This may be overridden in `WriteOptions` for all `WriteOperations` or per `WriteOperation` by setting the _Config_
 	// with key `persistencemodel.ModelSeparationConfigKey` and value of `persistencemodel.ModelSeparation`.
-	ModelSeparation persistencemodel.ModelSeparation `json:"separate"`
+	ModelSeparation persistencemodel.ModelSeparation `json:"separation,omitempty"`
 	// MaxReadBatchSize is the maximum number of items to read in a single batch. If read exceeds this number, it
 	// will be split into multiple requests. Default is 100.
-	MaxReadBatchSize int `json:"batch"`
-	// MaxParallelism is the maximum number of parallel requests to make to DynamoDB. If the number of items to write
+	MaxReadBatchSize int `json:"read_batch,omitempty"`
+	// MaxReadRetries is the maximum number of retries to make when reading from DynamoDB. Default is 3.
+	//
+	// This is when it return unprocessed keys and it will retry the request. All other errors are not retried.
+	MaxReadRetries int `json:"read_retries,omitempty"`
+	// MaxWriteParallelism is the maximum number of parallel requests to make to DynamoDB. If the number of items to write
 	// exceeds this, it will be queued up and processed in parallel.
 	//
 	// It defaults to 1, i.e. no parallelism.
-	MaxParallelism int `json:"parallel"`
+	MaxWriteParallelism int `json:"write_parallelism,omitempty"`
 	// AwsConfig to use when creating the client.
-	AwsConfig aws.Config `json:"aws"`
+	AwsConfig aws.Config `json:"-"`
 }

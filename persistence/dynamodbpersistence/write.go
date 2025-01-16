@@ -49,7 +49,7 @@ func (p *Persistence) Write(
 		groups[i].Error = persistutils.Validate(groups[i])
 	}
 
-	maxParallelism := p.config.MaxParallelism
+	maxParallelism := p.config.MaxWriteParallelism
 	if maxParallelism <= 0 {
 		maxParallelism = 1
 	}
