@@ -30,7 +30,7 @@ func (p *Persistence) writeCombined(
 		TimeStamp:   now,
 		ClientToken: reported.ClientID,
 		Desired:     desired.Model,
-		Reported:    desired.Model,
+		Reported:    reported.Model,
 	}
 
 	// Perform conditional write
