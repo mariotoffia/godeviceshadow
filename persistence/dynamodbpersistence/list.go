@@ -86,13 +86,6 @@ func (p *Persistence) List(
 			Limit:             &pageSize,
 		}
 
-		if opt.SearchExpr != "" {
-			input.FilterExpression = aws.String("(SK = :dsr) OR (SK = :dsd) OR (SK = :dsc)")
-			input.ExpressionAttributeValues[":dsr"] = &types.AttributeValueMemberS{Value: "DSR#" + opt.SearchExpr}
-			input.ExpressionAttributeValues[":dsd"] = &types.AttributeValueMemberS{Value: "DSD#" + opt.SearchExpr}
-			input.ExpressionAttributeValues[":dsc"] = &types.AttributeValueMemberS{Value: "DSC#" + opt.SearchExpr}
-		}
-
 		out, err := p.client.Scan(ctx, input)
 
 		if err != nil {

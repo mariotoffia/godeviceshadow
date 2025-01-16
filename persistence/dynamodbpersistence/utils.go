@@ -79,7 +79,21 @@ func readBatchErrorFixup(err error) error {
 	return err
 }
 
+func isMapValue(m map[string]types.AttributeValue, key string) bool {
+	if m, ok := m[key]; ok && m != nil {
+		if des, ok := m.(*types.AttributeValueMemberM); ok && des != nil {
+			return true
+		}
+	}
+
+	return false
+}
+
 func unmarshalFromMap(m types.AttributeValue, t reflect.Type) (any, error) {
+	if t.Kind() == reflect.Ptr {
+		t = t.Elem()
+	}
+
 	value := reflect.New(t)
 
 	if !value.IsValid() {

@@ -18,7 +18,7 @@ import (
 const (
 	// conditionWriteExpression that is used for conditional writes on tag _version_. If change in `PersistenceObject.Version`
 	// json tag name, this needs to be updated.
-	conditionWriteExpression = "attribute_not_exists(version) OR version = :expected_version"
+	conditionWriteExpression = "attribute_not_exists(Version) OR Version = :expected_version"
 	// expectedVersionValueKey is the key used in the condition expression for the expected version value.
 	expectedVersionValueKey = ":expected_version"
 )

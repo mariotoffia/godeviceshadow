@@ -72,7 +72,7 @@ func (p *Persistence) readBatch(ctx context.Context, batch ReadBatch, table stri
 		if err := attributevalue.UnmarshalMap(item, &stored); err != nil {
 			results = append(results, persistencemodel.ReadResult{
 				ID: persistencemodel.PersistenceID{
-					ID: op.ID.ID, Name: name,
+					ID: op.ID.ID, Name: name, ModelType: op.ID.ModelType,
 				},
 				Error: fmt.Errorf("unmarshal persist object failed: %w", err),
 			})
@@ -83,7 +83,7 @@ func (p *Persistence) readBatch(ctx context.Context, batch ReadBatch, table stri
 		// Ensure version matches -> 409
 		if op.Version > 0 && op.Version != stored.Version {
 			results = append(results, persistencemodel.ReadResult{
-				ID: persistencemodel.PersistenceID{ID: op.ID.ID, Name: name},
+				ID: persistencemodel.PersistenceID{ID: op.ID.ID, Name: name, ModelType: op.ID.ModelType},
 				Error: persistencemodel.Error409(
 					fmt.Sprintf("mismatching version, requested: %d, stored: %d", op.Version, stored.Version),
 				),
@@ -92,7 +92,7 @@ func (p *Persistence) readBatch(ctx context.Context, batch ReadBatch, table stri
 			continue
 		}
 
-		if item["Desired"] != nil {
+		if isMapValue(item, "Desired") {
 			if res, err := unmarshalFromMap(item["Desired"], op.Model); err != nil {
 				results = append(results, persistencemodel.ReadResult{
 					ID: op.ID.ToPersistenceID(persistencemodel.ModelTypeDesired), Error: fmt.Errorf("unmarshal desired failed: %w", err),
@@ -108,7 +108,7 @@ func (p *Persistence) readBatch(ctx context.Context, batch ReadBatch, table stri
 			}
 		}
 
-		if item["Reported"] != nil {
+		if isMapValue(item, "Reported") {
 			if res, err := unmarshalFromMap(item["Reported"], op.Model); err != nil {
 				results = append(results, persistencemodel.ReadResult{
 					ID: op.ID.ToPersistenceID(persistencemodel.ModelTypeReported), Error: fmt.Errorf("unmarshal reported failed: %w", err),
