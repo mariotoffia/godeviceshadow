@@ -2,16 +2,15 @@ package dynamodbpersistence
 
 import (
 	"context"
+	"errors"
 	"fmt"
-	"time"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 
 	"github.com/mariotoffia/godeviceshadow/model/persistencemodel"
 	"github.com/mariotoffia/godeviceshadow/utils"
-
-	"golang.org/x/exp/rand"
 )
 
 func (p *Persistence) Delete(
@@ -20,16 +19,15 @@ func (p *Persistence) Delete(
 	operations ...persistencemodel.WriteOperation,
 ) []persistencemodel.WriteResult {
 
-	// If no operations, return empty
 	if len(operations) == 0 {
 		return nil
 	}
 
-	maxBatchSize := 25 // DynamoDB BatchWriteItem limit is 25
+	maxBatchSize := 25
 	maxRetries := 3
 	table := p.config.Table
 
-	if p.config.MaxWriteParallelism > 0 {
+	if p.config.MaxWriteBatchSize > 0 {
 		maxBatchSize = p.config.MaxWriteBatchSize
 	}
 
@@ -37,21 +35,29 @@ func (p *Persistence) Delete(
 		maxRetries = p.config.MaxWriteRetries
 	}
 
-	// Prepare the batch requests
-	batches, prepErrors := prepareDelete(operations, table, maxBatchSize)
+	var ucOperations, condOperations []persistencemodel.WriteOperation
 
-	// Our final list of results
-	results := make([]persistencemodel.WriteResult, 0, len(operations))
-	results = append(results, prepErrors...) // any model-type or input errors
-
-	// For each batch, do the actual deletes
-	for _, b := range batches {
-		wrs := p.deleteBatch(ctx, b, table, maxRetries)
-		results = append(results, wrs...)
+	for _, op := range operations {
+		if op.Version > 0 {
+			condOperations = append(condOperations, op)
+		} else {
+			ucOperations = append(ucOperations, op)
+		}
 	}
 
-	// Return aggregated results
-	return results
+	results := make([]persistencemodel.WriteResult, 0, len(operations))
+	batches, errors := prepareDelete(ucOperations, table, maxBatchSize)
+
+	results = append(results, errors...)
+
+	// Batch Delete (version = 0)
+	for _, b := range batches {
+		rs := p.deleteBatch(ctx, b, table, maxRetries)
+		results = append(results, rs...)
+	}
+
+	// Do conditional deletes (version > 0) - if any
+	return append(results, p.deleteConditionalItems(ctx, condOperations, table)...)
 }
 
 func prepareDelete(
@@ -60,80 +66,61 @@ func prepareDelete(
 	maxBatchSize int,
 ) ([]DeleteBatch, []persistencemodel.WriteResult) {
 
-	// We’ll build a “batch” of up to maxBatchSize "WriteRequests" at a time
-	// to feed into a DynamoDB.BatchWriteItem call.
 	var (
-		batches []DeleteBatch
+		results []DeleteBatch
 		errors  []persistencemodel.WriteResult
 	)
 
-	// Use some function like your utils.ToBatch to chunk operations
-	opBatches := utils.ToBatch(operations, maxBatchSize)
+	batches := utils.ToBatch(operations, maxBatchSize)
 
-	for _, chunk := range opBatches {
+	for _, batch := range batches {
 		var writes []types.WriteRequest
 
-		for _, op := range chunk {
-			// Build one or more DeleteRequests for each operation
+		for _, op := range batch {
 			pk := toPartitionKey(op.ID)
 
-			// Figure out which SK(s) to delete
-			var sortKeys []string
+			var sk string
+
 			switch op.ID.ModelType {
-			case 0: // combined => delete all three
-				sortKeys = []string{
-					"DSC#" + op.ID.Name,
-					"DSD#" + op.ID.Name,
-					"DSR#" + op.ID.Name,
-				}
+			case 0: // combined
+				sk = "DSC#" + op.ID.Name
 			case persistencemodel.ModelTypeDesired:
-				sortKeys = []string{"DSD#" + op.ID.Name}
+				sk = "DSD#" + op.ID.Name
 			case persistencemodel.ModelTypeReported:
-				sortKeys = []string{"DSR#" + op.ID.Name}
+				sk = "DSR#" + op.ID.Name
 			default:
-				// Invalid model type => skip & record error
 				errors = append(errors, persistencemodel.WriteResult{
 					ID:    op.ID,
 					Error: persistencemodel.Error400("invalid model type"),
 				})
+
 				continue
 			}
 
-			// For each SK needed, add a DeleteRequest
-			for _, sk := range sortKeys {
-				delReq := types.WriteRequest{
-					DeleteRequest: &types.DeleteRequest{
-						Key: map[string]types.AttributeValue{
-							"PK": &types.AttributeValueMemberS{Value: pk},
-							"SK": &types.AttributeValueMemberS{Value: sk},
-						},
+			writes = append(writes, types.WriteRequest{
+				DeleteRequest: &types.DeleteRequest{
+					Key: map[string]types.AttributeValue{
+						"PK": &types.AttributeValueMemberS{Value: pk},
+						"SK": &types.AttributeValueMemberS{Value: sk},
 					},
-				}
-				writes = append(writes, delReq)
-			}
+				},
+			})
 		}
 
-		// Put them in a map for BatchWriteItem
-		batchMap := map[string][]types.WriteRequest{
-			table: writes,
-		}
-
-		// Build our DeleteBatch
-		db := DeleteBatch{
-			Operations: chunk,
-			Items:      batchMap,
-		}
-		batches = append(batches, db)
+		results = append(results, DeleteBatch{
+			Operations: batch,
+			Items: map[string][]types.WriteRequest{
+				table: writes,
+			},
+		})
 	}
 
-	return batches, errors
+	return results, errors
 }
 
 type DeleteBatch struct {
-	// The original subset of WriteOperations that produced these items
 	Operations []persistencemodel.WriteOperation
-	// Items is the map[tableName] => []WriteRequest for DynamoDB.BatchWriteItem
-	Items map[string][]types.WriteRequest
+	Items      map[string][]types.WriteRequest
 }
 
 func (rb *DeleteBatch) OperationFromIDName(id, name string) persistencemodel.WriteOperation {
@@ -157,68 +144,61 @@ func (p *Persistence) deleteBatch(
 		RequestItems: batch.Items,
 	}
 
-	// Build a final slice of results
-	var finalResults []persistencemodel.WriteResult
+	// items will hold the results of the batch deletes
+	var items []persistencemodel.WriteResult
 
-	// Possibly short-circuit if no items
 	if len(batch.Items[table]) == 0 {
 		return nil
 	}
 
 	for attempt := 1; attempt <= maxRetries; attempt++ {
-		// Check if context is cancelled
+		// context cancelled/errored -> mark all "current" items as failed
 		if err := ctx.Err(); err != nil {
-			// Mark all current items as failed
-			fr := p.buildDeleteFailedResults(batch, current.RequestItems[table], err)
-			finalResults = append(finalResults, fr...)
-			return finalResults
+			return append(
+				items, p.buildDeleteFailedResults(batch, current.RequestItems[table], err)...,
+			)
 		}
 
-		// Do the batch write
 		res, err := p.client.BatchWriteItem(ctx, current)
+
 		if err != nil {
-			// All current items failed
-			fr := p.buildDeleteFailedResults(batch, current.RequestItems[table], err)
-			finalResults = append(finalResults, fr...)
-			return finalResults
+			// mark all "current" items failed
+			return append(
+				items, p.buildDeleteFailedResults(batch, current.RequestItems[table], err)...,
+			)
 		}
 
-		// Check unprocessed
+		// no unprocessed items -> success
 		unprocessed := res.UnprocessedItems
 
-		// If no unprocessed => success
+		processed := diffWriteRequest(current.RequestItems[table], unprocessed[table])
+
+		items = append(items, p.buildDeleteSuccessResults(batch, processed)...)
+
 		if len(unprocessed) == 0 || len(unprocessed[table]) == 0 {
-			// We assume everything is deleted.
-			// Return success results for each item that was in "current"
-			// or do so item-by-item if you want them individually.
-			fr := p.buildDeleteSuccessResults(batch, current.RequestItems[table])
-			finalResults = append(finalResults, fr...)
-			return finalResults
+			return items
 		}
 
-		// If we have unprocessed items but reached maxRetries => fail them
 		if attempt == maxRetries {
-			fr := p.buildDeleteFailedResults(batch, unprocessed[table],
-				fmt.Errorf("unprocessed items remain after %d retries", maxRetries))
-			finalResults = append(finalResults, fr...)
-			return finalResults
+			return append(
+				items, p.buildDeleteFailedResults(
+					batch, unprocessed[table],
+					fmt.Errorf("unprocessed items remain after %d retries", maxRetries))...,
+			)
 		}
 
-		// Otherwise, continue retry with unprocessed
+		// retry unprocessed
 		current.RequestItems = unprocessed
 
-		// Exponential backoff with jitter
-		backoff := (time.Duration(1<<attempt) * 100 * time.Millisecond) +
-			(time.Duration(rand.Int63n(int64(50 * time.Millisecond))))
-
-		if backoff > 30*time.Second {
-			backoff = 30 * time.Second
+		if err := exponentialBackoff(ctx, attempt); err != nil {
+			return append(
+				items, p.buildDeleteFailedResults(batch, current.RequestItems[table], err)...,
+			)
 		}
-		time.Sleep(backoff)
 	}
 
-	// theoretically never reached if we return inside loop
-	return finalResults
+	// Should never reach here
+	return items
 }
 
 // buildDeleteFailedResults maps a slice of WriteRequests back to their
@@ -233,11 +213,14 @@ func (p *Persistence) buildDeleteFailedResults(
 
 	for _, wr := range requests {
 		del := wr.DeleteRequest
+
 		if del == nil {
-			continue // skip if somehow not a delete
+			continue
 		}
+
 		pkAttr, pkOk := del.Key["PK"].(*types.AttributeValueMemberS)
 		skAttr, skOk := del.Key["SK"].(*types.AttributeValueMemberS)
+
 		if !pkOk || !skOk {
 			continue // skip invalid
 		}
@@ -248,7 +231,7 @@ func (p *Persistence) buildDeleteFailedResults(
 
 		failed = append(failed, persistencemodel.WriteResult{
 			ID:    op.ID,
-			Error: readBatchErrorFixup(err), // or a specialized "deleteBatchErrorFixup"
+			Error: readBatchErrorFixup(err),
 		})
 	}
 
@@ -277,13 +260,86 @@ func (p *Persistence) buildDeleteSuccessResults(
 		name := sortKeyToName(skAttr.Value)
 		op := batch.OperationFromIDName(id, name)
 
-		// It's typical to not return a "version" if there's no concurrency check,
-		// but you can do so if you track version changes. Here we keep it simple.
-		success = append(success, persistencemodel.WriteResult{
-			ID: op.ID,
-			// No Error => success
-		})
+		success = append(success, persistencemodel.WriteResult{ID: op.ID, Version: 0})
 	}
 
 	return success
+}
+
+func (p *Persistence) deleteConditionalItems(
+	ctx context.Context,
+	operations []persistencemodel.WriteOperation,
+	table string,
+) []persistencemodel.WriteResult {
+	//
+	if len(operations) == 0 {
+		return nil
+	}
+
+	results := make([]persistencemodel.WriteResult, 0, len(operations))
+
+	for _, op := range operations {
+		pk := toPartitionKey(op.ID)
+
+		var sk string
+
+		switch op.ID.ModelType {
+		case 0:
+			sk = "DSC#" + op.ID.Name
+		case persistencemodel.ModelTypeDesired:
+			sk = "DSD#" + op.ID.Name
+		case persistencemodel.ModelTypeReported:
+			sk = "DSR#" + op.ID.Name
+		default:
+			results = append(results, persistencemodel.WriteResult{
+				ID:    op.ID,
+				Error: persistencemodel.Error400("invalid model type"),
+			})
+
+			continue
+		}
+
+		input := &dynamodb.DeleteItemInput{
+			TableName: &table,
+			Key: map[string]types.AttributeValue{
+				"PK": &types.AttributeValueMemberS{Value: pk},
+				"SK": &types.AttributeValueMemberS{Value: sk},
+			},
+			ConditionExpression: aws.String("Version = :ver"),
+			ExpressionAttributeValues: map[string]types.AttributeValue{
+				":ver": &types.AttributeValueMemberN{Value: fmt.Sprintf("%d", op.Version)},
+			},
+		}
+
+		// Execute the delete
+		_, err := p.client.DeleteItem(ctx, input)
+
+		if err != nil {
+			var cfe *types.ConditionalCheckFailedException
+
+			if ok := errors.As(err, &cfe); ok {
+				results = append(results, persistencemodel.WriteResult{
+					ID: op.ID,
+					Error: persistencemodel.Error409(
+						fmt.Sprintf("conditional delete failed, expected version = %d", op.Version),
+					),
+				})
+			} else {
+				// Other error
+				results = append(results, persistencemodel.WriteResult{
+					ID:      op.ID,
+					Version: op.Version,
+					Error:   err,
+				})
+			}
+		} else {
+			// Success
+			results = append(results, persistencemodel.WriteResult{
+				ID:      op.ID,
+				Version: op.Version,
+			})
+		}
+	}
+
+	return results
 }

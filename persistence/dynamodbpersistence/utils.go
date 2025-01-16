@@ -1,12 +1,15 @@
 package dynamodbpersistence
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"reflect"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
+	"golang.org/x/exp/rand"
 
 	"github.com/mariotoffia/godeviceshadow/model/persistencemodel"
 )
@@ -94,4 +97,70 @@ func unmarshalFromMap(m types.AttributeValue, t reflect.Type) (any, error) {
 	}
 
 	return nil, fmt.Errorf("expected AttributeValueMemberM but got: %T", m)
+}
+
+// diffWriteRequest returns the items in `write` that are NOT in `unprocessed`.
+func diffWriteRequest(write, unprocessed []types.WriteRequest) []types.WriteRequest {
+	if len(unprocessed) == 0 {
+		return write
+	}
+
+	subsetMap := make(map[string]bool, len(unprocessed))
+
+	for _, wr := range unprocessed {
+		key := writeRequestToID(wr)
+		subsetMap[key] = true
+	}
+
+	// For each item in all, if it's not in subsetMap, it was processed
+	var diff []types.WriteRequest
+
+	for _, wr := range write {
+		key := writeRequestToID(wr)
+		if !subsetMap[key] {
+			diff = append(diff, wr)
+		}
+	}
+
+	return diff
+}
+
+// writeRequestToID is a small helper that builds e.g. "PK=<val>,SK=<val>"
+// to uniquely identify the request in a map
+func writeRequestToID(wr types.WriteRequest) string {
+	if wr.DeleteRequest == nil {
+		return ""
+	}
+	pkVal := ""
+	skVal := ""
+
+	if pk, ok := wr.DeleteRequest.Key["PK"].(*types.AttributeValueMemberS); ok {
+		pkVal = pk.Value
+	}
+	if sk, ok := wr.DeleteRequest.Key["SK"].(*types.AttributeValueMemberS); ok {
+		skVal = sk.Value
+	}
+	return fmt.Sprintf("PK=%s,SK=%s", pkVal, skVal)
+}
+
+// exponentialBackoff sleeps for an exponentially growing duration based on `attempt`.
+// It also includes a small random jitter (to avoid thundering herd), and respects context cancellation.
+func exponentialBackoff(ctx context.Context, attempt int) error {
+	backoff := (time.Duration(1<<attempt) * 100 * time.Millisecond) +
+		(time.Duration(rand.Int63n(int64(50 * time.Millisecond))))
+
+	// Cap the maximum backoff at 30s
+	if backoff > 30*time.Second {
+		backoff = 30 * time.Second
+	}
+
+	// Use a select to wait or cancel
+	select {
+	case <-ctx.Done():
+		// Context was cancelled or deadline exceeded
+		return ctx.Err()
+	case <-time.After(backoff):
+		// Successfully slept the entire backoff duration
+		return nil
+	}
 }

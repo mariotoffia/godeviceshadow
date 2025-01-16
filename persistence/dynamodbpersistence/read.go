@@ -3,7 +3,6 @@ package dynamodbpersistence
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
@@ -11,8 +10,6 @@ import (
 
 	"github.com/mariotoffia/godeviceshadow/model/persistencemodel"
 	"github.com/mariotoffia/godeviceshadow/utils"
-
-	"golang.org/x/exp/rand"
 )
 
 // Read uses BatchGetItem to fetch the items for each ReadOperation.
@@ -185,15 +182,9 @@ func (p *Persistence) batchGetItems(
 		// Retry with unprocessed keys
 		current.RequestItems = res.UnprocessedKeys
 
-		// exponential backoff with random jitter
-		backoff := (time.Duration(1<<attempts) * 100 * time.Millisecond) +
-			(time.Duration(rand.Int63n(int64(50 * time.Millisecond))))
-
-		if backoff > 30*time.Second {
-			backoff = 30 * time.Second
+		if err := exponentialBackoff(ctx, attempts); err != nil {
+			return items, p.buildFailedResults(batch, unprocessed.Keys, err)
 		}
-
-		time.Sleep(backoff)
 	}
 
 	return items, nil
