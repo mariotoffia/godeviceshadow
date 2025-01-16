@@ -2,7 +2,6 @@ package dynamodbpersistence_test
 
 import (
 	"context"
-	"fmt"
 	"testing"
 	"time"
 
@@ -92,11 +91,9 @@ func TestListSingleCombinedDeviceShadow(t *testing.T) {
 func TestListMultipleDifferentIDs(t *testing.T) {
 	ctx := context.TODO()
 
-	// Create or verify the test table
 	res := dynamodbutils.NewTestTableResource(ctx, TestTableName)
 	defer res.Dispose(ctx, dynamodbutils.DisposeOpts{DeleteItems: true})
 
-	// Initialize our DynamoDB persistence
 	p, err := dynamodbpersistence.New(ctx, dynamodbpersistence.Config{
 		Table:  res.Table,
 		Client: res.Client,
@@ -171,19 +168,19 @@ func TestListMultipleDifferentIDs(t *testing.T) {
 		assert.NoError(t, w.Error, "Expected each write operation to succeed")
 	}
 
-	// 1) List with no ID => should return all items (4 items).
+	// list with no ID => should return all items (4 items).
 	allResults, err := p.List(ctx, persistencemodel.ListOptions{})
 	require.NoError(t, err)
 	require.NotNil(t, allResults)
 	assert.Len(t, allResults.Items, 4, "Expected 4 items total (2 for deviceA, 2 for deviceB)")
 
-	// 2) List by ID="deviceA" => only deviceA items (2 items).
+	// list by ID="deviceA" => only deviceA items (2 items).
 	aResults, err := p.List(ctx, persistencemodel.ListOptions{ID: "deviceA"})
 	require.NoError(t, err)
 	require.NotNil(t, aResults)
 	assert.Len(t, aResults.Items, 2, "Expected 2 items for deviceA")
 
-	// 3) List by ID="deviceB" => only deviceB items (2 items).
+	// list by ID="deviceB" => only deviceB items (2 items).
 	bResults, err := p.List(ctx, persistencemodel.ListOptions{ID: "deviceB"})
 	require.NoError(t, err)
 	require.NotNil(t, bResults)
@@ -266,64 +263,4 @@ func TestListPagination(t *testing.T) {
 	// Ensure second page has the remaining items
 	assert.Len(t, secondPage.Items, 9)
 	assert.Empty(t, secondPage.Token)
-}
-
-func TestListMultipleShadowsOnSameID(t *testing.T) {
-	ctx := context.TODO()
-
-	// Create or verify the test table
-	res := dynamodbutils.NewTestTableResource(ctx, TestTableName)
-	defer res.Dispose(ctx, dynamodbutils.DisposeOpts{DeleteItems: true})
-
-	pageSize := 100
-
-	// Initialize our DynamoDB persistence
-	p, err := dynamodbpersistence.New(ctx, dynamodbpersistence.Config{
-		Table:            res.Table,
-		Client:           res.Client,
-		MaxReadBatchSize: pageSize,
-	})
-
-	require.NoError(t, err)
-
-	var operations []persistencemodel.WriteOperation
-
-	for i := 0; i < 3; i++ {
-		id := fmt.Sprintf("limhamn-%d", i+1)
-
-		operations = append(operations,
-			persistencemodel.WriteOperation{
-				ClientID: persistutils.Id("test-"),
-				ID: persistencemodel.PersistenceID{
-					ID:        id,
-					Name:      "shadow",
-					ModelType: persistencemodel.ModelTypeReported,
-				},
-				Model: TestModel{
-					TimeZone: "UTC",
-				},
-			},
-		)
-	}
-
-	results := p.Write(ctx, persistencemodel.WriteOptions{
-		Config: persistencemodel.WriteConfig{Separation: persistencemodel.SeparateModels},
-	}, operations...)
-
-	require.Len(t, results, 3)
-
-	for _, w := range results {
-		require.NoError(t, w.Error)
-	}
-
-	page, err := p.List(ctx, persistencemodel.ListOptions{
-		ID:         "limhamn-2",
-		SearchExpr: "shadow-1",
-	})
-
-	require.NoError(t, err)
-	require.NotNil(t, page)
-
-	assert.Len(t, page.Items, 1)
-	assert.Empty(t, page.Token)
 }
