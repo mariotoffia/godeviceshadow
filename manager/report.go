@@ -32,6 +32,44 @@ func (mgr *Manager) Report(ctx context.Context, operations ...ReportOperation) [
 		return res
 	}
 
+	results := make(map[string]*ReportOperationResult, len(operations))
+
+	// Prepare for read
+	readOps := mgr.reportPrepareForRead(operations, results)
+
+	if len(readOps) == 0 {
+		return toResults(results)
+	}
+
+	// Read the models
+	readResults := mgr.reportReadFromPersistence(ctx, readOps, results)
+
+	if len(readResults) == 0 {
+		return toResults(results)
+	}
+
+	// Merge the models
+	readResults = mgr.reportMergeModels(readResults, operations, results)
+
+	// Now we may have queueDesired|Reported models to persist.
+	writes := reportCreateWrites(readResults)
+
+	if len(writes) == 0 {
+		return toResults(results)
+	}
+
+	// Write
+	mgr.reportWriteBack(ctx, writes, results)
+
+	return toResults(results)
+}
+
+func (mgr *Manager) reportMergeModels(
+	readResults []groupedPersistenceResult,
+	operations []ReportOperation,
+	results map[string]*ReportOperationResult,
+) []groupedPersistenceResult {
+	//
 	getOperation := func(id, name string) *ReportOperation {
 		for _, op := range operations {
 			if op.ID.ID == id && op.ID.Name == name {
@@ -40,22 +78,6 @@ func (mgr *Manager) Report(ctx context.Context, operations ...ReportOperation) [
 		}
 
 		return nil
-	}
-
-	results := make(map[string]*ReportOperationResult, len(operations))
-
-	// Prepare for read
-	readOps := mgr.prepareForRead(operations, results)
-
-	if len(readOps) == 0 {
-		return toResults(results)
-	}
-
-	// Read the models
-	readResults := mgr.readFromPersistence(ctx, readOps, results)
-
-	if len(readResults) == 0 {
-		return toResults(results)
 	}
 
 	for i, rdr := range readResults {
@@ -140,40 +162,10 @@ func (mgr *Manager) Report(ctx context.Context, operations ...ReportOperation) [
 		}
 	}
 
-	// Now we may have queueDesired|Reported models to persist.
-	writes := make([]persistencemodel.WriteOperation, 0, len(readResults))
+	return readResults
+}
 
-	for _, rdr := range readResults {
-		if rdr.queueReported != nil {
-			writes = append(writes, persistencemodel.WriteOperation{
-				ClientID: rdr.op.ClientID,
-				ID:       rdr.reported.ID,
-				Model:    rdr.queueReported,
-				Version:  rdr.reported.Version,
-				Config: persistencemodel.WriteOperationConfig{
-					Separation: rdr.op.Separation,
-				},
-			})
-		}
-
-		if rdr.queueDesired != nil {
-			writes = append(writes, persistencemodel.WriteOperation{
-				ClientID: rdr.op.ClientID,
-				ID:       rdr.desired.ID,
-				Model:    rdr.queueDesired,
-				Version:  rdr.desired.Version,
-				Config: persistencemodel.WriteOperationConfig{
-					Separation: rdr.op.Separation,
-				},
-			})
-		}
-	}
-
-	if len(writes) == 0 {
-		return toResults(results)
-	}
-
-	// Write
+func (mgr *Manager) reportWriteBack(ctx context.Context, writes []persistencemodel.WriteOperation, results map[string]*ReportOperationResult) {
 	result := mgr.persistence.Write(ctx, persistencemodel.WriteOptions{
 		Config: persistencemodel.WriteConfig{
 			Separation: mgr.separation,
@@ -214,8 +206,6 @@ func (mgr *Manager) Report(ctx context.Context, operations ...ReportOperation) [
 			}
 		}
 	}
-
-	return toResults(results)
 }
 
 // createDesiredLoggers will create logger instance from _loggers_ (if any), if none where submitted, it will use the `Manager.desiredLoggers`.
@@ -262,7 +252,7 @@ func (mgr *Manager) createMergeLoggers(loggers []model.CreatableMergeLogger) []m
 	return res
 }
 
-func (mgr *Manager) readFromPersistence(ctx context.Context, readOps []persistencemodel.ReadOperation, results map[string]*ReportOperationResult) []groupedPersistenceResult {
+func (mgr *Manager) reportReadFromPersistence(ctx context.Context, readOps []persistencemodel.ReadOperation, results map[string]*ReportOperationResult) []groupedPersistenceResult {
 	readResults := mgr.persistence.Read(ctx, persistencemodel.ReadOptions{}, readOps...)
 	res := make(map[string]*groupedPersistenceResult, len(readResults))
 
@@ -300,7 +290,7 @@ func (mgr *Manager) readFromPersistence(ctx context.Context, readOps []persisten
 	return r
 }
 
-func (mgr *Manager) prepareForRead(operations []ReportOperation, results map[string]*ReportOperationResult) []persistencemodel.ReadOperation {
+func (mgr *Manager) reportPrepareForRead(operations []ReportOperation, results map[string]*ReportOperationResult) []persistencemodel.ReadOperation {
 	// Prepare for read
 	readOps := make([]persistencemodel.ReadOperation, 0, len(operations))
 
@@ -354,4 +344,36 @@ func (mgr *Manager) prepareForRead(operations []ReportOperation, results map[str
 	}
 
 	return readOps
+}
+
+func reportCreateWrites(readResults []groupedPersistenceResult) []persistencemodel.WriteOperation {
+	writes := make([]persistencemodel.WriteOperation, 0, len(readResults))
+
+	for _, rdr := range readResults {
+		if rdr.queueReported != nil {
+			writes = append(writes, persistencemodel.WriteOperation{
+				ClientID: rdr.op.ClientID,
+				ID:       rdr.reported.ID,
+				Model:    rdr.queueReported,
+				Version:  rdr.reported.Version,
+				Config: persistencemodel.WriteOperationConfig{
+					Separation: rdr.op.Separation,
+				},
+			})
+		}
+
+		if rdr.queueDesired != nil {
+			writes = append(writes, persistencemodel.WriteOperation{
+				ClientID: rdr.op.ClientID,
+				ID:       rdr.desired.ID,
+				Model:    rdr.queueDesired,
+				Version:  rdr.desired.Version,
+				Config: persistencemodel.WriteOperationConfig{
+					Separation: rdr.op.Separation,
+				},
+			})
+		}
+	}
+
+	return writes
 }
