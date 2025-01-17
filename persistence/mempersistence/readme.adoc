@@ -11,6 +11,8 @@ ifndef::imagesdir[:imagesdir: ../meta/assets]
 == Introduction
 This `Persistence` is a non transactional persistence that uses the `Version` field to do optimistic locking. It is guarded by a mutex and hence is thread safe. It is primarily meant for testing purposes but may be used as a in memory persister.
 
+CAUTION: Current implementation do not satisfy the interface around combined and separate models. This has to be updated in the future.
+
 == Sample Usage
 Since no moving parts, it is just to instantiate and start read, write, delete and list models.
 

@@ -9,7 +9,6 @@ import (
 
 // Persistence is a in memory persistence, that stores the model without cloning.
 type Persistence struct {
-	// store is map[ID]map[Name]*modelEntry
 	store map[string]map[string]*modelEntry
 	mu    sync.RWMutex
 }
