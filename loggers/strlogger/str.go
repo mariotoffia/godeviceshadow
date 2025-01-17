@@ -25,6 +25,11 @@ func New() *StringLogger {
 	return &StringLogger{}
 }
 
+// New implements the `model.CreatableMergeLogger` interface.
+func (sl *StringLogger) New() model.MergeLogger {
+	return New()
+}
+
 // String returns the log as a string.
 func (sl *StringLogger) String() string {
 	return sl.log.String()
@@ -46,6 +51,7 @@ func (sl *StringLogger) Plain(path string, operation model.MergeOperation, oldVa
 		fmt.Sprintf("%v", newValue),
 	)
 }
+
 func (sl *StringLogger) Managed(
 	path string,
 	operation model.MergeOperation,

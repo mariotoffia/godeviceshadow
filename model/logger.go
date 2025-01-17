@@ -30,6 +30,20 @@ type MergeLogger interface {
 	Plain(path string, operation MergeOperation, oldValue, newValue any)
 }
 
+// CreatableMergeLogger is when a merge logger can be instantiated. This is is a requirement for the `Manager` to be able to return
+// the used logger for a specific operation.
+type CreatableMergeLogger interface {
+	// New shall return an pointer to the logger with all fields set to the initial values.
+	New() MergeLogger
+}
+
+// CreatableDesiredLogger is when a desired logger can be instantiated. This is is a requirement for the `Manager` to be able to return
+// the used logger for a specific operation.
+type CreatableDesiredLogger interface {
+	// New shall return an pointer to the logger with all fields set to the initial values.
+	New() DesiredLogger
+}
+
 // MergeLoggerPrepare will be called before any merge operation occurs.
 type MergeLoggerPrepare interface {
 	// Prepare will be called just before any merge operation is taking place.

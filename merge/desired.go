@@ -22,22 +22,31 @@ type DesiredObject struct {
 // are removed or set to `nil` in the desired model. The result is the desired model with the changes.
 //
 // It will only merge `model.ValueAndTimestamp` where `model.ValueAndTimestamp.GetValue()` are equal in
-// the reported model. WHen that happens, it will remove the value from the desired model and report
+// the reported model. When that happens, it will remove the value from the desired model and report
 // to `DesiredOptions.DesiredLoggers`.
 func Desired[T any](reportedModel, desiredModel T, opts DesiredOptions) (T, error) {
+	//
+	mergedVal, err := DesiredAny(reportedModel, desiredModel, opts)
+
+	var zero T
+
+	if err != nil {
+		return zero, err
+	}
+
+	return mergedVal.(T), nil
+}
+
+func DesiredAny(reportedModel, desiredModel any, opts DesiredOptions) (any, error) {
 	//
 	reportedVal := reflect.ValueOf(reportedModel)
 	desiredVal := reflect.ValueOf(desiredModel)
 
-	mergedVal := desiredRecursive(reportedVal, desiredVal, DesiredObject{DesiredOptions: opts})
-
-	if res, ok := mergedVal.Interface().(T); ok {
-		return res, nil
-	} else {
-		var zero T
-
-		return res, fmt.Errorf("desired merge failed, could not cast type: %T to %T", res, zero)
+	if reportedVal.Kind() != desiredVal.Kind() {
+		return nil, fmt.Errorf("reported and desired model must be of the same kind: %s != %s", reportedVal.Kind(), desiredVal.Kind())
 	}
+
+	return desiredRecursive(reportedVal, desiredVal, DesiredObject{DesiredOptions: opts}).Interface(), nil
 }
 
 func desiredRecursive(reportedVal, desiredVal reflect.Value, obj DesiredObject) reflect.Value {

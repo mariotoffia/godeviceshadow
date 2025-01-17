@@ -11,6 +11,8 @@ The partition key is the "name" of the device shadow and hence, it is possible t
 
 The storage is pluggable, but it comes with a DynamoDB and in-memory implementation out of the box.
 
+// TODO: A sample how to use a manager with a super simple model.
+
 == Core Concepts
 
 This is a model runtime and not a plain _JSON_ runtime, thus it handles golang models. The main interface is the `model.ValueAndTimestamp` of which it uses to discover variables and handle them.

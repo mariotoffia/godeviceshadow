@@ -51,9 +51,26 @@ type MergeObject struct {
 //
 // Returns the merged model. Neither _oldModel_ nor _newModel_ is modified.
 func Merge[T any](oldModel, newModel T, opts MergeOptions) (T, error) {
+
+	mergedVal, err := MergeAny(oldModel, newModel, opts)
+
+	var zero T
+
+	if err != nil {
+		return zero, err
+	}
+
+	return mergedVal.(T), nil
+}
+
+func MergeAny(oldModel, newModel any, opts MergeOptions) (any, error) {
 	//
 	oldVal := reflect.ValueOf(oldModel)
 	newVal := reflect.ValueOf(newModel)
+
+	if oldVal.Kind() != newVal.Kind() {
+		return oldModel, fmt.Errorf("oldModel: '%T' and newModel: '%T' must be of the same type", oldModel, newModel)
+	}
 
 	if err := opts.Loggers.NotifyPrepare(); err != nil {
 		return oldModel, err
@@ -65,15 +82,11 @@ func Merge[T any](oldModel, newModel T, opts MergeOptions) (T, error) {
 		return oldModel, err2
 	}
 
-	var zero T
-
 	if err != nil {
-		return zero, err
+		return oldModel, err
 	}
 
-	res, _ := mergedVal.Interface().(T)
-
-	return res, nil
+	return mergedVal.Interface(), nil
 }
 
 // mergeRecursive will try to merge base with override recursively.
