@@ -185,7 +185,7 @@ func (mgr *Manager) reportWriteBack(ctx context.Context, writes []persistencemod
 				r.Error = wr.Error
 			} else {
 				results[wr.ID.StringWithoutModelType()] = &ReportOperationResult{
-					ID:    wr.ID.ToModelIndependentPersistenceID(),
+					ID:    wr.ID.ToPlainPersistenceID(),
 					Error: wr.Error,
 				}
 			}
@@ -198,7 +198,7 @@ func (mgr *Manager) reportWriteBack(ctx context.Context, writes []persistencemod
 				r.ReportedProcessed = true
 			} else {
 				results[wr.ID.StringWithoutModelType()] = &ReportOperationResult{
-					ID:                wr.ID.ToModelIndependentPersistenceID(),
+					ID:                wr.ID.ToPlainPersistenceID(),
 					ReportedProcessed: true,
 				}
 			}
@@ -207,7 +207,7 @@ func (mgr *Manager) reportWriteBack(ctx context.Context, writes []persistencemod
 				r.DesiredProcessed = true
 			} else {
 				results[wr.ID.StringWithoutModelType()] = &ReportOperationResult{
-					ID:               wr.ID.ToModelIndependentPersistenceID(),
+					ID:               wr.ID.ToPlainPersistenceID(),
 					DesiredProcessed: true,
 				}
 			}
@@ -292,7 +292,7 @@ func (mgr *Manager) reportReadFromPersistence(
 
 			if rdr.Model == nil {
 				results[rdr.ID.StringWithoutModelType()] = &ReportOperationResult{
-					ID:    rdr.ID.ToModelIndependentPersistenceID(),
+					ID:    rdr.ID.ToPlainPersistenceID(),
 					Error: rdr.Error,
 				}
 
@@ -302,9 +302,9 @@ func (mgr *Manager) reportReadFromPersistence(
 
 		if r, ok := res[rdr.ID.StringWithoutModelType()]; !ok {
 			if rdr.ID.ModelType == persistencemodel.ModelTypeReported {
-				res[rdr.ID.StringWithoutModelType()] = &groupedPersistenceResult{id: rdr.ID.ToModelIndependentPersistenceID(), reported: &rdr}
+				res[rdr.ID.StringWithoutModelType()] = &groupedPersistenceResult{id: rdr.ID.ToPlainPersistenceID(), reported: &rdr}
 			} else {
-				res[rdr.ID.StringWithoutModelType()] = &groupedPersistenceResult{id: rdr.ID.ToModelIndependentPersistenceID(), desired: &rdr}
+				res[rdr.ID.StringWithoutModelType()] = &groupedPersistenceResult{id: rdr.ID.ToPlainPersistenceID(), desired: &rdr}
 			}
 		} else {
 			if rdr.ID.ModelType == persistencemodel.ModelTypeReported {

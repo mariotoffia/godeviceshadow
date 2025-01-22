@@ -35,7 +35,7 @@ type ReportOperation struct {
 	// Separation is the separation to use for this operation. If not set it will use the `Manager` default.
 	Separation persistencemodel.ModelSeparation
 	// ID is the id of the model to report.
-	ID persistencemodel.ModelIndependentPersistenceID
+	ID persistencemodel.PlainPersistenceID
 	// ModelType is the type of the model. This is to explicitly direct the `Manager` to lookup the model by this name.
 	// Otherwise, it will try to infer it via its `ID`.
 	ModelType string
@@ -47,7 +47,7 @@ type ReportOperation struct {
 
 type ReportOperationResult struct {
 	// ID is the id of the model that was reported.
-	ID persistencemodel.ModelIndependentPersistenceID
+	ID persistencemodel.PlainPersistenceID
 	// MergeLoggers are those loggers that participated in the merge operation.
 	MergeLoggers []model.MergeLogger
 	// DesiredLoggers are those loggers that participated in the desired operation.
@@ -69,7 +69,7 @@ type ReportOperationResult struct {
 }
 
 type groupedPersistenceResult struct {
-	id            persistencemodel.ModelIndependentPersistenceID
+	id            persistencemodel.PlainPersistenceID
 	reported      *persistencemodel.ReadResult
 	desired       *persistencemodel.ReadResult
 	queueReported any

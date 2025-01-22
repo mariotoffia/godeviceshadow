@@ -2,15 +2,15 @@ package persistencemodel
 
 import "fmt"
 
-// ModelIndependentPersistenceID  is same as `PersistenceID` but without the `ModelType`.
-type ModelIndependentPersistenceID struct {
+// PlainPersistenceID  is same as `PersistenceID` but without the `ModelType`.
+type PlainPersistenceID struct {
 	// Is a unique identifier e.g. MyCar 22 or a UUID.
 	ID string
 	// Name is the persistence name so it is possible to have multiple device shadows (model types).
 	Name string
 }
 
-func (mid ModelIndependentPersistenceID) String() string {
+func (mid PlainPersistenceID) String() string {
 	return fmt.Sprintf("%s#%s", mid.ID, mid.Name)
 }
 
@@ -37,8 +37,8 @@ func (pid PersistenceID) Equal(other PersistenceID) bool {
 	return pid.ID == other.ID && pid.Name == other.Name && pid.ModelType == other.ModelType
 }
 
-func (pid PersistenceID) ToModelIndependentPersistenceID() ModelIndependentPersistenceID {
-	return ModelIndependentPersistenceID{
+func (pid PersistenceID) ToPlainPersistenceID() PlainPersistenceID {
+	return PlainPersistenceID{
 		ID:   pid.ID,
 		Name: pid.Name,
 	}

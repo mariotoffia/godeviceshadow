@@ -45,7 +45,7 @@ res := mgr.Report(ctx, manager.ReportOperation{ // <6>
       "temp": {Value: 23.4, TimeStamp: now},
     },
   },
-  ID: persistencemodel.ModelIndependentPersistenceID{ID: "device123", Name: "homeHub"},
+  ID: persistencemodel.PlainPersistenceID{ID: "device123", Name: "homeHub"},
 })
 
 chl := changelogger.FindLogger(res[0].MergeLoggers) // <8>
