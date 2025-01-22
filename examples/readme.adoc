@@ -221,3 +221,166 @@ func TestDesiredReported(t *testing.T) {
 <4> Report back to the device shadow
 <5> Must be added or newer ts than the "old" reported, older will be ignored
 <6> Acknowledge in the desired model -> removed from model
+
+== Persistence Packages
+
+=== Memory Persistence Store
+This is a simple in-memory store that can be used for testing or small applications or serve as a in-memory cache. It is go routine safe and can handle separate and combined model persistence.
+
+.Example Usage of Memory Store
+[source,go]
+----
+func TestReadWrite(t *testing.T) {
+	persistence := mempersistence.New(mempersistence.PersistenceOpts{
+		Separation: persistencemodel.SeparateModels, // <1>
+	})
+
+	ctx := context.Background()
+
+	writeRes := persistence.Write(ctx, // <2>
+		persistencemodel.WriteOptions{},
+		persistencemodel.WriteOperation{
+			ID: persistencemodel.PersistenceID{
+				ID: "device123", Name: "HomeHub", ModelType: persistencemodel.ModelTypeReported,
+			},
+			Model: map[string]IndoorTemperatureSensor{
+				"temperature": {
+					Floor:       1,
+					Direction:   DirectionNorth,
+					Temperature: 23.5,
+					Humidity:    45.5,
+					UpdatedAt:   time.Now(),
+				},
+			},
+		})
+
+	assert.Len(t, writeRes, 1)
+	assert.NoError(t, writeRes[0].Error)
+
+	res := persistence.Read(ctx, // <3>
+		persistencemodel.ReadOptions{},
+		persistencemodel.ReadOperation{
+			ID: persistencemodel.PersistenceID{
+				ID: "device123", Name: "HomeHub", ModelType: persistencemodel.ModelTypeReported,
+			},
+		})
+
+	require.Len(t, res, 1)
+	require.NoError(t, res[0].Error)
+	assert.NotNil(t, res[0].Model)
+
+	temp := res[0].Model.(map[string]IndoorTemperatureSensor)["temperature"]
+	assert.Equal(t, 1, temp.Floor)
+	assert.Equal(t, DirectionNorth, temp.Direction)
+	assert.Equal(t, 23.5, temp.Temperature)
+	assert.Equal(t, 45.5, temp.Humidity)
+
+	deleteRes := persistence.Delete(ctx, // <4>
+		persistencemodel.WriteOptions{},
+		persistencemodel.WriteOperation{
+			ID: persistencemodel.PersistenceID{
+				ID: "device123", Name: "HomeHub", ModelType: persistencemodel.ModelTypeReported,
+			},
+		})
+
+	assert.Len(t, deleteRes, 1)
+	assert.NoError(t, deleteRes[0].Error)
+
+	res = persistence.Read(ctx, // <5>
+		persistencemodel.ReadOptions{},
+		persistencemodel.ReadOperation{
+			ID: persistencemodel.PersistenceID{
+				ID: "device123", Name: "HomeHub", ModelType: persistencemodel.ModelTypeReported,
+			},
+		})
+
+	assert.Len(t, res, 1)
+	assert.Error(t, res[0].Error, "Read operation should return an error for a deleted model")
+	assert.Equal(t, 404, res[0].Error.(persistencemodel.PersistenceError).Code)
+}
+----
+<1> Use separate models for reported and desired so we just need to write one of them (otherwise it is mandatory to provide both in a write)
+<2> Write a reported model into the store
+<3> Read the model back from the store and it should be successful. We could specify a version, though this would required a correct version, otherwise it will return 409 (conflict) to indicate that the version is not correct. Version _0_ ignores that and just read a version.
+<4> Delete the model from the store
+<5> Read the model back from the store and it should return an error since it is deleted. It has the code _404_ since it is not found.
+
+=== DynamoDB Persistence Store
+
+This works exactly as memory store but is backed by _DynamoDB_. It uses transaction, with conditional, if separate model and simple conditional if combined model. It uses the `PersistenceID.ID` as the partition key and the `PersistenceID.Name` as the sort key. It prefixes the partition key with _DS#{PK}_ and depending on model type it prefixes the sort key with _DSR#{SK}_ (Reported) or _DSD#{SK}_ (Desired). When it is combined
+the sort key is _DSC#{SK}_.
+
+.Example Usage of DynamoDB Store
+[source,go]
+----
+func TestReadUnversionedCombined(t *testing.T) {
+	ctx := context.Background()
+	res := dynamodbutils.NewTestTableResource(ctx, "MyTable") // <1>
+
+	defer res.Dispose(ctx, dynamodbutils.DisposeOpts{DeleteItems: true})
+
+	p, err := dynamodbpersistence.New(ctx, dynamodbpersistence.Config{
+		Table:  res.Table, // <2>
+		Client: res.Client, // <3>
+	})
+	require.NoError(t, err)
+
+	clientID := persistutils.Id("test-")
+
+	operations := p.Write( // <4>
+		ctx,
+		persistencemodel.WriteOptions{
+			Config: persistencemodel.WriteConfig{
+				Separation: persistencemodel.CombinedModels,
+			},
+		},
+		persistencemodel.WriteOperation{
+			ClientID: clientID,
+			ID: persistencemodel.PersistenceID{
+				ID: "deviceA", Name: "shadowA", ModelType: persistencemodel.ModelTypeReported,
+			},
+			Model: TestModel{
+				TimeZone: "Europe/Stockholm",
+				Sensors: map[string]Sensor{
+					"temp": {Value: 21.5, TimeStamp: time.Now().UTC()},
+				},
+			},
+		},
+		persistencemodel.WriteOperation{
+			ClientID: clientID,
+			ID: persistencemodel.PersistenceID{
+				ID: "deviceA", Name: "shadowA", ModelType: persistencemodel.ModelTypeDesired,
+			},
+			Model: TestModel{},
+		},
+	)
+
+	require.Len(t, operations, 2)
+	require.NoError(t, operations[0].Error)
+	require.NoError(t, operations[1].Error)
+
+	read := p.Read(ctx, persistencemodel.ReadOptions{}, persistencemodel.ReadOperation{ // <5>
+		ID:      persistencemodel.PersistenceID{ID: "deviceA", Name: "shadowA"},
+		Model:   reflect.TypeOf(&TestModel{}),
+		Version: 0, /*any -> non conditional read*/
+	})
+
+	require.Len(t, read, 2)
+	require.Equal(t, "deviceA", read[0].ID.ID)
+	require.Equal(t, "shadowA", read[0].ID.Name)
+	require.NotNil(t, read[0].Model)
+
+	require.Equal(t, "deviceA", read[1].ID.ID)
+	require.Equal(t, "shadowA", read[1].ID.Name)
+	require.NotNil(t, read[1].Model)
+
+	model, ok := read[0].Model.(*TestModel)
+	require.True(t, ok)
+	require.NotNil(t, model)
+}
+----
+<1> This is a test utility that can create a table and delete it when done (if configured so)
+<2> The _DynamoDB_ table to use for read, write, and query.
+<3> The _DynamoDB_ client to use. If not set it will use `awsconfig.LoadDefaultConfig` to load the default configuration.
+<4> Writes as combined models (i.e. one entry for reported and one for desired). Note that it has to be two write operations so it is no different from writing separate models. It is optional to set the _Separation_, if not passed it will use the `Persistence` default.
+<5> Read it back. Independent on storage, it will return both reported and desired in separate results.

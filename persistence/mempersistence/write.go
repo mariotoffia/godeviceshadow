@@ -16,8 +16,7 @@ func (p *Persistence) Write(
 ) []persistencemodel.WriteResult {
 	//
 	results := make([]persistencemodel.WriteResult, 0, len(operations))
-
-	sep := persistencemodel.CombinedModels
+	sep := p.opt.Separation
 
 	if opt.Config.Separation != 0 {
 		sep = opt.Config.Separation

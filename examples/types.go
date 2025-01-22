@@ -83,3 +83,21 @@ type ClimateSensors struct {
 	Outdoor map[string]OutdoorTemperatureSensor `json:"outdoor,omitempty"`
 	Indoor  map[string]IndoorTemperatureSensor  `json:"indoor,omitempty"`
 }
+
+type Sensor struct {
+	Value     any
+	TimeStamp time.Time
+}
+
+type TestModel struct {
+	TimeZone string
+	Sensors  map[string]Sensor
+}
+
+func (sp *Sensor) GetTimestamp() time.Time {
+	return sp.TimeStamp
+}
+
+func (sp *Sensor) GetValue() any {
+	return sp.Value
+}
