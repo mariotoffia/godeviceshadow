@@ -3,7 +3,7 @@ This is an implementation of a device shadow storage and notification for Dynamo
 
 == Introduction
 
-CAUTION: This is work in progress and is in design stages - do not use it. This statement is removed when this library have a alpha status.
+CAUTION: This is work in progress - use it with caution!
 
 This is a somewhat emulation of the existing IoT Core Device Shadow. However, it separates the _Reported_ and _Desired_ states into two different sort keys to allow for more data and better querying.
 
@@ -54,7 +54,7 @@ sensors := sns.All()
 
 fmt.Printf("%s: %s", sensors[0].Path, sensors[0].NewValue.GetTimestamp().Format(time.RFC3339)) // <9>
 ----
-<1> Use builder to create a new manager.
+<1> Use builder to create a new manager. This manager is _go routine safe_.
 <2> Use in-memory persistence. Swap this e.g. for _DynamoDB_ persistence via `dynamodbpersistence.New(...)`.
 <3> Separate the model persistence by default - can be overridden on each write operation.
 <4> Use the change logger to log changes both managed and plain values for post examination. This registers the `New` function so a new logger is always created on each report.
