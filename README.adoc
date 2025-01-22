@@ -18,34 +18,34 @@ ctx := context.Background()
 now := time.Now()
 
 mgr := manager.New(). // <1>
-	WithPersistence(mempersistence.New()). // <2>
-	WithSeparation(persistencemodel.SeparateModels). // <3>
-	WithReportedLoggers(changelogger.New()). // <4>
-	WithTypeRegistryResolver(
-		types.NewRegistry().RegisterResolver(
-			model.NewResolveFunc(func(id, name string) (model.TypeEntry, bool) {
-				if name == "homeHub" { // <5>
-					return model.TypeEntry{
-						Name: "homeHub", Model: reflect.TypeOf(TestModel{}),
-					}, true
-				}
+  WithPersistence(mempersistence.New()). // <2>
+  WithSeparation(persistencemodel.SeparateModels). // <3>
+  WithReportedLoggers(changelogger.New()). // <4>
+  WithTypeRegistryResolver(
+    types.NewRegistry().RegisterResolver(
+      model.NewResolveFunc(func(id, name string) (model.TypeEntry, bool) {
+        if name == "homeHub" { // <5>
+          return model.TypeEntry{
+            Name: "homeHub", Model: reflect.TypeOf(TestModel{}),
+          }, true
+        }
 
-				return model.TypeEntry{}, false
-			}),
-		),
-	).
-	Build()
+        return model.TypeEntry{}, false
+      }),
+    ),
+  ).
+  Build()
 
 res := mgr.Report(ctx, manager.ReportOperation{ // <6>
-	ClientID: "myClient",
-	Version:  0, // <7>
-	Model: TestModel{
-		TimeZone: tz,
-		Sensors: map[string]Sensor{
-			"temp": {Value: 23.4, TimeStamp: now},
-		},
-	},
-	ID: persistencemodel.ModelIndependentPersistenceID{ID: "device123", Name: "homeHub"},
+  ClientID: "myClient",
+  Version:  0, // <7>
+  Model: TestModel{
+    TimeZone: tz,
+    Sensors: map[string]Sensor{
+      "temp": {Value: 23.4, TimeStamp: now},
+    },
+  },
+  ID: persistencemodel.ModelIndependentPersistenceID{ID: "device123", Name: "homeHub"},
 })
 
 chl := changelogger.FindLogger(res[0].MergeLoggers) // <8>
@@ -77,18 +77,18 @@ ValueAndTimestamp Interface
 // ValueAndTimestamp is the interface that fields must implement if they
 // support timestamp-based merging.
 type ValueAndTimestamp interface {
-	// GetTimestamp will return the timestamp associated with the value. This is
-	// used to determine which value is newer when a merge is commenced.
-	GetTimestamp() time.Time
-	// GetValue will return the value that the timestamp is associated with.
-	//
-	// If multiple values, the instance itself is the value and this method
-	// will return the _"default"_ value. If the value is a map[string]any
-	// it will return all values where the key is the name of the value.
-	//
-	// The latter gives the caller a way of knowing what values are relevant
-	// to e.g. log instead of iterate the whole struct.
-	GetValue() any
+  // GetTimestamp will return the timestamp associated with the value. This is
+  // used to determine which value is newer when a merge is commenced.
+  GetTimestamp() time.Time
+  // GetValue will return the value that the timestamp is associated with.
+  //
+  // If multiple values, the instance itself is the value and this method
+  // will return the _"default"_ value. If the value is a map[string]any
+  // it will return all values where the key is the name of the value.
+  //
+  // The latter gives the caller a way of knowing what values are relevant
+  // to e.g. log instead of iterate the whole struct.
+  GetValue() any
 }
 ----
 
@@ -98,81 +98,81 @@ Those may be anywhere in a structs, maps etc. The system will iterate all and ha
 [source,go]
 ----
 type HomeTemperatureHub struct {
-	*MetaInfo      `json:"meta,omitempty"`
-	ClimateSensors *ClimateSensors            `json:"climate,omitempty"`
-	IndoorTempSP   *IndoorTemperatureSetPoint `json:"indoor_temp_sp,omitempty"` // Important omitempty when used in desired
+  *MetaInfo      `json:"meta,omitempty"`
+  ClimateSensors *ClimateSensors            `json:"climate,omitempty"`
+  IndoorTempSP   *IndoorTemperatureSetPoint `json:"indoor_temp_sp,omitempty"` // Important omitempty when used in desired
 }
 
 type MetaInfo struct {
-	TimeZone string `json:"tz,omitempty"`
-	Owner    string `json:"owner,omitempty"`
+  TimeZone string `json:"tz,omitempty"`
+  Owner    string `json:"owner,omitempty"`
 }
 
 type Direction string
 
 const (
-	DirectionNorth Direction = "north"
-	DirectionSouth Direction = "south"
-	DirectionEast  Direction = "east"
-	DirectionWest  Direction = "west"
+  DirectionNorth Direction = "north"
+  DirectionSouth Direction = "south"
+  DirectionEast  Direction = "east"
+  DirectionWest  Direction = "west"
 )
 
 type IndoorTemperatureSensor struct {
-	Floor       int       `json:"floor"`
-	Direction   Direction `json:"direction"`
-	Temperature float64   `json:"t"`
-	Humidity    float64   `json:"h"`
-	UpdatedAt   time.Time `json:"ts"`
+  Floor       int       `json:"floor"`
+  Direction   Direction `json:"direction"`
+  Temperature float64   `json:"t"`
+  Humidity    float64   `json:"h"`
+  UpdatedAt   time.Time `json:"ts"`
 }
 
 func (idt *IndoorTemperatureSensor) GetTimestamp() time.Time {
-	return idt.UpdatedAt
+  return idt.UpdatedAt
 }
 
 func (idt *IndoorTemperatureSensor) GetValue() any {
-	return map[string]any{ // <1>
-		"floor":       idt.Floor,
-		"direction":   idt.Direction,
-		"temperature": idt.Temperature,
-		"humidity":    idt.Humidity,
-	}
+  return map[string]any{ // <1>
+    "floor":       idt.Floor,
+    "direction":   idt.Direction,
+    "temperature": idt.Temperature,
+    "humidity":    idt.Humidity,
+  }
 }
 
 type OutdoorTemperatureSensor struct {
-	Direction   Direction `json:"direction"`
-	Temperature float64   `json:"t"`
-	Humidity    float64   `json:"h"`
-	UpdatedAt   time.Time `json:"ts"`
+  Direction   Direction `json:"direction"`
+  Temperature float64   `json:"t"`
+  Humidity    float64   `json:"h"`
+  UpdatedAt   time.Time `json:"ts"`
 }
 
 func (ots *OutdoorTemperatureSensor) GetTimestamp() time.Time {
-	return ots.UpdatedAt // <2>
+  return ots.UpdatedAt // <2>
 }
 
 func (ots *OutdoorTemperatureSensor) GetValue() any {
-	return map[string]any{
-		"direction":   ots.Direction,
-		"temperature": ots.Temperature,
-		"humidity":    ots.Humidity,
-	}
+  return map[string]any{
+    "direction":   ots.Direction,
+    "temperature": ots.Temperature,
+    "humidity":    ots.Humidity,
+  }
 }
 
 type IndoorTemperatureSetPoint struct {
-	SetPoint  float64   `json:"sp"`
-	UpdatedAt time.Time `json:"ts"`
+  SetPoint  float64   `json:"sp"`
+  UpdatedAt time.Time `json:"ts"`
 }
 
 func (sp *IndoorTemperatureSetPoint) GetTimestamp() time.Time {
-	return sp.UpdatedAt
+  return sp.UpdatedAt
 }
 
 func (sp *IndoorTemperatureSetPoint) GetValue() any {
-	return sp.SetPoint
+  return sp.SetPoint
 }
 
 type ClimateSensors struct {
-	Outdoor map[string]OutdoorTemperatureSensor `json:"outdoor,omitempty"`
-	Indoor  map[string]IndoorTemperatureSensor  `json:"indoor,omitempty"`
+  Outdoor map[string]OutdoorTemperatureSensor `json:"outdoor,omitempty"`
+  Indoor  map[string]IndoorTemperatureSensor  `json:"indoor,omitempty"`
 }
 ----
 <1> When map, it will check all values to determine if any value change has occurred, otherwise just return a plain value.
