@@ -27,7 +27,7 @@ type TestModel struct {
 }
 
 func TestListEmpty(t *testing.T) {
-	ctx := context.TODO()
+	ctx := context.Background()
 	res := dynamodbutils.NewTestTableResource(ctx, TestTableName)
 
 	defer res.Dispose(ctx, dynamodbutils.DisposeOpts{DeleteItems: true})
@@ -49,7 +49,7 @@ func TestListEmpty(t *testing.T) {
 }
 
 func TestListSingleCombinedDeviceShadow(t *testing.T) {
-	ctx := context.TODO()
+	ctx := context.Background()
 	res := dynamodbutils.NewTestTableResource(ctx, TestTableName)
 
 	defer res.Dispose(ctx, dynamodbutils.DisposeOpts{DeleteItems: true})
@@ -89,7 +89,7 @@ func TestListSingleCombinedDeviceShadow(t *testing.T) {
 }
 
 func TestListMultipleDifferentIDs(t *testing.T) {
-	ctx := context.TODO()
+	ctx := context.Background()
 
 	res := dynamodbutils.NewTestTableResource(ctx, TestTableName)
 	defer res.Dispose(ctx, dynamodbutils.DisposeOpts{DeleteItems: true})
@@ -188,7 +188,7 @@ func TestListMultipleDifferentIDs(t *testing.T) {
 }
 
 func TestListPagination(t *testing.T) {
-	ctx := context.TODO()
+	ctx := context.Background()
 
 	// Create or verify the test table
 	res := dynamodbutils.NewTestTableResource(ctx, TestTableName)

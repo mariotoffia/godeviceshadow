@@ -13,7 +13,7 @@ import (
 
 func TestListEmptyStore(t *testing.T) {
 	persistence := mempersistence.New()
-	ctx := context.TODO()
+	ctx := context.Background()
 
 	results, err := persistence.List(ctx, persistencemodel.ListOptions{})
 
@@ -23,7 +23,7 @@ func TestListEmptyStore(t *testing.T) {
 
 func TestWriteAndListSingleModel(t *testing.T) {
 	persistence := mempersistence.New()
-	ctx := context.TODO()
+	ctx := context.Background()
 
 	writeResults := persistence.Write(ctx,
 		persistencemodel.WriteOptions{
@@ -59,7 +59,7 @@ func TestWriteAndListSingleModel(t *testing.T) {
 
 func TestWriteAndReadSingleModel(t *testing.T) {
 	persistence := mempersistence.New()
-	ctx := context.TODO()
+	ctx := context.Background()
 
 	writeResults := persistence.Write(ctx,
 		persistencemodel.WriteOptions{
@@ -99,7 +99,7 @@ func TestWriteAndReadSingleModel(t *testing.T) {
 
 func TestWriteAndDeleteSingleModel(t *testing.T) {
 	persistence := mempersistence.New()
-	ctx := context.TODO()
+	ctx := context.Background()
 
 	writeResults := persistence.Write(ctx,
 		persistencemodel.WriteOptions{
@@ -151,7 +151,7 @@ func TestWriteAndDeleteSingleModel(t *testing.T) {
 
 func TestWriteVersionConflict(t *testing.T) {
 	persistence := mempersistence.New()
-	ctx := context.TODO()
+	ctx := context.Background()
 
 	writeResults := persistence.Write(ctx,
 		persistencemodel.WriteOptions{
@@ -196,7 +196,7 @@ func TestWriteVersionConflict(t *testing.T) {
 
 func TestDeleteVersionConflict(t *testing.T) {
 	persistence := mempersistence.New()
-	ctx := context.TODO()
+	ctx := context.Background()
 
 	writeResults := persistence.Write(ctx,
 		persistencemodel.WriteOptions{
@@ -238,7 +238,7 @@ func TestDeleteVersionConflict(t *testing.T) {
 
 func TestDeleteWithoutVersionConstraint(t *testing.T) {
 	persistence := mempersistence.New()
-	ctx := context.TODO()
+	ctx := context.Background()
 
 	writeResults := persistence.Write(ctx,
 		persistencemodel.WriteOptions{
@@ -292,7 +292,7 @@ func TestDeleteWithoutVersionConstraint(t *testing.T) {
 
 func TestListMultipleModels(t *testing.T) {
 	persistence := mempersistence.New()
-	ctx := context.TODO()
+	ctx := context.Background()
 
 	writeResults := persistence.Write(ctx,
 		persistencemodel.WriteOptions{
@@ -342,7 +342,7 @@ func TestListMultipleModels(t *testing.T) {
 
 func TestListWithIDFilter(t *testing.T) {
 	persistence := mempersistence.New()
-	ctx := context.TODO()
+	ctx := context.Background()
 
 	persistence.Write(ctx,
 		persistencemodel.WriteOptions{
@@ -386,7 +386,7 @@ func TestListWithIDFilter(t *testing.T) {
 
 func TestReadNonExistentModel(t *testing.T) {
 	persistence := mempersistence.New()
-	ctx := context.TODO()
+	ctx := context.Background()
 
 	readResults := persistence.Read(ctx, persistencemodel.ReadOptions{}, persistencemodel.ReadOperation{
 		ID: persistencemodel.PersistenceID{
@@ -406,7 +406,7 @@ func TestReadNonExistentModel(t *testing.T) {
 
 func TestWriteUpdateExistingModel(t *testing.T) {
 	persistence := mempersistence.New()
-	ctx := context.TODO()
+	ctx := context.Background()
 
 	initialWrite := persistence.Write(ctx,
 		persistencemodel.WriteOptions{
@@ -464,7 +464,7 @@ func TestWriteUpdateExistingModel(t *testing.T) {
 
 func TestDeleteNonExistentModel(t *testing.T) {
 	persistence := mempersistence.New()
-	ctx := context.TODO()
+	ctx := context.Background()
 
 	deleteResults := persistence.Delete(ctx,
 		persistencemodel.WriteOptions{
@@ -489,7 +489,7 @@ func TestDeleteNonExistentModel(t *testing.T) {
 
 func TestListAfterDeletingAllModels(t *testing.T) {
 	persistence := mempersistence.New()
-	ctx := context.TODO()
+	ctx := context.Background()
 
 	persistence.Write(ctx,
 		persistencemodel.WriteOptions{
@@ -553,7 +553,7 @@ func TestListAfterDeletingAllModels(t *testing.T) {
 
 func TestWriteIdenticalIDDifferentNames(t *testing.T) {
 	persistence := mempersistence.New()
-	ctx := context.TODO()
+	ctx := context.Background()
 
 	writeResults := persistence.Write(ctx,
 		persistencemodel.WriteOptions{
@@ -601,7 +601,7 @@ func TestWriteIdenticalIDDifferentNames(t *testing.T) {
 
 func TestDeleteByNameForIdenticalID(t *testing.T) {
 	persistence := mempersistence.New()
-	ctx := context.TODO()
+	ctx := context.Background()
 
 	persistence.Write(ctx,
 		persistencemodel.WriteOptions{
@@ -660,7 +660,7 @@ func TestDeleteByNameForIdenticalID(t *testing.T) {
 
 func TestWriteUpdatesOnlySpecifiedModel(t *testing.T) {
 	persistence := mempersistence.New()
-	ctx := context.TODO()
+	ctx := context.Background()
 
 	persistence.Write(ctx,
 		persistencemodel.WriteOptions{
@@ -736,7 +736,7 @@ func TestWriteUpdatesOnlySpecifiedModel(t *testing.T) {
 
 func TestListNoMatchingID(t *testing.T) {
 	persistence := mempersistence.New()
-	ctx := context.TODO()
+	ctx := context.Background()
 
 	persistence.Write(ctx,
 		persistencemodel.WriteOptions{

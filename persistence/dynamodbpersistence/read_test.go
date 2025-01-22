@@ -18,7 +18,7 @@ import (
 const tz = "Europe/Stockholm"
 
 func TestReadUnversionedCombined(t *testing.T) {
-	ctx := context.TODO()
+	ctx := context.Background()
 
 	res := dynamodbutils.NewTestTableResource(ctx, TestTableName)
 	defer res.Dispose(ctx, dynamodbutils.DisposeOpts{DeleteItems: true})
@@ -105,7 +105,7 @@ func TestReadUnversionedCombined(t *testing.T) {
 }
 
 func TestReadIncorrectVersionIsConflictSeparateModels(t *testing.T) {
-	ctx := context.TODO()
+	ctx := context.Background()
 
 	res := dynamodbutils.NewTestTableResource(ctx, TestTableName)
 	defer res.Dispose(ctx, dynamodbutils.DisposeOpts{DeleteItems: true})
@@ -157,7 +157,7 @@ func TestReadIncorrectVersionIsConflictSeparateModels(t *testing.T) {
 }
 
 func TestReadIncorrectVersionIsConflictCombinedModels(t *testing.T) {
-	ctx := context.TODO()
+	ctx := context.Background()
 
 	res := dynamodbutils.NewTestTableResource(ctx, TestTableName)
 	defer res.Dispose(ctx, dynamodbutils.DisposeOpts{DeleteItems: true})
@@ -216,7 +216,7 @@ func TestReadIncorrectVersionIsConflictCombinedModels(t *testing.T) {
 }
 
 func TestReadCorrectVersionSuccessSeparateModels(t *testing.T) {
-	ctx := context.TODO()
+	ctx := context.Background()
 
 	res := dynamodbutils.NewTestTableResource(ctx, TestTableName)
 	defer res.Dispose(ctx, dynamodbutils.DisposeOpts{DeleteItems: true})
@@ -266,7 +266,7 @@ func TestReadCorrectVersionSuccessSeparateModels(t *testing.T) {
 }
 
 func TestReadCorrectVersionSuccessCombinedModels(t *testing.T) {
-	ctx := context.TODO()
+	ctx := context.Background()
 
 	res := dynamodbutils.NewTestTableResource(ctx, TestTableName)
 	defer res.Dispose(ctx, dynamodbutils.DisposeOpts{DeleteItems: true})
@@ -324,7 +324,7 @@ func TestReadCorrectVersionSuccessCombinedModels(t *testing.T) {
 }
 
 func TestReadCorrectVersionSuccessCombinedModelsUpdate(t *testing.T) {
-	ctx := context.TODO()
+	ctx := context.Background()
 
 	res := dynamodbutils.NewTestTableResource(ctx, TestTableName)
 	defer res.Dispose(ctx, dynamodbutils.DisposeOpts{DeleteItems: true})

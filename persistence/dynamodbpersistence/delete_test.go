@@ -15,7 +15,7 @@ import (
 )
 
 func TestDeleteAnyVersion(t *testing.T) {
-	ctx := context.TODO()
+	ctx := context.Background()
 
 	res := dynamodbutils.NewTestTableResource(ctx, TestTableName)
 	defer res.Dispose(ctx, dynamodbutils.DisposeOpts{DeleteItems: true})
@@ -71,7 +71,7 @@ func TestDeleteAnyVersion(t *testing.T) {
 }
 
 func TestDeleteIncorrectVersion(t *testing.T) {
-	ctx := context.TODO()
+	ctx := context.Background()
 
 	res := dynamodbutils.NewTestTableResource(ctx, TestTableName)
 	defer res.Dispose(ctx, dynamodbutils.DisposeOpts{DeleteItems: true})
@@ -129,7 +129,7 @@ func TestDeleteIncorrectVersion(t *testing.T) {
 }
 
 func TestDeleteCorrectVersion(t *testing.T) {
-	ctx := context.TODO()
+	ctx := context.Background()
 
 	res := dynamodbutils.NewTestTableResource(ctx, TestTableName)
 	defer res.Dispose(ctx, dynamodbutils.DisposeOpts{DeleteItems: true})

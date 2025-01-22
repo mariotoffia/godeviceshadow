@@ -23,7 +23,7 @@ but a reader may do this and since it is a straight assignment share - it will b
 [source,go]
 ----
 persistor := mempersistence.New()
-ctx := context.TODO()
+ctx := context.Background()
 
 write := persistor.Write(ctx, persistencemodel.WriteOptions{}, persistencemodel.WriteOperation{ // <1>
   ClientID: "my-random-uuid",
