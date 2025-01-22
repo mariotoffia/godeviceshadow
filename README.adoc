@@ -57,7 +57,7 @@ fmt.Printf("%s: %d", sensors[0].Path, sensors[0].NewValue.GetTimestamp()) // <9>
 <1> Use builder to create a new manager.
 <2> Use in-memory persistence. Swap this e.g. for _DynamoDB_ persistence via `dynamodbpersistence.New(...)`.
 <3> Separate the model persistence by default - can be overridden on each write operation.
-<4> Use the change logger to log changes both managed and plain values for post examination.
+<4> Use the change logger to log changes both managed and plain values for post examination. This registers the `New` function so a new logger is always created on each report.
 <5> Simple resolver that only resolves the `homeHub` model.
 <6> Report the model and thereby merge with model in the persistence and ensure any desired acknowledgements are done. In this case nothing is persisted so it will create a new model and merge it.
 <7> The version is 0 and will be incremented by the system. If using zero it will always use the latest version to merge with. If explicit version is use, it will only merge if the version is the same (and then increment the version).
