@@ -24,68 +24,68 @@ allows for deletions.
 [source,go]
 ----
 func TestMerge(t *testing.T) {
-	// See types.go for the structs below
-	hubZero := HomeTemperatureHub{ // <1>
-		DeviceShadow: DeviceShadow{
-			TimeZone: "Europe/Stockholm",
-			Owner:    "mariotoffia",
-		},
-		ClimateSensors: ClimateSensors{
-			Indoor: map[string]IndoorTemperatureSensor{
-				"living_room": {
-					Floor:       1,
-					Direction:   DirectionNorth,
-					Temperature: 22.6,
-					UpdatedAt:   parse("2023-01-01T10:00:00+01:00"),
-					Humidity:    32.0,
-				},
-			},
-		},
-	}
+  // See types.go for the structs below
+  hubZero := HomeTemperatureHub{ // <1>
+    DeviceShadow: DeviceShadow{
+      TimeZone: "Europe/Stockholm",
+      Owner:    "mariotoffia",
+    },
+    ClimateSensors: ClimateSensors{
+      Indoor: map[string]IndoorTemperatureSensor{
+        "living_room": {
+          Floor:       1,
+          Direction:   DirectionNorth,
+          Temperature: 22.6,
+          UpdatedAt:   parse("2023-01-01T10:00:00+01:00"),
+          Humidity:    32.0,
+        },
+      },
+    },
+  }
 
-	hub := HomeTemperatureHub{ // <2>
-		DeviceShadow: DeviceShadow{
-			TimeZone: "Europe/Stockholm",
-			Owner:    "mariotoffia",
-		},
-		ClimateSensors: ClimateSensors{
-			Outdoor: map[string]OutdoorTemperatureSensor{
-				"garden": {
-					Direction:   DirectionNorth,
-					Temperature: -27.0,
-					UpdatedAt:   parse("2023-01-01T12:00:00+01:00"),
-					Humidity:    17.0,
-				},
-			},
-			Indoor: map[string]IndoorTemperatureSensor{
-				"living_room": {
-					Floor:       1,
-					Direction:   DirectionNorth,
-					Temperature: 22.6,
-					UpdatedAt:   parse("2023-01-01T11:55:00+01:00"),
-					Humidity:    32.0,
-				},
-				"basement": {
-					Floor:       0,
-					Direction:   DirectionSouth,
-					Temperature: 18.0,
-					UpdatedAt:   parse("2023-01-01T11:00:00+01:00"),
-					Humidity:    40.0,
-				},
-			},
-		},
-	}
+  hub := HomeTemperatureHub{ // <2>
+    DeviceShadow: DeviceShadow{
+      TimeZone: "Europe/Stockholm",
+      Owner:    "mariotoffia",
+    },
+    ClimateSensors: ClimateSensors{
+      Outdoor: map[string]OutdoorTemperatureSensor{
+        "garden": {
+          Direction:   DirectionNorth,
+          Temperature: -27.0,
+          UpdatedAt:   parse("2023-01-01T12:00:00+01:00"),
+          Humidity:    17.0,
+        },
+      },
+      Indoor: map[string]IndoorTemperatureSensor{
+        "living_room": {
+          Floor:       1,
+          Direction:   DirectionNorth,
+          Temperature: 22.6,
+          UpdatedAt:   parse("2023-01-01T11:55:00+01:00"),
+          Humidity:    32.0,
+        },
+        "basement": {
+          Floor:       0,
+          Direction:   DirectionSouth,
+          Temperature: 18.0,
+          UpdatedAt:   parse("2023-01-01T11:00:00+01:00"),
+          Humidity:    40.0,
+        },
+      },
+    },
+  }
 
-	sl := strlogger.NewStringLogger() // <3>
+  sl := strlogger.NewStringLogger() // <3>
 
-	res, err := merge.Merge(hubZero, hub, merge.MergeOptions{
-		Mode:    merge.ServerIsMaster,   // <4>
-		Loggers: merge.MergeLoggers{sl}, // <5>
-	})
-	require.NoError(t, err)
-	assert.Equal(t, hub, res) // <6>
+  res, err := merge.Merge(hubZero, hub, merge.MergeOptions{
+    Mode:    merge.ServerIsMaster,   // <4>
+    Loggers: merge.MergeLoggers{sl}, // <5>
+  })
+  require.NoError(t, err)
+  assert.Equal(t, hub, res) // <6>
 
-	fmt.Println(sl.String())
+  fmt.Println(sl.String())
 }
 ----
 <1> This is the baseline (e.g. gotten from _DynamoDB_)
@@ -105,114 +105,114 @@ state we want to have. The `merge.Desired` function is used to acknowledge the r
 [source,go]
 ----
 func TestDesiredReported(t *testing.T) {
-	reported := HomeTemperatureHub{ // <1>
-		DeviceShadow: &DeviceShadow{
-			TimeZone: "Europe/Stockholm",
-			Owner:    "mariotoffia",
-		},
-		ClimateSensors: &ClimateSensors{
-			Outdoor: map[string]OutdoorTemperatureSensor{
-				"garden": {
-					Direction:   DirectionNorth,
-					Temperature: -27.0,
-					UpdatedAt:   parse("2023-01-01T12:00:00+01:00"),
-					Humidity:    17.0,
-				},
-			},
-			Indoor: map[string]IndoorTemperatureSensor{
-				"living_room": {
-					Floor:       1,
-					Direction:   DirectionNorth,
-					Temperature: 22.6,
-					UpdatedAt:   parse("2023-01-01T11:55:00+01:00"),
-					Humidity:    32.0,
-				},
-				"basement": {
-					Floor:       0,
-					Direction:   DirectionSouth,
-					Temperature: 18.0,
-					UpdatedAt:   parse("2023-01-01T11:00:00+01:00"),
-					Humidity:    40.0,
-				},
-			},
-		},
-	}
-	
-	desired := HomeTemperatureHub{} // <2>
+  reported := HomeTemperatureHub{ // <1>
+    DeviceShadow: &DeviceShadow{
+      TimeZone: "Europe/Stockholm",
+      Owner:    "mariotoffia",
+    },
+    ClimateSensors: &ClimateSensors{
+      Outdoor: map[string]OutdoorTemperatureSensor{
+        "garden": {
+          Direction:   DirectionNorth,
+          Temperature: -27.0,
+          UpdatedAt:   parse("2023-01-01T12:00:00+01:00"),
+          Humidity:    17.0,
+        },
+      },
+      Indoor: map[string]IndoorTemperatureSensor{
+        "living_room": {
+          Floor:       1,
+          Direction:   DirectionNorth,
+          Temperature: 22.6,
+          UpdatedAt:   parse("2023-01-01T11:55:00+01:00"),
+          Humidity:    32.0,
+        },
+        "basement": {
+          Floor:       0,
+          Direction:   DirectionSouth,
+          Temperature: 18.0,
+          UpdatedAt:   parse("2023-01-01T11:00:00+01:00"),
+          Humidity:    40.0,
+        },
+      },
+    },
+  }
+  
+  desired := HomeTemperatureHub{} // <2>
 
-	var err error
-	
-	desired, err = merge.Merge(desired, HomeTemperatureHub{ // <3>
-		IndoorTempSP: &IndoorTemperatureSetPoint{
-			SetPoint:  22.0,
-			UpdatedAt: parse("2023-01-01T13:00:00+01:00"),
-		},
-	}, merge.MergeOptions{})
+  var err error
+  
+  desired, err = merge.Merge(desired, HomeTemperatureHub{ // <3>
+    IndoorTempSP: &IndoorTemperatureSetPoint{
+      SetPoint:  22.0,
+      UpdatedAt: parse("2023-01-01T13:00:00+01:00"),
+    },
+  }, merge.MergeOptions{})
 
-	require.NoError(t, err)
-	require.Equal(t, 22.0, desired.IndoorTempSP.SetPoint)
+  require.NoError(t, err)
+  require.Equal(t, 22.0, desired.IndoorTempSP.SetPoint)
 
-	data, _ := json.Marshal(desired)
-	fmt.Println(string(data))
-	// Output:
-	// {"indoor_temp_sp":{"sp":22,"ts":"2023-01-01T13:00:00+01:00"}}
-	
-	reported, err = merge.Merge(reported, HomeTemperatureHub{ // <4>
-		IndoorTempSP: &IndoorTemperatureSetPoint{
-			SetPoint: 22.0,			
-			UpdatedAt: parse("2023-01-01T13:05:00+01:00"), // <5>
-		},
-	}, merge.MergeOptions{
-		Mode: merge.ServerIsMaster,
-	})
+  data, _ := json.Marshal(desired)
+  fmt.Println(string(data))
+  // Output:
+  // {"indoor_temp_sp":{"sp":22,"ts":"2023-01-01T13:00:00+01:00"}}
+  
+  reported, err = merge.Merge(reported, HomeTemperatureHub{ // <4>
+    IndoorTempSP: &IndoorTemperatureSetPoint{
+      SetPoint: 22.0,      
+      UpdatedAt: parse("2023-01-01T13:05:00+01:00"), // <5>
+    },
+  }, merge.MergeOptions{
+    Mode: merge.ServerIsMaster,
+  })
 
-	data, _ = json.Marshal(reported)
-	fmt.Println(string(data))
-	// Output:
-	// {
-	//   "shadow": {"tz": "Europe/Stockholm", "owner": "mariotoffia"},
-	//   "climate": {
-	//     "outdoor": {
-	//       "garden": {
-	//         "direction": "north",
-	//         "t": -27,
-	//         "h": 17,
-	//         "ts": "2023-01-01T12:00:00+01:00"
-	//       }
-	//     },
-	//     "indoor": {
-	//       "basement": {
-	//         "floor": 0,
-	//         "direction": "south",
-	//         "t": 18,
-	//         "h": 40,
-	//         "ts": "2023-01-01T11:00:00+01:00"
-	//       },
-	//       "living_room": {
-	//         "floor": 1,
-	//         "direction": "north",
-	//         "t": 22.6,
-	//         "h": 32,
-	//         "ts": "2023-01-01T11:55:00+01:00"
-	//       }
-	//     }
-	//   },
-	//   "indoor_temp_sp": {"sp": 22, "ts": "2023-01-01T13:05:00+01:00"}
-	// }
+  data, _ = json.Marshal(reported)
+  fmt.Println(string(data))
+  // Output:
+  // {
+  //   "shadow": {"tz": "Europe/Stockholm", "owner": "mariotoffia"},
+  //   "climate": {
+  //     "outdoor": {
+  //       "garden": {
+  //         "direction": "north",
+  //         "t": -27,
+  //         "h": 17,
+  //         "ts": "2023-01-01T12:00:00+01:00"
+  //       }
+  //     },
+  //     "indoor": {
+  //       "basement": {
+  //         "floor": 0,
+  //         "direction": "south",
+  //         "t": 18,
+  //         "h": 40,
+  //         "ts": "2023-01-01T11:00:00+01:00"
+  //       },
+  //       "living_room": {
+  //         "floor": 1,
+  //         "direction": "north",
+  //         "t": 22.6,
+  //         "h": 32,
+  //         "ts": "2023-01-01T11:55:00+01:00"
+  //       }
+  //     }
+  //   },
+  //   "indoor_temp_sp": {"sp": 22, "ts": "2023-01-01T13:05:00+01:00"}
+  // }
 
 
-	require.NoError(t, err)
-	require.Equal(t, 22.0, reported.IndoorTempSP.SetPoint)
+  require.NoError(t, err)
+  require.Equal(t, 22.0, reported.IndoorTempSP.SetPoint)
 
-	desired, err = merge.Desired(reported, desired, merge.DesiredOptions{}) // <6>
+  desired, err = merge.Desired(reported, desired, merge.DesiredOptions{}) // <6>
 
-	require.NoError(t, err)
-	assert.Nil(t, desired.IndoorTempSP, "Is removed from desired since reported")
+  require.NoError(t, err)
+  assert.Nil(t, desired.IndoorTempSP, "Is removed from desired since reported")
 
-	data, _ = json.Marshal(desired)
-	fmt.Println(string(data))
-	// Output:
-	// {}
+  data, _ = json.Marshal(desired)
+  fmt.Println(string(data))
+  // Output:
+  // {}
 }
 ----
 <1> Initial device shadow state of the reported (e.g. from db)
@@ -231,72 +231,72 @@ This is a simple in-memory store that can be used for testing or small applicati
 [source,go]
 ----
 func TestReadWrite(t *testing.T) {
-	persistence := mempersistence.New(mempersistence.PersistenceOpts{
-		Separation: persistencemodel.SeparateModels, // <1>
-	})
+  persistence := mempersistence.New(mempersistence.PersistenceOpts{
+    Separation: persistencemodel.SeparateModels, // <1>
+  })
 
-	ctx := context.Background()
+  ctx := context.Background()
 
-	writeRes := persistence.Write(ctx, // <2>
-		persistencemodel.WriteOptions{},
-		persistencemodel.WriteOperation{
-			ID: persistencemodel.PersistenceID{
-				ID: "device123", Name: "HomeHub", ModelType: persistencemodel.ModelTypeReported,
-			},
-			Model: map[string]IndoorTemperatureSensor{
-				"temperature": {
-					Floor:       1,
-					Direction:   DirectionNorth,
-					Temperature: 23.5,
-					Humidity:    45.5,
-					UpdatedAt:   time.Now(),
-				},
-			},
-		})
+  writeRes := persistence.Write(ctx, // <2>
+    persistencemodel.WriteOptions{},
+    persistencemodel.WriteOperation{
+      ID: persistencemodel.PersistenceID{
+        ID: "device123", Name: "HomeHub", ModelType: persistencemodel.ModelTypeReported,
+      },
+      Model: map[string]IndoorTemperatureSensor{
+        "temperature": {
+          Floor:       1,
+          Direction:   DirectionNorth,
+          Temperature: 23.5,
+          Humidity:    45.5,
+          UpdatedAt:   time.Now(),
+        },
+      },
+    })
 
-	assert.Len(t, writeRes, 1)
-	assert.NoError(t, writeRes[0].Error)
+  assert.Len(t, writeRes, 1)
+  assert.NoError(t, writeRes[0].Error)
 
-	res := persistence.Read(ctx, // <3>
-		persistencemodel.ReadOptions{},
-		persistencemodel.ReadOperation{
-			ID: persistencemodel.PersistenceID{
-				ID: "device123", Name: "HomeHub", ModelType: persistencemodel.ModelTypeReported,
-			},
-		})
+  res := persistence.Read(ctx, // <3>
+    persistencemodel.ReadOptions{},
+    persistencemodel.ReadOperation{
+      ID: persistencemodel.PersistenceID{
+        ID: "device123", Name: "HomeHub", ModelType: persistencemodel.ModelTypeReported,
+      },
+    })
 
-	require.Len(t, res, 1)
-	require.NoError(t, res[0].Error)
-	assert.NotNil(t, res[0].Model)
+  require.Len(t, res, 1)
+  require.NoError(t, res[0].Error)
+  assert.NotNil(t, res[0].Model)
 
-	temp := res[0].Model.(map[string]IndoorTemperatureSensor)["temperature"]
-	assert.Equal(t, 1, temp.Floor)
-	assert.Equal(t, DirectionNorth, temp.Direction)
-	assert.Equal(t, 23.5, temp.Temperature)
-	assert.Equal(t, 45.5, temp.Humidity)
+  temp := res[0].Model.(map[string]IndoorTemperatureSensor)["temperature"]
+  assert.Equal(t, 1, temp.Floor)
+  assert.Equal(t, DirectionNorth, temp.Direction)
+  assert.Equal(t, 23.5, temp.Temperature)
+  assert.Equal(t, 45.5, temp.Humidity)
 
-	deleteRes := persistence.Delete(ctx, // <4>
-		persistencemodel.WriteOptions{},
-		persistencemodel.WriteOperation{
-			ID: persistencemodel.PersistenceID{
-				ID: "device123", Name: "HomeHub", ModelType: persistencemodel.ModelTypeReported,
-			},
-		})
+  deleteRes := persistence.Delete(ctx, // <4>
+    persistencemodel.WriteOptions{},
+    persistencemodel.WriteOperation{
+      ID: persistencemodel.PersistenceID{
+        ID: "device123", Name: "HomeHub", ModelType: persistencemodel.ModelTypeReported,
+      },
+    })
 
-	assert.Len(t, deleteRes, 1)
-	assert.NoError(t, deleteRes[0].Error)
+  assert.Len(t, deleteRes, 1)
+  assert.NoError(t, deleteRes[0].Error)
 
-	res = persistence.Read(ctx, // <5>
-		persistencemodel.ReadOptions{},
-		persistencemodel.ReadOperation{
-			ID: persistencemodel.PersistenceID{
-				ID: "device123", Name: "HomeHub", ModelType: persistencemodel.ModelTypeReported,
-			},
-		})
+  res = persistence.Read(ctx, // <5>
+    persistencemodel.ReadOptions{},
+    persistencemodel.ReadOperation{
+      ID: persistencemodel.PersistenceID{
+        ID: "device123", Name: "HomeHub", ModelType: persistencemodel.ModelTypeReported,
+      },
+    })
 
-	assert.Len(t, res, 1)
-	assert.Error(t, res[0].Error, "Read operation should return an error for a deleted model")
-	assert.Equal(t, 404, res[0].Error.(persistencemodel.PersistenceError).Code)
+  assert.Len(t, res, 1)
+  assert.Error(t, res[0].Error, "Read operation should return an error for a deleted model")
+  assert.Equal(t, 404, res[0].Error.(persistencemodel.PersistenceError).Code)
 }
 ----
 <1> Use separate models for reported and desired so we just need to write one of them (otherwise it is mandatory to provide both in a write)
@@ -314,69 +314,69 @@ the sort key is _DSC#{SK}_.
 [source,go]
 ----
 func TestReadUnversionedCombined(t *testing.T) {
-	ctx := context.Background()
-	res := dynamodbutils.NewTestTableResource(ctx, "MyTable") // <1>
+  ctx := context.Background()
+  res := dynamodbutils.NewTestTableResource(ctx, "MyTable") // <1>
 
-	defer res.Dispose(ctx, dynamodbutils.DisposeOpts{DeleteItems: true})
+  defer res.Dispose(ctx, dynamodbutils.DisposeOpts{DeleteItems: true})
 
-	p, err := dynamodbpersistence.New(ctx, dynamodbpersistence.Config{
-		Table:  res.Table, // <2>
-		Client: res.Client, // <3>
-	})
-	require.NoError(t, err)
+  p, err := dynamodbpersistence.New(ctx, dynamodbpersistence.Config{
+    Table:  res.Table, // <2>
+    Client: res.Client, // <3>
+  })
+  require.NoError(t, err)
 
-	clientID := persistutils.Id("test-")
+  clientID := persistutils.Id("test-")
 
-	operations := p.Write( // <4>
-		ctx,
-		persistencemodel.WriteOptions{
-			Config: persistencemodel.WriteConfig{
-				Separation: persistencemodel.CombinedModels,
-			},
-		},
-		persistencemodel.WriteOperation{
-			ClientID: clientID,
-			ID: persistencemodel.PersistenceID{
-				ID: "deviceA", Name: "shadowA", ModelType: persistencemodel.ModelTypeReported,
-			},
-			Model: TestModel{
-				TimeZone: "Europe/Stockholm",
-				Sensors: map[string]Sensor{
-					"temp": {Value: 21.5, TimeStamp: time.Now().UTC()},
-				},
-			},
-		},
-		persistencemodel.WriteOperation{
-			ClientID: clientID,
-			ID: persistencemodel.PersistenceID{
-				ID: "deviceA", Name: "shadowA", ModelType: persistencemodel.ModelTypeDesired,
-			},
-			Model: TestModel{},
-		},
-	)
+  operations := p.Write( // <4>
+    ctx,
+    persistencemodel.WriteOptions{
+      Config: persistencemodel.WriteConfig{
+        Separation: persistencemodel.CombinedModels,
+      },
+    },
+    persistencemodel.WriteOperation{
+      ClientID: clientID,
+      ID: persistencemodel.PersistenceID{
+        ID: "deviceA", Name: "shadowA", ModelType: persistencemodel.ModelTypeReported,
+      },
+      Model: TestModel{
+        TimeZone: "Europe/Stockholm",
+        Sensors: map[string]Sensor{
+          "temp": {Value: 21.5, TimeStamp: time.Now().UTC()},
+        },
+      },
+    },
+    persistencemodel.WriteOperation{
+      ClientID: clientID,
+      ID: persistencemodel.PersistenceID{
+        ID: "deviceA", Name: "shadowA", ModelType: persistencemodel.ModelTypeDesired,
+      },
+      Model: TestModel{},
+    },
+  )
 
-	require.Len(t, operations, 2)
-	require.NoError(t, operations[0].Error)
-	require.NoError(t, operations[1].Error)
+  require.Len(t, operations, 2)
+  require.NoError(t, operations[0].Error)
+  require.NoError(t, operations[1].Error)
 
-	read := p.Read(ctx, persistencemodel.ReadOptions{}, persistencemodel.ReadOperation{ // <5>
-		ID:      persistencemodel.PersistenceID{ID: "deviceA", Name: "shadowA"},
-		Model:   reflect.TypeOf(&TestModel{}),
-		Version: 0, /*any -> non conditional read*/
-	})
+  read := p.Read(ctx, persistencemodel.ReadOptions{}, persistencemodel.ReadOperation{ // <5>
+    ID:      persistencemodel.PersistenceID{ID: "deviceA", Name: "shadowA"},
+    Model:   reflect.TypeOf(&TestModel{}),
+    Version: 0, /*any -> non conditional read*/
+  })
 
-	require.Len(t, read, 2)
-	require.Equal(t, "deviceA", read[0].ID.ID)
-	require.Equal(t, "shadowA", read[0].ID.Name)
-	require.NotNil(t, read[0].Model)
+  require.Len(t, read, 2)
+  require.Equal(t, "deviceA", read[0].ID.ID)
+  require.Equal(t, "shadowA", read[0].ID.Name)
+  require.NotNil(t, read[0].Model)
 
-	require.Equal(t, "deviceA", read[1].ID.ID)
-	require.Equal(t, "shadowA", read[1].ID.Name)
-	require.NotNil(t, read[1].Model)
+  require.Equal(t, "deviceA", read[1].ID.ID)
+  require.Equal(t, "shadowA", read[1].ID.Name)
+  require.NotNil(t, read[1].Model)
 
-	model, ok := read[0].Model.(*TestModel)
-	require.True(t, ok)
-	require.NotNil(t, model)
+  model, ok := read[0].Model.(*TestModel)
+  require.True(t, ok)
+  require.NotNil(t, model)
 }
 ----
 <1> This is a test utility that can create a table and delete it when done (if configured so)
