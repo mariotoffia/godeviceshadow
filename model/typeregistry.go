@@ -42,3 +42,15 @@ type TypeRegistryResolver interface {
 	// same way. This function do not rely on any prior registration.
 	ResolveByID(id, name string) (TypeEntry, bool)
 }
+
+type TypeRegistryResolverImpl struct {
+	f func(id, name string) (TypeEntry, bool)
+}
+
+func NewResolveFunc(f func(id, name string) (TypeEntry, bool)) *TypeRegistryResolverImpl {
+	return &TypeRegistryResolverImpl{f: f}
+}
+
+func (r *TypeRegistryResolverImpl) ResolveByID(id, name string) (TypeEntry, bool) {
+	return r.f(id, name)
+}

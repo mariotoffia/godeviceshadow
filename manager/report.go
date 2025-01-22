@@ -2,7 +2,9 @@ package manager
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"reflect"
 
 	"github.com/mariotoffia/godeviceshadow/merge"
 	"github.com/mariotoffia/godeviceshadow/model"
@@ -42,7 +44,7 @@ func (mgr *Manager) Report(ctx context.Context, operations ...ReportOperation) [
 	}
 
 	// Read the models
-	readResults := mgr.reportReadFromPersistence(ctx, readOps, results)
+	readResults := mgr.reportReadFromPersistence(ctx, readOps, results, true /*create*/)
 
 	if len(readResults) == 0 {
 		return toResults(results)
@@ -86,10 +88,15 @@ func (mgr *Manager) reportMergeModels(
 		readResults[i].op = op
 
 		// Merge the Reported models
+		var (
+			reported any // Merge into this to use below: desired
+			err      error
+		)
+
 		if rdr.reported != nil {
 			ml := mgr.createMergeLoggers(op.MergeLoggers)
 
-			model, err := merge.MergeAny(rdr.reported.Model, op.Model, merge.MergeOptions{
+			reported, err = merge.MergeAny(rdr.reported.Model, op.Model, merge.MergeOptions{
 				Mode:    merge.ServerIsMaster,
 				Loggers: ml,
 			})
@@ -116,18 +123,18 @@ func (mgr *Manager) reportMergeModels(
 			}
 
 			// need persist -> queue
-			readResults[i].queueReported = model
+			readResults[i].queueReported = reported
 
 			results[rdr.id.String()] = &ReportOperationResult{
 				ID:           rdr.id,
 				MergeLoggers: ml,
-				Model:        model,
+				Model:        reported,
 			}
 		}
 
-		if rdr.desired != nil {
+		if rdr.desired != nil && reported != nil {
 			dl := mgr.createDesiredLoggers(op.DesiredLoggers)
-			model, err := merge.DesiredAny(rdr.reported.Model, rdr.desired.Model, merge.DesiredOptions{
+			model, err := merge.DesiredAny(reported, rdr.desired.Model, merge.DesiredOptions{
 				Loggers: dl,
 			})
 
@@ -174,10 +181,10 @@ func (mgr *Manager) reportWriteBack(ctx context.Context, writes []persistencemod
 
 	for _, wr := range result {
 		if wr.Error != nil {
-			if r, ok := results[wr.ID.String()]; ok {
+			if r, ok := results[wr.ID.StringWithoutModelType()]; ok {
 				r.Error = wr.Error
 			} else {
-				results[wr.ID.String()] = &ReportOperationResult{
+				results[wr.ID.StringWithoutModelType()] = &ReportOperationResult{
 					ID:    wr.ID.ToModelIndependentPersistenceID(),
 					Error: wr.Error,
 				}
@@ -187,19 +194,19 @@ func (mgr *Manager) reportWriteBack(ctx context.Context, writes []persistencemod
 		}
 
 		if wr.ID.ModelType == persistencemodel.ModelTypeReported {
-			if r, ok := results[wr.ID.String()]; ok {
+			if r, ok := results[wr.ID.StringWithoutModelType()]; ok {
 				r.ReportedProcessed = true
 			} else {
-				results[wr.ID.String()] = &ReportOperationResult{
+				results[wr.ID.StringWithoutModelType()] = &ReportOperationResult{
 					ID:                wr.ID.ToModelIndependentPersistenceID(),
 					ReportedProcessed: true,
 				}
 			}
 		} else if wr.ID.ModelType == persistencemodel.ModelTypeDesired {
-			if r, ok := results[wr.ID.String()]; ok {
+			if r, ok := results[wr.ID.StringWithoutModelType()]; ok {
 				r.DesiredProcessed = true
 			} else {
-				results[wr.ID.String()] = &ReportOperationResult{
+				results[wr.ID.StringWithoutModelType()] = &ReportOperationResult{
 					ID:               wr.ID.ToModelIndependentPersistenceID(),
 					DesiredProcessed: true,
 				}
@@ -252,25 +259,48 @@ func (mgr *Manager) createMergeLoggers(loggers []model.CreatableMergeLogger) []m
 	return res
 }
 
-func (mgr *Manager) reportReadFromPersistence(ctx context.Context, readOps []persistencemodel.ReadOperation, results map[string]*ReportOperationResult) []groupedPersistenceResult {
+func (mgr *Manager) reportReadFromPersistence(
+	ctx context.Context,
+	readOps []persistencemodel.ReadOperation,
+	results map[string]*ReportOperationResult,
+	create bool,
+) []groupedPersistenceResult {
 	readResults := mgr.persistence.Read(ctx, persistencemodel.ReadOptions{}, readOps...)
 	res := make(map[string]*groupedPersistenceResult, len(readResults))
 
 	for _, rdr := range readResults {
 		if rdr.Error != nil {
-			results[rdr.ID.String()] = &ReportOperationResult{
-				ID:    rdr.ID.ToModelIndependentPersistenceID(),
-				Error: rdr.Error,
+			var pe persistencemodel.PersistenceError
+
+			if errors.As(rdr.Error, &pe); create && pe.Code == 404 /*not found*/ {
+				// Special case -> create new empty model
+				for _, op := range readOps {
+					if op.ID.Equal(rdr.ID) {
+						if op.Version == 0 { // Only when version is 0
+							rdr.Model = reflect.New(op.Model).Elem().Interface()
+							rdr.Error = nil
+
+							break
+						}
+					}
+				}
 			}
 
-			continue
+			if rdr.Model == nil {
+				results[rdr.ID.StringWithoutModelType()] = &ReportOperationResult{
+					ID:    rdr.ID.ToModelIndependentPersistenceID(),
+					Error: rdr.Error,
+				}
+
+				continue
+			}
 		}
 
-		if r, ok := res[rdr.ID.String()]; !ok {
+		if r, ok := res[rdr.ID.StringWithoutModelType()]; !ok {
 			if rdr.ID.ModelType == persistencemodel.ModelTypeReported {
-				res[rdr.ID.String()] = &groupedPersistenceResult{id: rdr.ID.ToModelIndependentPersistenceID(), reported: &rdr}
+				res[rdr.ID.StringWithoutModelType()] = &groupedPersistenceResult{id: rdr.ID.ToModelIndependentPersistenceID(), reported: &rdr}
 			} else {
-				res[rdr.ID.String()] = &groupedPersistenceResult{id: rdr.ID.ToModelIndependentPersistenceID(), desired: &rdr}
+				res[rdr.ID.StringWithoutModelType()] = &groupedPersistenceResult{id: rdr.ID.ToModelIndependentPersistenceID(), desired: &rdr}
 			}
 		} else {
 			if rdr.ID.ModelType == persistencemodel.ModelTypeReported {

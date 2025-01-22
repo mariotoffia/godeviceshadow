@@ -10,14 +10,14 @@ import (
 func (p *Persistence) List(
 	ctx context.Context,
 	opt persistencemodel.ListOptions,
-) ([]persistencemodel.ListResult, error) {
+) (persistencemodel.ListResults, error) {
 	//
 	if opt.SearchExpr != "" {
-		return nil, persistencemodel.Error400("SearchExpr is not supported")
+		return persistencemodel.ListResults{}, persistencemodel.Error400("SearchExpr is not supported")
 	}
 
 	if opt.Token != "" {
-		return nil, persistencemodel.Error400("Token is not supported")
+		return persistencemodel.ListResults{}, persistencemodel.Error400("Token is not supported")
 	}
 
 	return p.store.List(opt.ID), nil

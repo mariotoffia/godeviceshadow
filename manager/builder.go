@@ -5,17 +5,17 @@ import (
 	"github.com/mariotoffia/godeviceshadow/model/persistencemodel"
 )
 
-type Builder struct {
+type builder struct {
 	m *Manager
 }
 
-func New() *Builder {
-	return &Builder{
+func New() *builder {
+	return &builder{
 		m: &Manager{},
 	}
 }
 
-func (b *Builder) Build() *Manager {
+func (b *builder) Build() *Manager {
 	sep := b.m.separation
 
 	if sep == 0 {
@@ -32,20 +32,20 @@ func (b *Builder) Build() *Manager {
 	}
 }
 
-func (b *Builder) WithPersistence(persistence persistencemodel.Persistence) *Builder {
+func (b *builder) WithPersistence(persistence persistencemodel.Persistence) *builder {
 	b.m.persistence = persistence
 	return b
 }
 
 // WithSeparation will set the default separation to use. If not set, it will default to `CombinedModels`.
-func (b *Builder) WithSeparation(separation persistencemodel.ModelSeparation) *Builder {
+func (b *builder) WithSeparation(separation persistencemodel.ModelSeparation) *builder {
 	b.m.separation = separation
 	return b
 }
 
 // WithTypeRegistry will set the type registry to use. If the `TypeRegistryResolver` is set and it also implements the
 // `TypeRegistry` interface, it will also set the `TypeRegistry` to the resolver.
-func (b *Builder) WithTypeRegistry(typeRegistry model.TypeRegistry) *Builder {
+func (b *builder) WithTypeRegistry(typeRegistry model.TypeRegistry) *builder {
 	b.m.typeRegistry = typeRegistry
 
 	if tr, ok := typeRegistry.(model.TypeRegistryResolver); ok && b.m.typeRegistryResolver == nil {
@@ -57,7 +57,7 @@ func (b *Builder) WithTypeRegistry(typeRegistry model.TypeRegistry) *Builder {
 
 // WithTypeRegistryResolver will set the type registry resolver to use. If it also implements the `TypeRegistry` interface
 // and it has not yet been set, it will also set the `TypeRegistry` to the resolver.
-func (b *Builder) WithTypeRegistryResolver(typeRegistryResolver model.TypeRegistryResolver) *Builder {
+func (b *builder) WithTypeRegistryResolver(typeRegistryResolver model.TypeRegistryResolver) *builder {
 	b.m.typeRegistryResolver = typeRegistryResolver
 
 	if tr, ok := typeRegistryResolver.(model.TypeRegistry); ok && b.m.typeRegistry == nil {
@@ -67,14 +67,14 @@ func (b *Builder) WithTypeRegistryResolver(typeRegistryResolver model.TypeRegist
 	return b
 }
 
-func (b *Builder) WithReportedLoggers(reportedLoggers []model.CreatableMergeLogger) *Builder {
+func (b *builder) WithReportedLoggers(reportedLoggers ...model.CreatableMergeLogger) *builder {
 	b.m.reportedMergeLoggers = reportedLoggers
 	return b
 }
 
 // WithDesiredLoggers will set the default desired loggers for the manager instance. If none is supplied in the `Report` operation
 // those will be used.
-func (b *Builder) WithDesiredLoggers(desiredLoggers []model.CreatableDesiredLogger) *Builder {
+func (b *builder) WithDesiredLoggers(desiredLoggers ...model.CreatableDesiredLogger) *builder {
 	b.m.reportedDesiredLoggers = desiredLoggers
 	return b
 }

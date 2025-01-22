@@ -89,3 +89,14 @@ func (op MergeOperation) String() string {
 		return "unknown"
 	}
 }
+
+// In returns `true` if the operation is in the list of _operations_.
+func (op MergeOperation) In(operations ...MergeOperation) bool {
+	for _, o := range operations {
+		if o == op {
+			return true
+		}
+	}
+
+	return false
+}

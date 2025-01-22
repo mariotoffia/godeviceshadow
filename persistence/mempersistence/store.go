@@ -6,7 +6,7 @@ import (
 	"github.com/mariotoffia/godeviceshadow/model/persistencemodel"
 )
 
-func (s *Store) List(pk string) []persistencemodel.ListResult {
+func (s *Store) List(pk string) persistencemodel.ListResults {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -38,7 +38,7 @@ func (s *Store) List(pk string) []persistencemodel.ListResult {
 			}
 		}
 
-		return res
+		return persistencemodel.ListResults{Items: res}
 	}
 
 	if partition, ok := s.partitions[pk]; ok {
@@ -58,10 +58,10 @@ func (s *Store) List(pk string) []persistencemodel.ListResult {
 			}
 		}
 
-		return res
+		return persistencemodel.ListResults{Items: res}
 	}
 
-	return nil
+	return persistencemodel.ListResults{}
 }
 
 func (s *Store) DeleteEntry(pk, sk string, version int64) error {

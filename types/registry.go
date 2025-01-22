@@ -27,7 +27,7 @@ func NewRegistry() *TypeRegistryImpl {
 
 // Register implements the `model.TypeRegistry` interface. If name is empty, it will
 // use _'{pkg name}.{type name}'_ as the name.
-func (r *TypeRegistryImpl) Register(name string, t any, meta ...map[string]string) {
+func (r *TypeRegistryImpl) Register(name string, t any, meta ...map[string]string) *TypeRegistryImpl {
 	te := toEntry(t, name, meta)
 
 	r.mtx.Lock()
@@ -35,6 +35,8 @@ func (r *TypeRegistryImpl) Register(name string, t any, meta ...map[string]strin
 	r.types[te.Name] = te
 
 	r.mtx.Unlock()
+
+	return r
 }
 
 // Get implements the `model.TypeRegistry` interface.
@@ -150,10 +152,12 @@ func (r *TypeRegistryImpl) RegisterNameLookup(name string, t any, meta ...map[st
 //
 // It is possible to register multiple resolvers and they will be invoked in the order they are registered.
 // First hit will be returned.
-func (r *TypeRegistryImpl) RegisterResolver(resolver model.TypeRegistryResolver) {
+func (r *TypeRegistryImpl) RegisterResolver(resolver model.TypeRegistryResolver) *TypeRegistryImpl {
 	r.mtx.Lock()
 
 	r.resolvers = append(r.resolvers, resolver)
 
 	r.mtx.Unlock()
+
+	return r
 }

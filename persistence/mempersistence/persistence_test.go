@@ -18,7 +18,7 @@ func TestListEmptyStore(t *testing.T) {
 	results, err := persistence.List(ctx, persistencemodel.ListOptions{})
 
 	assert.NoError(t, err)
-	assert.Empty(t, results, "Results should be empty when the store is empty")
+	assert.Empty(t, results.Items, "Results should be empty when the store is empty")
 }
 
 func TestWriteAndListSingleModel(t *testing.T) {
@@ -44,17 +44,17 @@ func TestWriteAndListSingleModel(t *testing.T) {
 	assert.Len(t, writeResults, 1)
 	assert.NoError(t, writeResults[0].Error)
 
-	listResults, err := persistence.List(ctx, persistencemodel.ListOptions{
+	lr, err := persistence.List(ctx, persistencemodel.ListOptions{
 		ID: "device123",
 	})
 
 	assert.NoError(t, err)
 
-	assert.Len(t, listResults, 1, "There should be one model listed")
-	assert.Equal(t, "device123", listResults[0].ID.ID, "ID should match")
-	assert.Equal(t, "HomeHub", listResults[0].ID.Name, "Name should match")
-	assert.Equal(t, persistencemodel.ModelTypeReported, listResults[0].ID.ModelType, "ModelType should match")
-	assert.Greater(t, listResults[0].Version, int64(0), "Version should be greater than 0")
+	assert.Len(t, lr.Items, 1, "There should be one model listed")
+	assert.Equal(t, "device123", lr.Items[0].ID.ID, "ID should match")
+	assert.Equal(t, "HomeHub", lr.Items[0].ID.Name, "Name should match")
+	assert.Equal(t, persistencemodel.ModelTypeReported, lr.Items[0].ID.ModelType, "ModelType should match")
+	assert.Greater(t, lr.Items[0].Version, int64(0), "Version should be greater than 0")
 }
 
 func TestWriteAndReadSingleModel(t *testing.T) {
@@ -327,16 +327,16 @@ func TestListMultipleModels(t *testing.T) {
 		assert.NoError(t, result.Error)
 	}
 
-	listResults, err := persistence.List(ctx, persistencemodel.ListOptions{})
+	lr, err := persistence.List(ctx, persistencemodel.ListOptions{})
 
 	assert.NoError(t, err)
 
-	assert.Len(t, listResults, 2, "There should be two models listed")
+	assert.Len(t, lr.Items, 2, "There should be two models listed")
 	assert.ElementsMatch(t, []string{"device123", "device124"}, []string{
-		listResults[0].ID.ID, listResults[1].ID.ID,
+		lr.Items[0].ID.ID, lr.Items[1].ID.ID,
 	}, "IDs of listed models should match")
 	assert.ElementsMatch(t, []string{"HomeHub", "Car"}, []string{
-		listResults[0].ID.Name, listResults[1].ID.Name,
+		lr.Items[0].ID.Name, lr.Items[1].ID.Name,
 	}, "Names of listed models should match")
 }
 
@@ -372,16 +372,16 @@ func TestListWithIDFilter(t *testing.T) {
 		},
 	)
 
-	listResults, err := persistence.List(ctx, persistencemodel.ListOptions{
+	lr, err := persistence.List(ctx, persistencemodel.ListOptions{
 		ID: "device123",
 	})
 
 	assert.NoError(t, err)
 
-	assert.Len(t, listResults, 1, "There should be one model listed")
-	assert.Equal(t, "device123", listResults[0].ID.ID, "Listed model ID should match the filter")
-	assert.Equal(t, "HomeHub", listResults[0].ID.Name, "Listed model Name should match")
-	assert.Equal(t, persistencemodel.ModelTypeReported, listResults[0].ID.ModelType, "Listed model ModelType should match")
+	assert.Len(t, lr.Items, 1, "There should be one model listed")
+	assert.Equal(t, "device123", lr.Items[0].ID.ID, "Listed model ID should match the filter")
+	assert.Equal(t, "HomeHub", lr.Items[0].ID.Name, "Listed model Name should match")
+	assert.Equal(t, persistencemodel.ModelTypeReported, lr.Items[0].ID.ModelType, "Listed model ModelType should match")
 }
 
 func TestReadNonExistentModel(t *testing.T) {
@@ -519,9 +519,9 @@ func TestListAfterDeletingAllModels(t *testing.T) {
 		},
 	)
 
-	listResults, err := persistence.List(ctx, persistencemodel.ListOptions{})
+	lr, err := persistence.List(ctx, persistencemodel.ListOptions{})
 	require.NoError(t, err)
-	require.Len(t, listResults, 2, "There should be two models listed before deletion")
+	require.Len(t, lr.Items, 2, "There should be two models listed before deletion")
 
 	persistence.Delete(ctx,
 		persistencemodel.WriteOptions{
@@ -545,10 +545,10 @@ func TestListAfterDeletingAllModels(t *testing.T) {
 		},
 	)
 
-	listResults, err = persistence.List(ctx, persistencemodel.ListOptions{})
+	lr, err = persistence.List(ctx, persistencemodel.ListOptions{})
 
 	assert.NoError(t, err)
-	assert.Empty(t, listResults, "Results should be empty after deleting all models")
+	assert.Empty(t, lr.Items, "Results should be empty after deleting all models")
 }
 
 func TestWriteIdenticalIDDifferentNames(t *testing.T) {
@@ -588,14 +588,14 @@ func TestWriteIdenticalIDDifferentNames(t *testing.T) {
 		assert.NoError(t, result.Error)
 	}
 
-	listResults, err := persistence.List(ctx, persistencemodel.ListOptions{
+	lr, err := persistence.List(ctx, persistencemodel.ListOptions{
 		ID: "device123",
 	})
 
 	assert.NoError(t, err)
-	assert.Len(t, listResults, 2, "There should be two models listed")
+	assert.Len(t, lr.Items, 2, "There should be two models listed")
 	assert.ElementsMatch(t, []string{"HomeHub", "Car"}, []string{
-		listResults[0].ID.Name, listResults[1].ID.Name,
+		lr.Items[0].ID.Name, lr.Items[1].ID.Name,
 	}, "Names of listed models should match")
 }
 
@@ -647,15 +647,15 @@ func TestDeleteByNameForIdenticalID(t *testing.T) {
 	assert.Len(t, deleteResults, 1)
 	assert.NoError(t, deleteResults[0].Error)
 
-	listResults, err := persistence.List(ctx, persistencemodel.ListOptions{
+	lr, err := persistence.List(ctx, persistencemodel.ListOptions{
 		ID: "device123",
 	})
 
 	assert.NoError(t, err)
 
-	assert.Len(t, listResults, 1, "There should be one model remaining")
-	assert.Equal(t, "Car", listResults[0].ID.Name, "Remaining model should have Name 'Desired'")
-	assert.Equal(t, persistencemodel.ModelTypeDesired, listResults[0].ID.ModelType, "Remaining model should have ModelType 'Desired'")
+	assert.Len(t, lr.Items, 1, "There should be one model remaining")
+	assert.Equal(t, "Car", lr.Items[0].ID.Name, "Remaining model should have Name 'Desired'")
+	assert.Equal(t, persistencemodel.ModelTypeDesired, lr.Items[0].ID.ModelType, "Remaining model should have ModelType 'Desired'")
 }
 
 func TestWriteUpdatesOnlySpecifiedModel(t *testing.T) {

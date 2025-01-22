@@ -20,9 +20,6 @@ type Manager struct {
 	// reportedDesiredLoggers is a slice of instantiator to produce DesiredLogger(s) of which is all applied when merge operations when
 	// user invokes the `Report` function.
 	reportedDesiredLoggers []model.CreatableDesiredLogger
-	// desiredMergeLoggers is a slice of instantiator to produce MergeLogger(s) of which is all applied when merge operations when
-	// user invokes the `Desired` function.
-	desiredMergeLoggers []model.CreatableMergeLogger
 	// separation is the default separation.
 	separation persistencemodel.ModelSeparation
 }

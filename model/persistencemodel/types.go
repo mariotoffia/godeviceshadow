@@ -29,6 +29,14 @@ func (pid PersistenceID) String() string {
 	return fmt.Sprintf("%s#%s/%s", pid.ID, pid.Name, pid.ModelType.String())
 }
 
+func (pid PersistenceID) StringWithoutModelType() string {
+	return fmt.Sprintf("%s#%s", pid.ID, pid.Name)
+}
+
+func (pid PersistenceID) Equal(other PersistenceID) bool {
+	return pid.ID == other.ID && pid.Name == other.Name && pid.ModelType == other.ModelType
+}
+
 func (pid PersistenceID) ToModelIndependentPersistenceID() ModelIndependentPersistenceID {
 	return ModelIndependentPersistenceID{
 		ID:   pid.ID,
