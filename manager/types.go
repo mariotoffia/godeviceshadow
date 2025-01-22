@@ -30,6 +30,11 @@ type Manager struct {
 type ReportOperation struct {
 	// ClientID is a optional client ID.
 	ClientID string
+	// Version when set to zero -> report to latest version. Otherwise, it expects the specific version in persistence and if not,
+	// it will fail with 409 (Conflict).
+	Version int64
+	// Model to report. If any desired values, those will be checked and acknowledged if matched.
+	Model any
 	// Separation is the separation to use for this operation. If not set it will use the `Manager` default.
 	Separation persistencemodel.ModelSeparation
 	// ID is the id of the model to report.
@@ -41,11 +46,6 @@ type ReportOperation struct {
 	MergeLoggers []model.CreatableMergeLogger
 	// DesiredLoggers will override the default desired loggers, for report function, in the `Manager`.
 	DesiredLoggers []model.CreatableDesiredLogger
-	// Model to report. If any desired values, those will be checked and acknowledged if matched.
-	Model any
-	// Version when set to zero -> report to latest version. Otherwise, it expects the specific version in persistence and if not,
-	// it will fail with 409 (Conflict).
-	Version int64
 }
 
 type ReportOperationResult struct {

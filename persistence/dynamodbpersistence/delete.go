@@ -18,7 +18,7 @@ func (p *Persistence) Delete(
 	opt persistencemodel.WriteOptions,
 	operations ...persistencemodel.WriteOperation,
 ) []persistencemodel.WriteResult {
-
+	//
 	if len(operations) == 0 {
 		return nil
 	}

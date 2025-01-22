@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/mariotoffia/godeviceshadow/model/persistencemodel"
+	"github.com/mariotoffia/godeviceshadow/utils/persistutils"
 )
 
 // Write writes a model into the in-memory persistence. It supports update and create operations.
@@ -13,141 +14,158 @@ func (p *Persistence) Write(
 	opt persistencemodel.WriteOptions,
 	operations ...persistencemodel.WriteOperation,
 ) []persistencemodel.WriteResult {
-	results := make([]persistencemodel.WriteResult, len(operations))
+	//
+	results := make([]persistencemodel.WriteResult, 0, len(operations))
+
+	sep := persistencemodel.CombinedModels
+
+	if opt.Config.Separation != 0 {
+		sep = opt.Config.Separation
+	}
+
+	groups := persistutils.Group(operations, sep)
 
 	if opt.Tx != nil {
-		for i, op := range operations {
-			results[i] = persistencemodel.WriteResult{
+		for _, op := range operations {
+			results = append(results, persistencemodel.WriteResult{
 				ID: persistencemodel.PersistenceID{
 					ID:        op.ID.ID,
 					Name:      op.ID.Name,
 					ModelType: op.ID.ModelType,
 				},
 				Error: persistencemodel.Error400("Transactions are not supported"),
-			}
+			})
 		}
+
 		return results
 	}
 
-	p.mu.Lock()
-	defer p.mu.Unlock()
+	for _, op := range groups {
+		if err := persistutils.Validate(op); err != nil {
+			for _, o := range op.Operations {
+				results = append(results, persistencemodel.WriteResult{
+					ID:      o.ID,
+					Version: o.Version,
+					Error:   err,
+				})
+			}
 
-	for i, op := range operations {
-		result := persistencemodel.WriteResult{
-			ID: persistencemodel.PersistenceID{
-				ID:        op.ID.ID,
-				Name:      op.ID.Name,
-				ModelType: op.ID.ModelType,
-			},
-		}
-
-		// Check if the model already exists
-		if _, exists := p.store[op.ID.ID]; !exists {
-			p.store[op.ID.ID] = map[string]*modelEntry{}
-		}
-
-		entry, exists := p.store[op.ID.ID][op.ID.Name]
-
-		// Handle version conflicts
-		if exists && op.Version > 0 && entry.version != op.Version {
-			result.Error = persistencemodel.Error409("Version conflict")
-			results[i] = result
 			continue
 		}
 
-		// Create or update the model
-		var version int64
-
-		if !exists {
-			version = 1
-		} else {
-			version = entry.version + 1
-		}
-
-		timestamp := time.Now().UnixNano()
-
-		p.store[op.ID.ID][op.ID.Name] = &modelEntry{
-			model:       op.Model,
-			modelType:   op.ID.ModelType,
-			version:     version,
-			timestamp:   timestamp,
-			clientToken: op.ClientID,
-		}
-
-		result.Version = version
-		result.TimeStamp = timestamp
-		results[i] = result
+		results = append(results, p.writeGroup(op)...)
 	}
 
 	return results
 }
 
-// Delete deletes models from the in-memory persistence. Supports optional version constraints.
-func (p *Persistence) Delete(
-	ctx context.Context,
-	opt persistencemodel.WriteOptions,
-	operations ...persistencemodel.WriteOperation,
-) []persistencemodel.WriteResult {
-	results := make([]persistencemodel.WriteResult, len(operations))
-
-	if opt.Tx != nil {
-		for i, op := range operations {
-			results[i] = persistencemodel.WriteResult{
-				ID: persistencemodel.PersistenceID{
-					ID:        op.ID.ID,
-					Name:      op.ID.Name,
-					ModelType: op.ID.ModelType,
-				},
-				Error: persistencemodel.Error400("Transactions are not supported"),
-			}
-		}
-		return results
+func (p *Persistence) writeGroup(group persistutils.GroupedWriteOperation) []persistencemodel.WriteResult {
+	if group.ModelSeparation == persistencemodel.CombinedModels {
+		return p.writeCombined(group)
 	}
 
-	p.mu.Lock()
-	defer p.mu.Unlock()
+	res := make([]persistencemodel.WriteResult, 0, len(group.Operations))
 
-	for i, op := range operations {
-		result := persistencemodel.WriteResult{
-			ID: persistencemodel.PersistenceID{
-				ID:        op.ID.ID,
-				Name:      op.ID.Name,
-				ModelType: op.ID.ModelType,
+	for _, op := range group.Operations {
+		res = append(res, p.writeSingle(op))
+	}
+
+	return res
+}
+
+func (p *Persistence) writeCombined(group persistutils.GroupedWriteOperation) []persistencemodel.WriteResult {
+	// Get the desired and reported models
+	desired := group.GetByModelType(persistencemodel.ModelTypeDesired)
+	reported := group.GetByModelType(persistencemodel.ModelTypeReported)
+
+	if desired == nil || reported == nil {
+		return []persistencemodel.WriteResult{
+			persistencemodel.WriteResult{
+				ID:    persistencemodel.PersistenceID{ID: group.ID, Name: group.Name, ModelType: persistencemodel.ModelTypeDesired},
+				Error: persistencemodel.Error400("Neither desired or reported is set, use delete to delete models"),
+			},
+			persistencemodel.WriteResult{
+				ID:    persistencemodel.PersistenceID{ID: group.ID, Name: group.Name, ModelType: persistencemodel.ModelTypeReported},
+				Error: persistencemodel.Error400("Neither desired or reported is set, use delete to delete models"),
 			},
 		}
-
-		// Check if the model exists
-		models, exists := p.store[op.ID.ID]
-		if !exists {
-			result.Error = persistencemodel.Error404("ID not found")
-			results[i] = result
-			continue
-		}
-
-		entry, exists := models[op.ID.Name]
-		if !exists {
-			result.Error = persistencemodel.Error404("ModelType not found")
-			results[i] = result
-			continue
-		}
-
-		// Handle version constraints
-		if op.Version > 0 && entry.version != op.Version {
-			result.Error = persistencemodel.Error409("Version conflict")
-			results[i] = result
-			continue
-		}
-
-		// Delete the model
-		delete(models, op.ID.Name)
-		if len(models) == 0 {
-			delete(p.store, op.ID.ID)
-		}
-
-		result.Version = entry.version
-		result.TimeStamp = entry.timestamp
-		results[i] = result
 	}
 
-	return results
+	var (
+		version  int64
+		des, rep any
+	)
+
+	if desired != nil {
+		version = desired.Version
+		des = desired.Model
+	}
+
+	if reported != nil {
+		version = reported.Version
+		rep = reported.Model
+	}
+
+	now := time.Now().UTC().UnixNano()
+	entry, err := p.store.StoreEntry(group.ID, group.Name, &modelEntry{
+		version:   version,
+		timestamp: now,
+		modelType: 0, // Combined
+		desired:   des,
+		reported:  rep,
+	})
+
+	if entry == nil {
+		entry = &modelEntry{
+			version:   version,
+			timestamp: now,
+		}
+	}
+
+	return []persistencemodel.WriteResult{
+		{
+			ID:        persistencemodel.PersistenceID{ID: group.ID, Name: group.Name, ModelType: persistencemodel.ModelTypeDesired},
+			Version:   entry.version,
+			TimeStamp: entry.timestamp,
+			Error:     err,
+		},
+		{
+			ID:        persistencemodel.PersistenceID{ID: group.ID, Name: group.Name, ModelType: persistencemodel.ModelTypeReported},
+			Version:   entry.version,
+			TimeStamp: entry.timestamp,
+			Error:     err,
+		},
+	}
+}
+
+func (p *Persistence) writeSingle(op persistencemodel.WriteOperation) persistencemodel.WriteResult {
+	now := time.Now().UTC().UnixNano()
+
+	entry := modelEntry{
+		version:   op.Version,
+		timestamp: now,
+		modelType: op.ID.ModelType,
+	}
+
+	if op.ID.ModelType == persistencemodel.ModelTypeDesired {
+		entry.desired = op.Model
+	} else if op.ID.ModelType == persistencemodel.ModelTypeReported {
+		entry.reported = op.Model
+	}
+
+	res, err := p.store.StoreEntry(op.ID.ID, op.ID.Name, &entry)
+
+	if res == nil {
+		res = &modelEntry{
+			version:   op.Version,
+			timestamp: now,
+		}
+	}
+
+	return persistencemodel.WriteResult{
+		ID:        op.ID,
+		Version:   res.version,
+		TimeStamp: res.timestamp,
+		Error:     err,
+	}
 }

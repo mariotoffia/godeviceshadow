@@ -13,8 +13,9 @@ import (
 
 func TestListEmptyStore(t *testing.T) {
 	persistence := mempersistence.New()
+	ctx := context.TODO()
 
-	results, err := persistence.List(context.TODO(), persistencemodel.ListOptions{})
+	results, err := persistence.List(ctx, persistencemodel.ListOptions{})
 
 	assert.NoError(t, err)
 	assert.Empty(t, results, "Results should be empty when the store is empty")
@@ -22,22 +23,28 @@ func TestListEmptyStore(t *testing.T) {
 
 func TestWriteAndListSingleModel(t *testing.T) {
 	persistence := mempersistence.New()
+	ctx := context.TODO()
 
-	writeResults := persistence.Write(context.TODO(), persistencemodel.WriteOptions{}, persistencemodel.WriteOperation{
-		ID: persistencemodel.PersistenceID{
-			ID:        "device123",
-			Name:      "HomeHub",
-			ModelType: persistencemodel.ModelTypeReported,
-		},
-		Model: map[string]any{
-			"temperature": 22.5,
-		},
-	})
+	writeResults := persistence.Write(ctx,
+		persistencemodel.WriteOptions{
+			Config: persistencemodel.WriteConfig{
+				Separation: persistencemodel.SeparateModels,
+			},
+		}, persistencemodel.WriteOperation{
+			ID: persistencemodel.PersistenceID{
+				ID:        "device123",
+				Name:      "HomeHub",
+				ModelType: persistencemodel.ModelTypeReported,
+			},
+			Model: map[string]any{
+				"temperature": 22.5,
+			},
+		})
 
 	assert.Len(t, writeResults, 1)
 	assert.NoError(t, writeResults[0].Error)
 
-	listResults, err := persistence.List(context.TODO(), persistencemodel.ListOptions{
+	listResults, err := persistence.List(ctx, persistencemodel.ListOptions{
 		ID: "device123",
 	})
 
@@ -52,22 +59,28 @@ func TestWriteAndListSingleModel(t *testing.T) {
 
 func TestWriteAndReadSingleModel(t *testing.T) {
 	persistence := mempersistence.New()
+	ctx := context.TODO()
 
-	writeResults := persistence.Write(context.TODO(), persistencemodel.WriteOptions{}, persistencemodel.WriteOperation{
-		ID: persistencemodel.PersistenceID{
-			ID:        "device123",
-			Name:      "HomeHub",
-			ModelType: persistencemodel.ModelTypeReported,
-		},
-		Model: map[string]any{
-			"temperature": 22.5,
-		},
-	})
+	writeResults := persistence.Write(ctx,
+		persistencemodel.WriteOptions{
+			Config: persistencemodel.WriteConfig{
+				Separation: persistencemodel.SeparateModels,
+			},
+		}, persistencemodel.WriteOperation{
+			ID: persistencemodel.PersistenceID{
+				ID:        "device123",
+				Name:      "HomeHub",
+				ModelType: persistencemodel.ModelTypeReported,
+			},
+			Model: map[string]any{
+				"temperature": 22.5,
+			},
+		})
 
 	assert.Len(t, writeResults, 1)
 	assert.NoError(t, writeResults[0].Error)
 
-	readResults := persistence.Read(context.TODO(), persistencemodel.ReadOptions{}, persistencemodel.ReadOperation{
+	readResults := persistence.Read(ctx, persistencemodel.ReadOptions{}, persistencemodel.ReadOperation{
 		ID: persistencemodel.PersistenceID{
 			ID:        "device123",
 			Name:      "HomeHub",
@@ -86,33 +99,44 @@ func TestWriteAndReadSingleModel(t *testing.T) {
 
 func TestWriteAndDeleteSingleModel(t *testing.T) {
 	persistence := mempersistence.New()
+	ctx := context.TODO()
 
-	writeResults := persistence.Write(context.TODO(), persistencemodel.WriteOptions{}, persistencemodel.WriteOperation{
-		ID: persistencemodel.PersistenceID{
-			ID:        "device123",
-			Name:      "HomeHub",
-			ModelType: persistencemodel.ModelTypeReported,
-		},
-		Model: map[string]any{
-			"temperature": 22.5,
-		},
-	})
+	writeResults := persistence.Write(ctx,
+		persistencemodel.WriteOptions{
+			Config: persistencemodel.WriteConfig{
+				Separation: persistencemodel.SeparateModels,
+			},
+		}, persistencemodel.WriteOperation{
+			ID: persistencemodel.PersistenceID{
+				ID:        "device123",
+				Name:      "HomeHub",
+				ModelType: persistencemodel.ModelTypeReported,
+			},
+			Model: map[string]any{
+				"temperature": 22.5,
+			},
+		})
 
 	assert.Len(t, writeResults, 1)
 	assert.NoError(t, writeResults[0].Error)
 
-	deleteResults := persistence.Delete(context.TODO(), persistencemodel.WriteOptions{}, persistencemodel.WriteOperation{
-		ID: persistencemodel.PersistenceID{
-			ID:        "device123",
-			Name:      "HomeHub",
-			ModelType: persistencemodel.ModelTypeReported,
-		},
-	})
+	deleteResults := persistence.Delete(ctx,
+		persistencemodel.WriteOptions{
+			Config: persistencemodel.WriteConfig{
+				Separation: persistencemodel.SeparateModels,
+			},
+		}, persistencemodel.WriteOperation{
+			ID: persistencemodel.PersistenceID{
+				ID:        "device123",
+				Name:      "HomeHub",
+				ModelType: persistencemodel.ModelTypeReported,
+			},
+		})
 
 	assert.Len(t, deleteResults, 1)
 	assert.NoError(t, deleteResults[0].Error)
 
-	readResults := persistence.Read(context.TODO(), persistencemodel.ReadOptions{}, persistencemodel.ReadOperation{
+	readResults := persistence.Read(ctx, persistencemodel.ReadOptions{}, persistencemodel.ReadOperation{
 		ID: persistencemodel.PersistenceID{
 			ID:        "device123",
 			Name:      "HomeHub",
@@ -127,32 +151,43 @@ func TestWriteAndDeleteSingleModel(t *testing.T) {
 
 func TestWriteVersionConflict(t *testing.T) {
 	persistence := mempersistence.New()
+	ctx := context.TODO()
 
-	writeResults := persistence.Write(context.TODO(), persistencemodel.WriteOptions{}, persistencemodel.WriteOperation{
-		ID: persistencemodel.PersistenceID{
-			ID:        "device123",
-			Name:      "HomeHub",
-			ModelType: persistencemodel.ModelTypeReported,
-		},
-		Model: map[string]any{
-			"temperature": 22.5,
-		},
-	})
+	writeResults := persistence.Write(ctx,
+		persistencemodel.WriteOptions{
+			Config: persistencemodel.WriteConfig{
+				Separation: persistencemodel.SeparateModels,
+			},
+		}, persistencemodel.WriteOperation{
+			ID: persistencemodel.PersistenceID{
+				ID:        "device123",
+				Name:      "HomeHub",
+				ModelType: persistencemodel.ModelTypeReported,
+			},
+			Model: map[string]any{
+				"temperature": 22.5,
+			},
+		})
 
 	assert.Len(t, writeResults, 1)
 	assert.NoError(t, writeResults[0].Error)
 
-	conflictResults := persistence.Write(context.TODO(), persistencemodel.WriteOptions{}, persistencemodel.WriteOperation{
-		ID: persistencemodel.PersistenceID{
-			ID:        "device123",
-			Name:      "HomeHub",
-			ModelType: persistencemodel.ModelTypeReported,
-		},
-		Model: map[string]any{
-			"temperature": 23.0, // Updated value
-		},
-		Version: 99, // Incorrect version
-	})
+	conflictResults := persistence.Write(ctx,
+		persistencemodel.WriteOptions{
+			Config: persistencemodel.WriteConfig{
+				Separation: persistencemodel.SeparateModels,
+			},
+		}, persistencemodel.WriteOperation{
+			ID: persistencemodel.PersistenceID{
+				ID:        "device123",
+				Name:      "HomeHub",
+				ModelType: persistencemodel.ModelTypeReported,
+			},
+			Model: map[string]any{
+				"temperature": 23.0, // Updated value
+			},
+			Version: 99, // Incorrect version
+		})
 
 	assert.Len(t, conflictResults, 1, "There should be one result for the conflicting write operation")
 	assert.Error(t, conflictResults[0].Error, "Write operation should return an error for version conflict")
@@ -161,29 +196,40 @@ func TestWriteVersionConflict(t *testing.T) {
 
 func TestDeleteVersionConflict(t *testing.T) {
 	persistence := mempersistence.New()
+	ctx := context.TODO()
 
-	writeResults := persistence.Write(context.TODO(), persistencemodel.WriteOptions{}, persistencemodel.WriteOperation{
-		ID: persistencemodel.PersistenceID{
-			ID:        "device123",
-			Name:      "HomeHub",
-			ModelType: persistencemodel.ModelTypeReported,
-		},
-		Model: map[string]any{
-			"temperature": 22.5,
-		},
-	})
+	writeResults := persistence.Write(ctx,
+		persistencemodel.WriteOptions{
+			Config: persistencemodel.WriteConfig{
+				Separation: persistencemodel.SeparateModels,
+			},
+		}, persistencemodel.WriteOperation{
+			ID: persistencemodel.PersistenceID{
+				ID:        "device123",
+				Name:      "HomeHub",
+				ModelType: persistencemodel.ModelTypeReported,
+			},
+			Model: map[string]any{
+				"temperature": 22.5,
+			},
+		})
 
 	assert.Len(t, writeResults, 1)
 	assert.NoError(t, writeResults[0].Error)
 
-	deleteResults := persistence.Delete(context.TODO(), persistencemodel.WriteOptions{}, persistencemodel.WriteOperation{
-		ID: persistencemodel.PersistenceID{
-			ID:        "device123",
-			Name:      "HomeHub",
-			ModelType: persistencemodel.ModelTypeReported,
-		},
-		Version: 99, // Incorrect version
-	})
+	deleteResults := persistence.Delete(ctx,
+		persistencemodel.WriteOptions{
+			Config: persistencemodel.WriteConfig{
+				Separation: persistencemodel.SeparateModels,
+			},
+		}, persistencemodel.WriteOperation{
+			ID: persistencemodel.PersistenceID{
+				ID:        "device123",
+				Name:      "HomeHub",
+				ModelType: persistencemodel.ModelTypeReported,
+			},
+			Version: 99, // Incorrect version
+		})
 
 	assert.Len(t, deleteResults, 1)
 	assert.Error(t, deleteResults[0].Error, "Delete operation should return an error for version conflict")
@@ -192,35 +238,46 @@ func TestDeleteVersionConflict(t *testing.T) {
 
 func TestDeleteWithoutVersionConstraint(t *testing.T) {
 	persistence := mempersistence.New()
+	ctx := context.TODO()
 
-	writeResults := persistence.Write(context.TODO(), persistencemodel.WriteOptions{}, persistencemodel.WriteOperation{
-		ClientID: "my-random-uuid",
-		ID: persistencemodel.PersistenceID{
-			ID:        "device123",
-			Name:      "HomeHub",
-			ModelType: persistencemodel.ModelTypeReported,
-		},
-		Model: map[string]any{
-			"temperature": 22.5,
-		},
-	})
+	writeResults := persistence.Write(ctx,
+		persistencemodel.WriteOptions{
+			Config: persistencemodel.WriteConfig{
+				Separation: persistencemodel.SeparateModels,
+			},
+		}, persistencemodel.WriteOperation{
+			ClientID: "my-random-uuid",
+			ID: persistencemodel.PersistenceID{
+				ID:        "device123",
+				Name:      "HomeHub",
+				ModelType: persistencemodel.ModelTypeReported,
+			},
+			Model: map[string]any{
+				"temperature": 22.5,
+			},
+		})
 
 	assert.Len(t, writeResults, 1)
 	assert.NoError(t, writeResults[0].Error)
 
-	deleteResults := persistence.Delete(context.TODO(), persistencemodel.WriteOptions{}, persistencemodel.WriteOperation{
-		ID: persistencemodel.PersistenceID{
-			ID:        "device123",
-			Name:      "HomeHub",
-			ModelType: persistencemodel.ModelTypeReported,
-		},
-		Version: 0, // No version constraint
-	})
+	deleteResults := persistence.Delete(ctx,
+		persistencemodel.WriteOptions{
+			Config: persistencemodel.WriteConfig{
+				Separation: persistencemodel.SeparateModels,
+			},
+		}, persistencemodel.WriteOperation{
+			ID: persistencemodel.PersistenceID{
+				ID:        "device123",
+				Name:      "HomeHub",
+				ModelType: persistencemodel.ModelTypeReported,
+			},
+			Version: 0, // No version constraint
+		})
 
 	assert.Len(t, deleteResults, 1)
 	assert.NoError(t, deleteResults[0].Error)
 
-	readResults := persistence.Read(context.TODO(), persistencemodel.ReadOptions{}, persistencemodel.ReadOperation{
+	readResults := persistence.Read(ctx, persistencemodel.ReadOptions{}, persistencemodel.ReadOperation{
 		ID: persistencemodel.PersistenceID{
 			ID:        "device123",
 			Name:      "HomeHub",
@@ -235,8 +292,14 @@ func TestDeleteWithoutVersionConstraint(t *testing.T) {
 
 func TestListMultipleModels(t *testing.T) {
 	persistence := mempersistence.New()
+	ctx := context.TODO()
 
-	writeResults := persistence.Write(context.TODO(), persistencemodel.WriteOptions{},
+	writeResults := persistence.Write(ctx,
+		persistencemodel.WriteOptions{
+			Config: persistencemodel.WriteConfig{
+				Separation: persistencemodel.SeparateModels,
+			},
+		},
 		persistencemodel.WriteOperation{
 			ID: persistencemodel.PersistenceID{
 				ID:        "device123",
@@ -264,7 +327,7 @@ func TestListMultipleModels(t *testing.T) {
 		assert.NoError(t, result.Error)
 	}
 
-	listResults, err := persistence.List(context.TODO(), persistencemodel.ListOptions{})
+	listResults, err := persistence.List(ctx, persistencemodel.ListOptions{})
 
 	assert.NoError(t, err)
 
@@ -279,8 +342,14 @@ func TestListMultipleModels(t *testing.T) {
 
 func TestListWithIDFilter(t *testing.T) {
 	persistence := mempersistence.New()
+	ctx := context.TODO()
 
-	persistence.Write(context.TODO(), persistencemodel.WriteOptions{},
+	persistence.Write(ctx,
+		persistencemodel.WriteOptions{
+			Config: persistencemodel.WriteConfig{
+				Separation: persistencemodel.SeparateModels,
+			},
+		},
 		persistencemodel.WriteOperation{
 			ID: persistencemodel.PersistenceID{
 				ID:        "device123",
@@ -303,7 +372,7 @@ func TestListWithIDFilter(t *testing.T) {
 		},
 	)
 
-	listResults, err := persistence.List(context.TODO(), persistencemodel.ListOptions{
+	listResults, err := persistence.List(ctx, persistencemodel.ListOptions{
 		ID: "device123",
 	})
 
@@ -317,8 +386,9 @@ func TestListWithIDFilter(t *testing.T) {
 
 func TestReadNonExistentModel(t *testing.T) {
 	persistence := mempersistence.New()
+	ctx := context.TODO()
 
-	readResults := persistence.Read(context.TODO(), persistencemodel.ReadOptions{}, persistencemodel.ReadOperation{
+	readResults := persistence.Read(ctx, persistencemodel.ReadOptions{}, persistencemodel.ReadOperation{
 		ID: persistencemodel.PersistenceID{
 			ID:        "nonexistent123",
 			Name:      "HomeHub",
@@ -336,38 +406,49 @@ func TestReadNonExistentModel(t *testing.T) {
 
 func TestWriteUpdateExistingModel(t *testing.T) {
 	persistence := mempersistence.New()
+	ctx := context.TODO()
 
-	initialWrite := persistence.Write(context.TODO(), persistencemodel.WriteOptions{}, persistencemodel.WriteOperation{
-		ID: persistencemodel.PersistenceID{
-			ID:        "device123",
-			Name:      "HomeHub",
-			ModelType: persistencemodel.ModelTypeReported,
-		},
-		Model: map[string]any{
-			"temperature": 22.5,
-		},
-	})
+	initialWrite := persistence.Write(ctx,
+		persistencemodel.WriteOptions{
+			Config: persistencemodel.WriteConfig{
+				Separation: persistencemodel.SeparateModels,
+			},
+		}, persistencemodel.WriteOperation{
+			ID: persistencemodel.PersistenceID{
+				ID:        "device123",
+				Name:      "HomeHub",
+				ModelType: persistencemodel.ModelTypeReported,
+			},
+			Model: map[string]any{
+				"temperature": 22.5,
+			},
+		})
 
 	assert.Len(t, initialWrite, 1, "There should be one result for the initial write operation")
 	assert.NoError(t, initialWrite[0].Error, "Initial write operation should not return an error")
 
 	// Update the model
-	updateWrite := persistence.Write(context.TODO(), persistencemodel.WriteOptions{}, persistencemodel.WriteOperation{
-		ID: persistencemodel.PersistenceID{
-			ID:        "device123",
-			Name:      "HomeHub",
-			ModelType: persistencemodel.ModelTypeReported,
-		},
-		Model: map[string]any{
-			"temperature": 25.0,
-		},
-		Version: 1, // Use the correct version
-	})
+	updateWrite := persistence.Write(ctx,
+		persistencemodel.WriteOptions{
+			Config: persistencemodel.WriteConfig{
+				Separation: persistencemodel.SeparateModels,
+			},
+		}, persistencemodel.WriteOperation{
+			ID: persistencemodel.PersistenceID{
+				ID:        "device123",
+				Name:      "HomeHub",
+				ModelType: persistencemodel.ModelTypeReported,
+			},
+			Model: map[string]any{
+				"temperature": 25.0,
+			},
+			Version: 1, // Use the correct version
+		})
 
 	assert.Len(t, updateWrite, 1, "There should be one result for the update write operation")
 	assert.NoError(t, updateWrite[0].Error, "Update write operation should not return an error")
 
-	readResults := persistence.Read(context.TODO(), persistencemodel.ReadOptions{}, persistencemodel.ReadOperation{
+	readResults := persistence.Read(ctx, persistencemodel.ReadOptions{}, persistencemodel.ReadOperation{
 		ID: persistencemodel.PersistenceID{
 			ID:        "device123",
 			Name:      "HomeHub",
@@ -383,14 +464,20 @@ func TestWriteUpdateExistingModel(t *testing.T) {
 
 func TestDeleteNonExistentModel(t *testing.T) {
 	persistence := mempersistence.New()
+	ctx := context.TODO()
 
-	deleteResults := persistence.Delete(context.TODO(), persistencemodel.WriteOptions{}, persistencemodel.WriteOperation{
-		ID: persistencemodel.PersistenceID{
-			ID:        "nonexistent123",
-			Name:      "HomeHub",
-			ModelType: persistencemodel.ModelTypeReported,
-		},
-	})
+	deleteResults := persistence.Delete(ctx,
+		persistencemodel.WriteOptions{
+			Config: persistencemodel.WriteConfig{
+				Separation: persistencemodel.SeparateModels,
+			},
+		}, persistencemodel.WriteOperation{
+			ID: persistencemodel.PersistenceID{
+				ID:        "nonexistent123",
+				Name:      "HomeHub",
+				ModelType: persistencemodel.ModelTypeReported,
+			},
+		})
 
 	assert.Len(t, deleteResults, 1)
 	assert.Error(t, deleteResults[0].Error, "Delete operation should return an error for a non-existent model")
@@ -402,8 +489,14 @@ func TestDeleteNonExistentModel(t *testing.T) {
 
 func TestListAfterDeletingAllModels(t *testing.T) {
 	persistence := mempersistence.New()
+	ctx := context.TODO()
 
-	persistence.Write(context.TODO(), persistencemodel.WriteOptions{},
+	persistence.Write(ctx,
+		persistencemodel.WriteOptions{
+			Config: persistencemodel.WriteConfig{
+				Separation: persistencemodel.SeparateModels,
+			},
+		},
 		persistencemodel.WriteOperation{
 			ID: persistencemodel.PersistenceID{
 				ID:        "device123",
@@ -426,11 +519,16 @@ func TestListAfterDeletingAllModels(t *testing.T) {
 		},
 	)
 
-	listResults, err := persistence.List(context.TODO(), persistencemodel.ListOptions{})
+	listResults, err := persistence.List(ctx, persistencemodel.ListOptions{})
 	require.NoError(t, err)
 	require.Len(t, listResults, 2, "There should be two models listed before deletion")
 
-	persistence.Delete(context.TODO(), persistencemodel.WriteOptions{},
+	persistence.Delete(ctx,
+		persistencemodel.WriteOptions{
+			Config: persistencemodel.WriteConfig{
+				Separation: persistencemodel.SeparateModels,
+			},
+		},
 		persistencemodel.WriteOperation{
 			ID: persistencemodel.PersistenceID{
 				ID:        "device123",
@@ -447,7 +545,7 @@ func TestListAfterDeletingAllModels(t *testing.T) {
 		},
 	)
 
-	listResults, err = persistence.List(context.TODO(), persistencemodel.ListOptions{})
+	listResults, err = persistence.List(ctx, persistencemodel.ListOptions{})
 
 	assert.NoError(t, err)
 	assert.Empty(t, listResults, "Results should be empty after deleting all models")
@@ -455,8 +553,14 @@ func TestListAfterDeletingAllModels(t *testing.T) {
 
 func TestWriteIdenticalIDDifferentNames(t *testing.T) {
 	persistence := mempersistence.New()
+	ctx := context.TODO()
 
-	writeResults := persistence.Write(context.TODO(), persistencemodel.WriteOptions{},
+	writeResults := persistence.Write(ctx,
+		persistencemodel.WriteOptions{
+			Config: persistencemodel.WriteConfig{
+				Separation: persistencemodel.SeparateModels,
+			},
+		},
 		persistencemodel.WriteOperation{
 			ID: persistencemodel.PersistenceID{
 				ID:        "device123",
@@ -484,7 +588,7 @@ func TestWriteIdenticalIDDifferentNames(t *testing.T) {
 		assert.NoError(t, result.Error)
 	}
 
-	listResults, err := persistence.List(context.TODO(), persistencemodel.ListOptions{
+	listResults, err := persistence.List(ctx, persistencemodel.ListOptions{
 		ID: "device123",
 	})
 
@@ -497,8 +601,14 @@ func TestWriteIdenticalIDDifferentNames(t *testing.T) {
 
 func TestDeleteByNameForIdenticalID(t *testing.T) {
 	persistence := mempersistence.New()
+	ctx := context.TODO()
 
-	persistence.Write(context.TODO(), persistencemodel.WriteOptions{},
+	persistence.Write(ctx,
+		persistencemodel.WriteOptions{
+			Config: persistencemodel.WriteConfig{
+				Separation: persistencemodel.SeparateModels,
+			},
+		},
 		persistencemodel.WriteOperation{
 			ID: persistencemodel.PersistenceID{
 				ID:        "device123",
@@ -521,18 +631,23 @@ func TestDeleteByNameForIdenticalID(t *testing.T) {
 		},
 	)
 
-	deleteResults := persistence.Delete(context.TODO(), persistencemodel.WriteOptions{}, persistencemodel.WriteOperation{
-		ID: persistencemodel.PersistenceID{
-			ID:        "device123",
-			Name:      "HomeHub",
-			ModelType: persistencemodel.ModelTypeReported,
-		},
-	})
+	deleteResults := persistence.Delete(ctx,
+		persistencemodel.WriteOptions{
+			Config: persistencemodel.WriteConfig{
+				Separation: persistencemodel.SeparateModels,
+			},
+		}, persistencemodel.WriteOperation{
+			ID: persistencemodel.PersistenceID{
+				ID:        "device123",
+				Name:      "HomeHub",
+				ModelType: persistencemodel.ModelTypeReported,
+			},
+		})
 
 	assert.Len(t, deleteResults, 1)
 	assert.NoError(t, deleteResults[0].Error)
 
-	listResults, err := persistence.List(context.TODO(), persistencemodel.ListOptions{
+	listResults, err := persistence.List(ctx, persistencemodel.ListOptions{
 		ID: "device123",
 	})
 
@@ -545,8 +660,14 @@ func TestDeleteByNameForIdenticalID(t *testing.T) {
 
 func TestWriteUpdatesOnlySpecifiedModel(t *testing.T) {
 	persistence := mempersistence.New()
+	ctx := context.TODO()
 
-	persistence.Write(context.TODO(), persistencemodel.WriteOptions{},
+	persistence.Write(ctx,
+		persistencemodel.WriteOptions{
+			Config: persistencemodel.WriteConfig{
+				Separation: persistencemodel.SeparateModels,
+			},
+		},
 		persistencemodel.WriteOperation{
 			ID: persistencemodel.PersistenceID{
 				ID:        "device123",
@@ -569,22 +690,27 @@ func TestWriteUpdatesOnlySpecifiedModel(t *testing.T) {
 		},
 	)
 
-	writeResults := persistence.Write(context.TODO(), persistencemodel.WriteOptions{}, persistencemodel.WriteOperation{
-		ID: persistencemodel.PersistenceID{
-			ID:        "device123",
-			Name:      "HomeHub",
-			ModelType: persistencemodel.ModelTypeReported,
-		},
-		Model: map[string]any{
-			"temperature": 23.0, // New temperature
-		},
-		Version: 1, // Correct version for "HomeHub"
-	})
+	writeResults := persistence.Write(ctx,
+		persistencemodel.WriteOptions{
+			Config: persistencemodel.WriteConfig{
+				Separation: persistencemodel.SeparateModels,
+			},
+		}, persistencemodel.WriteOperation{
+			ID: persistencemodel.PersistenceID{
+				ID:        "device123",
+				Name:      "HomeHub",
+				ModelType: persistencemodel.ModelTypeReported,
+			},
+			Model: map[string]any{
+				"temperature": 23.0, // New temperature
+			},
+			Version: 1, // Correct version for "HomeHub"
+		})
 
 	assert.Len(t, writeResults, 1)
 	assert.NoError(t, writeResults[0].Error)
 
-	readResults := persistence.Read(context.TODO(), persistencemodel.ReadOptions{},
+	readResults := persistence.Read(ctx, persistencemodel.ReadOptions{},
 		persistencemodel.ReadOperation{
 			ID: persistencemodel.PersistenceID{
 				ID:        "device123",
@@ -610,8 +736,14 @@ func TestWriteUpdatesOnlySpecifiedModel(t *testing.T) {
 
 func TestListNoMatchingID(t *testing.T) {
 	persistence := mempersistence.New()
+	ctx := context.TODO()
 
-	persistence.Write(context.TODO(), persistencemodel.WriteOptions{},
+	persistence.Write(ctx,
+		persistencemodel.WriteOptions{
+			Config: persistencemodel.WriteConfig{
+				Separation: persistencemodel.SeparateModels,
+			},
+		},
 		persistencemodel.WriteOperation{
 			ID: persistencemodel.PersistenceID{
 				ID:        "device123",
@@ -634,7 +766,7 @@ func TestListNoMatchingID(t *testing.T) {
 		},
 	)
 
-	listResults, err := persistence.List(context.TODO(), persistencemodel.ListOptions{
+	listResults, err := persistence.List(ctx, persistencemodel.ListOptions{
 		ID: "device999", // ID that does not exist
 	})
 

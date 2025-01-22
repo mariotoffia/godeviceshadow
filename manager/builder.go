@@ -16,8 +16,15 @@ func New() *Builder {
 }
 
 func (b *Builder) Build() *Manager {
+	sep := b.m.separation
+
+	if sep == 0 {
+		sep = persistencemodel.CombinedModels
+	}
+
 	return &Manager{
 		persistence:            b.m.persistence,
+		separation:             sep,
 		typeRegistry:           b.m.typeRegistry,
 		typeRegistryResolver:   b.m.typeRegistryResolver,
 		reportedMergeLoggers:   b.m.reportedMergeLoggers,
@@ -27,6 +34,12 @@ func (b *Builder) Build() *Manager {
 
 func (b *Builder) WithPersistence(persistence persistencemodel.Persistence) *Builder {
 	b.m.persistence = persistence
+	return b
+}
+
+// WithSeparation will set the default separation to use. If not set, it will default to `CombinedModels`.
+func (b *Builder) WithSeparation(separation persistencemodel.ModelSeparation) *Builder {
+	b.m.separation = separation
 	return b
 }
 

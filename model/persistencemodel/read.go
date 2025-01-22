@@ -20,7 +20,12 @@ type ReadonlyPersistence interface {
 	// NOTE: It will return a separate error for each _operation_ even if e.g. the storage is completely down and
 	// thus each _id_ will return the same error.
 	//
-	// If the model is combined use the `ModelType` of 0 in the `PersistenceID.ModelType`.
+	// If the model is combined use the `ModelType` of 0 in the `PersistenceID.ModelType`. If it contains both reported
+	// and desired when `ModelTye` is _zero_ it will return two `ReadResults` one for reported and one for desired. If
+	// one one of them exists (in the combined storage) it will just return that one. If error, it will return a single
+	// `ReadResult` with the error.
+	//
+	// All other cases it will return exactly one `ReadResult` per _operation_.
 	Read(ctx context.Context, opt ReadOptions, operation ...ReadOperation) []ReadResult
 }
 
