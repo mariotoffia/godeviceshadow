@@ -36,7 +36,7 @@ mgr := manager.New(). // <1>
   ).
   Build()
 
-res := mgr.Report(ctx, manager.ReportOperation{ // <6>
+res := mgr.Report(ctx, managermodel.ReportOperation{ // <6>
   ClientID: "myClient",
   Version:  0, // <7>
   Model: TestModel{

@@ -9,6 +9,7 @@ import (
 	"github.com/mariotoffia/godeviceshadow/loggers/changelogger"
 	"github.com/mariotoffia/godeviceshadow/manager"
 	"github.com/mariotoffia/godeviceshadow/model"
+	"github.com/mariotoffia/godeviceshadow/model/managermodel"
 	"github.com/mariotoffia/godeviceshadow/model/persistencemodel"
 	"github.com/mariotoffia/godeviceshadow/persistence/mempersistence"
 	"github.com/mariotoffia/godeviceshadow/types"
@@ -60,7 +61,7 @@ func TestReportCreateNew(t *testing.T) {
 		).
 		Build()
 
-	res := mgr.Report(ctx, manager.ReportOperation{
+	res := mgr.Report(ctx, managermodel.ReportOperation{
 		ClientID: "myClient",
 		Version:  0,
 		Model: TestModel{
@@ -116,7 +117,7 @@ func TestReportUpdateReport(t *testing.T) {
 		).
 		Build()
 
-	res := mgr.Report(ctx, manager.ReportOperation{
+	res := mgr.Report(ctx, managermodel.ReportOperation{
 		ClientID: "myClient",
 		Version:  0,
 		Model: TestModel{
@@ -132,7 +133,7 @@ func TestReportUpdateReport(t *testing.T) {
 	require.NoError(t, res[0].Error)
 	assert.True(t, res[0].ReportedProcessed)
 
-	res = mgr.Report(ctx, manager.ReportOperation{
+	res = mgr.Report(ctx, managermodel.ReportOperation{
 		ClientID: "myClient",
 		Version:  0, // update latest
 		Model: TestModel{
@@ -180,7 +181,7 @@ func TestReportUpdateReportNotChanged(t *testing.T) {
 		).
 		Build()
 
-	res := mgr.Report(ctx, manager.ReportOperation{
+	res := mgr.Report(ctx, managermodel.ReportOperation{
 		ClientID: "myClient",
 		Version:  0,
 		Model: TestModel{
@@ -195,7 +196,7 @@ func TestReportUpdateReportNotChanged(t *testing.T) {
 	require.Len(t, res, 1)
 	require.NoError(t, res[0].Error)
 
-	res = mgr.Report(ctx, manager.ReportOperation{
+	res = mgr.Report(ctx, managermodel.ReportOperation{
 		ClientID: "myClient",
 		Version:  0, // update latest
 		Model: TestModel{

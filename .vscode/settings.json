@@ -16,6 +16,7 @@
     "instantiator",
     "jsonutils",
     "limhamn",
+    "managermodel",
     "mariotoffia",
     "mempersistence",
     "nocng",

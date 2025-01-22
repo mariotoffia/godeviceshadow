@@ -8,6 +8,7 @@ import (
 
 	"github.com/mariotoffia/godeviceshadow/merge"
 	"github.com/mariotoffia/godeviceshadow/model"
+	"github.com/mariotoffia/godeviceshadow/model/managermodel"
 	"github.com/mariotoffia/godeviceshadow/model/persistencemodel"
 )
 
@@ -18,14 +19,16 @@ import (
 // If another process / go routine is updating the same id, it may fail, and return an error. If e.g. 409 (Conflict)
 // the caller may safely re-try the operation.
 //
-// TIP: It will *always* return a slice of `ReportOperationResult` with the same length as the input `operations`.
-func (mgr *Manager) Report(ctx context.Context, operations ...ReportOperation) []ReportOperationResult {
+// TIP: It will *always* return a slice of `  managermodel.ReportOperationResult` with the same length as the input `operations`.
+//
+// This implements the `managermodel.Reportable` interface.
+func (mgr *Manager) Report(ctx context.Context, operations ...managermodel.ReportOperation) []managermodel.ReportOperationResult {
 	if len(operations) == 0 {
 		return nil
 	}
 
-	toResults := func(results map[string]*ReportOperationResult) []ReportOperationResult {
-		res := make([]ReportOperationResult, 0, len(operations))
+	toResults := func(results map[string]*managermodel.ReportOperationResult) []managermodel.ReportOperationResult {
+		res := make([]managermodel.ReportOperationResult, 0, len(operations))
 
 		for op := range results {
 			res = append(res, *results[op])
@@ -34,7 +37,7 @@ func (mgr *Manager) Report(ctx context.Context, operations ...ReportOperation) [
 		return res
 	}
 
-	results := make(map[string]*ReportOperationResult, len(operations))
+	results := make(map[string]*managermodel.ReportOperationResult, len(operations))
 
 	// Prepare for read
 	readOps := mgr.reportPrepareForRead(operations, results)
@@ -68,11 +71,11 @@ func (mgr *Manager) Report(ctx context.Context, operations ...ReportOperation) [
 
 func (mgr *Manager) reportMergeModels(
 	readResults []groupedPersistenceResult,
-	operations []ReportOperation,
-	results map[string]*ReportOperationResult,
+	operations []managermodel.ReportOperation,
+	results map[string]*managermodel.ReportOperationResult,
 ) []groupedPersistenceResult {
 	//
-	getOperation := func(id, name string) *ReportOperation {
+	getOperation := func(id, name string) *managermodel.ReportOperation {
 		for _, op := range operations {
 			if op.ID.ID == id && op.ID.Name == name {
 				return &op
@@ -102,7 +105,7 @@ func (mgr *Manager) reportMergeModels(
 			})
 
 			if err != nil {
-				results[rdr.id.String()] = &ReportOperationResult{
+				results[rdr.id.String()] = &managermodel.ReportOperationResult{
 					ID:    rdr.id,
 					Error: err,
 				}
@@ -114,7 +117,7 @@ func (mgr *Manager) reportMergeModels(
 
 			if !dl.Dirty {
 				// Nothing to do (no changes)
-				results[rdr.id.String()] = &ReportOperationResult{
+				results[rdr.id.String()] = &managermodel.ReportOperationResult{
 					ID:           rdr.id,
 					MergeLoggers: ml,
 				}
@@ -125,7 +128,7 @@ func (mgr *Manager) reportMergeModels(
 			// need persist -> queue
 			readResults[i].queueReported = reported
 
-			results[rdr.id.String()] = &ReportOperationResult{
+			results[rdr.id.String()] = &managermodel.ReportOperationResult{
 				ID:           rdr.id,
 				MergeLoggers: ml,
 				Model:        reported,
@@ -140,7 +143,7 @@ func (mgr *Manager) reportMergeModels(
 
 			if err != nil {
 				// Skip this
-				results[rdr.id.String()] = &ReportOperationResult{
+				results[rdr.id.String()] = &managermodel.ReportOperationResult{
 					ID:    rdr.id,
 					Error: err,
 				}
@@ -156,7 +159,7 @@ func (mgr *Manager) reportMergeModels(
 			if r, ok := results[rdr.id.String()]; ok {
 				r.DesiredLoggers = dl
 			} else {
-				results[rdr.id.String()] = &ReportOperationResult{
+				results[rdr.id.String()] = &managermodel.ReportOperationResult{
 					ID:             rdr.id,
 					DesiredLoggers: dl,
 				}
@@ -172,7 +175,7 @@ func (mgr *Manager) reportMergeModels(
 	return readResults
 }
 
-func (mgr *Manager) reportWriteBack(ctx context.Context, writes []persistencemodel.WriteOperation, results map[string]*ReportOperationResult) {
+func (mgr *Manager) reportWriteBack(ctx context.Context, writes []persistencemodel.WriteOperation, results map[string]*managermodel.ReportOperationResult) {
 	result := mgr.persistence.Write(ctx, persistencemodel.WriteOptions{
 		Config: persistencemodel.WriteConfig{
 			Separation: mgr.separation,
@@ -184,7 +187,7 @@ func (mgr *Manager) reportWriteBack(ctx context.Context, writes []persistencemod
 			if r, ok := results[wr.ID.StringWithoutModelType()]; ok {
 				r.Error = wr.Error
 			} else {
-				results[wr.ID.StringWithoutModelType()] = &ReportOperationResult{
+				results[wr.ID.StringWithoutModelType()] = &managermodel.ReportOperationResult{
 					ID:    wr.ID.ToID(),
 					Error: wr.Error,
 				}
@@ -197,7 +200,7 @@ func (mgr *Manager) reportWriteBack(ctx context.Context, writes []persistencemod
 			if r, ok := results[wr.ID.StringWithoutModelType()]; ok {
 				r.ReportedProcessed = true
 			} else {
-				results[wr.ID.StringWithoutModelType()] = &ReportOperationResult{
+				results[wr.ID.StringWithoutModelType()] = &managermodel.ReportOperationResult{
 					ID:                wr.ID.ToID(),
 					ReportedProcessed: true,
 				}
@@ -206,7 +209,7 @@ func (mgr *Manager) reportWriteBack(ctx context.Context, writes []persistencemod
 			if r, ok := results[wr.ID.StringWithoutModelType()]; ok {
 				r.DesiredProcessed = true
 			} else {
-				results[wr.ID.StringWithoutModelType()] = &ReportOperationResult{
+				results[wr.ID.StringWithoutModelType()] = &managermodel.ReportOperationResult{
 					ID:               wr.ID.ToID(),
 					DesiredProcessed: true,
 				}
@@ -262,7 +265,7 @@ func (mgr *Manager) createMergeLoggers(loggers []model.CreatableMergeLogger) []m
 func (mgr *Manager) reportReadFromPersistence(
 	ctx context.Context,
 	readOps []persistencemodel.ReadOperation,
-	results map[string]*ReportOperationResult,
+	results map[string]*managermodel.ReportOperationResult,
 	create bool,
 ) []groupedPersistenceResult {
 	readResults := mgr.persistence.Read(ctx, persistencemodel.ReadOptions{}, readOps...)
@@ -291,7 +294,7 @@ func (mgr *Manager) reportReadFromPersistence(
 			}
 
 			if rdr.Model == nil {
-				results[rdr.ID.StringWithoutModelType()] = &ReportOperationResult{
+				results[rdr.ID.StringWithoutModelType()] = &managermodel.ReportOperationResult{
 					ID:    rdr.ID.ToID(),
 					Error: rdr.Error,
 				}
@@ -331,7 +334,7 @@ func (mgr *Manager) reportReadFromPersistence(
 	return r
 }
 
-func (mgr *Manager) reportPrepareForRead(operations []ReportOperation, results map[string]*ReportOperationResult) []persistencemodel.ReadOperation {
+func (mgr *Manager) reportPrepareForRead(operations []managermodel.ReportOperation, results map[string]*managermodel.ReportOperationResult) []persistencemodel.ReadOperation {
 	// Prepare for read
 	readOps := make([]persistencemodel.ReadOperation, 0, len(operations))
 
@@ -339,7 +342,7 @@ func (mgr *Manager) reportPrepareForRead(operations []ReportOperation, results m
 		te, ok := mgr.ResolveType(op.ModelType, op.ID)
 
 		if !ok {
-			results[op.ID.String()] = &ReportOperationResult{
+			results[op.ID.String()] = &managermodel.ReportOperationResult{
 				ID:    op.ID,
 				Error: fmt.Errorf("unable to resolve type: %s", op.ModelType),
 			}
@@ -348,7 +351,7 @@ func (mgr *Manager) reportPrepareForRead(operations []ReportOperation, results m
 		}
 
 		if op.Model == nil {
-			results[op.ID.String()] = &ReportOperationResult{
+			results[op.ID.String()] = &managermodel.ReportOperationResult{
 				ID:    op.ID,
 				Error: fmt.Errorf("model is nil (use delete to remove model)"),
 			}
