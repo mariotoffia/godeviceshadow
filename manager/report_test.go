@@ -12,6 +12,7 @@ import (
 	"github.com/mariotoffia/godeviceshadow/model/persistencemodel"
 	"github.com/mariotoffia/godeviceshadow/persistence/mempersistence"
 	"github.com/mariotoffia/godeviceshadow/types"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -90,4 +91,131 @@ func TestReportCreateNew(t *testing.T) {
 	assert.Equal(t, 23.4, sensors[0].NewValue.GetValue())
 	assert.Equal(t, time.Time{}, sensors[0].OldTimeStamp)
 	assert.Equal(t, now, sensors[0].NewValue.GetTimestamp())
+}
+
+func TestReportUpdateReport(t *testing.T) {
+	ctx := context.Background()
+	now := time.Now()
+
+	mgr := manager.New().
+		WithPersistence(mempersistence.New()).
+		WithSeparation(persistencemodel.SeparateModels).
+		WithReportedLoggers(changelogger.New()).
+		WithTypeRegistryResolver(
+			types.NewRegistry().RegisterResolver(
+				model.NewResolveFunc(func(id, name string) (model.TypeEntry, bool) {
+					if name == "homeHub" {
+						return model.TypeEntry{
+							Name: "homeHub", Model: reflect.TypeOf(TestModel{}),
+						}, true
+					}
+
+					return model.TypeEntry{}, false
+				}),
+			),
+		).
+		Build()
+
+	res := mgr.Report(ctx, manager.ReportOperation{
+		ClientID: "myClient",
+		Version:  0,
+		Model: TestModel{
+			TimeZone: tz,
+			Sensors: map[string]Sensor{
+				"temp": {Value: 23.4, TimeStamp: now},
+			},
+		},
+		ID: persistencemodel.ModelIndependentPersistenceID{ID: "device123", Name: "homeHub"},
+	})
+
+	require.Len(t, res, 1)
+	require.NoError(t, res[0].Error)
+	assert.True(t, res[0].ReportedProcessed)
+
+	res = mgr.Report(ctx, manager.ReportOperation{
+		ClientID: "myClient",
+		Version:  0, // update latest
+		Model: TestModel{
+			TimeZone: tz,
+			Sensors: map[string]Sensor{
+				"temp": {Value: 23.5, TimeStamp: now.Add(1 * time.Minute)},
+			},
+		},
+		ID: persistencemodel.ModelIndependentPersistenceID{ID: "device123", Name: "homeHub"},
+	})
+
+	require.Len(t, res, 1)
+	require.NoError(t, res[0].Error)
+	assert.True(t, res[0].ReportedProcessed)
+
+	chl := changelogger.FindLogger(res[0].MergeLoggers)
+	require.NotNil(t, chl)
+	require.Len(t, chl.PlainLog, 1)
+	require.Len(t, chl.ManagedLog, 1)
+
+	assert.Len(t, chl.PlainLog[model.MergeOperationNotChanged], 1, "no change")
+	assert.Len(t, chl.ManagedLog[model.MergeOperationUpdate], 1, "temp sensor shall have been updated")
+}
+
+func TestReportUpdateReportNotChanged(t *testing.T) {
+	ctx := context.Background()
+	now := time.Now()
+
+	mgr := manager.New().
+		WithPersistence(mempersistence.New()).
+		WithSeparation(persistencemodel.SeparateModels).
+		WithReportedLoggers(changelogger.New()).
+		WithTypeRegistryResolver(
+			types.NewRegistry().RegisterResolver(
+				model.NewResolveFunc(func(id, name string) (model.TypeEntry, bool) {
+					if name == "homeHub" {
+						return model.TypeEntry{
+							Name: "homeHub", Model: reflect.TypeOf(TestModel{}),
+						}, true
+					}
+
+					return model.TypeEntry{}, false
+				}),
+			),
+		).
+		Build()
+
+	res := mgr.Report(ctx, manager.ReportOperation{
+		ClientID: "myClient",
+		Version:  0,
+		Model: TestModel{
+			TimeZone: tz,
+			Sensors: map[string]Sensor{
+				"temp": {Value: 23.4, TimeStamp: now},
+			},
+		},
+		ID: persistencemodel.ModelIndependentPersistenceID{ID: "device123", Name: "homeHub"},
+	})
+
+	require.Len(t, res, 1)
+	require.NoError(t, res[0].Error)
+
+	res = mgr.Report(ctx, manager.ReportOperation{
+		ClientID: "myClient",
+		Version:  0, // update latest
+		Model: TestModel{
+			TimeZone: tz,
+			Sensors: map[string]Sensor{
+				"temp": {Value: 23.4, TimeStamp: now},
+			},
+		},
+		ID: persistencemodel.ModelIndependentPersistenceID{ID: "device123", Name: "homeHub"},
+	})
+
+	require.Len(t, res, 1)
+	require.NoError(t, res[0].Error)
+
+	chl := changelogger.FindLogger(res[0].MergeLoggers)
+	require.NotNil(t, chl)
+	require.Len(t, chl.PlainLog, 1)
+	require.Len(t, chl.ManagedLog, 1)
+
+	// Nothing has changed
+	assert.Len(t, chl.PlainLog[model.MergeOperationNotChanged], 1)
+	assert.Len(t, chl.ManagedLog[model.MergeOperationNotChanged], 1)
 }

@@ -268,21 +268,25 @@ func (mgr *Manager) reportReadFromPersistence(
 	readResults := mgr.persistence.Read(ctx, persistencemodel.ReadOptions{}, readOps...)
 	res := make(map[string]*groupedPersistenceResult, len(readResults))
 
+	findOp := func(id persistencemodel.PersistenceID) *persistencemodel.ReadOperation {
+		for _, op := range readOps {
+			if op.ID.Equal(id) {
+				return &op
+			}
+		}
+
+		return nil
+	}
+
 	for _, rdr := range readResults {
 		if rdr.Error != nil {
 			var pe persistencemodel.PersistenceError
 
 			if errors.As(rdr.Error, &pe); create && pe.Code == 404 /*not found*/ {
 				// Special case -> create new empty model
-				for _, op := range readOps {
-					if op.ID.Equal(rdr.ID) {
-						if op.Version == 0 { // Only when version is 0
-							rdr.Model = reflect.New(op.Model).Elem().Interface()
-							rdr.Error = nil
-
-							break
-						}
-					}
+				if op := findOp(rdr.ID); op != nil && op.Version == 0 /*only when version is 0*/ {
+					rdr.Model = reflect.New(op.Model).Elem().Interface()
+					rdr.Error = nil
 				}
 			}
 
@@ -306,6 +310,13 @@ func (mgr *Manager) reportReadFromPersistence(
 			if rdr.ID.ModelType == persistencemodel.ModelTypeReported {
 				r.reported = &rdr
 			} else {
+				// In case where there where no desired model in persistence -> create one
+				if rdr.Model == nil {
+					if op := findOp(rdr.ID); op != nil {
+						rdr.Model = reflect.New(op.Model).Elem().Interface()
+					}
+				}
+
 				r.desired = &rdr
 			}
 		}
