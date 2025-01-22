@@ -78,13 +78,13 @@ func (p *Persistence) writeCombined(group persistutils.GroupedWriteOperation) []
 	desired := group.GetByModelType(persistencemodel.ModelTypeDesired)
 	reported := group.GetByModelType(persistencemodel.ModelTypeReported)
 
-	if desired == nil || reported == nil {
+	if desired == nil && reported == nil {
 		return []persistencemodel.WriteResult{
-			persistencemodel.WriteResult{
+			{
 				ID:    persistencemodel.PersistenceID{ID: group.ID, Name: group.Name, ModelType: persistencemodel.ModelTypeDesired},
 				Error: persistencemodel.Error400("Neither desired or reported is set, use delete to delete models"),
 			},
-			persistencemodel.WriteResult{
+			{
 				ID:    persistencemodel.PersistenceID{ID: group.ID, Name: group.Name, ModelType: persistencemodel.ModelTypeReported},
 				Error: persistencemodel.Error400("Neither desired or reported is set, use delete to delete models"),
 			},
