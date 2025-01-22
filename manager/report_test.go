@@ -69,7 +69,7 @@ func TestReportCreateNew(t *testing.T) {
 				"temp": {Value: 23.4, TimeStamp: now},
 			},
 		},
-		ID: persistencemodel.PlainPersistenceID{ID: "device123", Name: "homeHub"},
+		ID: persistencemodel.ID{ID: "device123", Name: "homeHub"},
 	})
 
 	require.Len(t, res, 1)
@@ -125,7 +125,7 @@ func TestReportUpdateReport(t *testing.T) {
 				"temp": {Value: 23.4, TimeStamp: now},
 			},
 		},
-		ID: persistencemodel.PlainPersistenceID{ID: "device123", Name: "homeHub"},
+		ID: persistencemodel.ID{ID: "device123", Name: "homeHub"},
 	})
 
 	require.Len(t, res, 1)
@@ -141,7 +141,7 @@ func TestReportUpdateReport(t *testing.T) {
 				"temp": {Value: 23.5, TimeStamp: now.Add(1 * time.Minute)},
 			},
 		},
-		ID: persistencemodel.PlainPersistenceID{ID: "device123", Name: "homeHub"},
+		ID: persistencemodel.ID{ID: "device123", Name: "homeHub"},
 	})
 
 	require.Len(t, res, 1)
@@ -189,7 +189,7 @@ func TestReportUpdateReportNotChanged(t *testing.T) {
 				"temp": {Value: 23.4, TimeStamp: now},
 			},
 		},
-		ID: persistencemodel.PlainPersistenceID{ID: "device123", Name: "homeHub"},
+		ID: persistencemodel.ID{ID: "device123", Name: "homeHub"},
 	})
 
 	require.Len(t, res, 1)
@@ -204,7 +204,7 @@ func TestReportUpdateReportNotChanged(t *testing.T) {
 				"temp": {Value: 23.4, TimeStamp: now},
 			},
 		},
-		ID: persistencemodel.PlainPersistenceID{ID: "device123", Name: "homeHub"},
+		ID: persistencemodel.ID{ID: "device123", Name: "homeHub"},
 	})
 
 	require.Len(t, res, 1)
