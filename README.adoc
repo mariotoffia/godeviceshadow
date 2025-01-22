@@ -52,7 +52,7 @@ chl := changelogger.FindLogger(res[0].MergeLoggers) // <8>
 sns, err := chl.ManagedFromPath(`Sensors\..*`)
 sensors := sns.All()
 
-fmt.Printf("%s: %d", sensors[0].Path, sensors[0].NewValue.GetTimestamp()) // <9>
+fmt.Printf("%s: %s", sensors[0].Path, sensors[0].NewValue.GetTimestamp().Format(time.RFC3339)) // <9>
 ----
 <1> Use builder to create a new manager.
 <2> Use in-memory persistence. Swap this e.g. for _DynamoDB_ persistence via `dynamodbpersistence.New(...)`.
@@ -62,9 +62,10 @@ fmt.Printf("%s: %d", sensors[0].Path, sensors[0].NewValue.GetTimestamp()) // <9>
 <6> Report the model and thereby merge with model in the persistence and ensure any desired acknowledgements are done. In this case nothing is persisted so it will create a new model and merge it.
 <7> The version is 0 and will be incremented by the system. If using zero it will always use the latest version to merge with. If explicit version is use, it will only merge if the version is the same (and then increment the version).
 <8> Find the change logger and extract the managed values from the path `Sensors\..*` (_Regular Expression_).
-<9> Outputs e.q. _Sensors.temp: 2021-09-01 12:00:00 +0000 UTC_
+<9> Outputs e.q. _Sensors.temp: 2025-01-22T13:22:26+01:00_
 
-TIP: 💡 To view all examples, visit the https://github.com/mariotoffia/godeviceshadow/tree/main/examples[Examples] directory.
+== TIP 💡: View All Examples
+To view all examples, visit the https://github.com/mariotoffia/godeviceshadow/tree/main/examples[Examples] directory.
 
 == Core Concepts
 
