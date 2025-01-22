@@ -11,7 +11,58 @@ The partition key is the "name" of the device shadow and hence, it is possible t
 
 The storage is pluggable, but it comes with a DynamoDB and in-memory implementation out of the box.
 
-// TODO: A sample how to use a manager with a super simple model.
+.Example Use Embedded and In Memory 
+[source,go]
+----
+ctx := context.Background()
+now := time.Now()
+
+mgr := manager.New(). // <1>
+	WithPersistence(mempersistence.New()). // <2>
+	WithSeparation(persistencemodel.SeparateModels). // <3>
+	WithReportedLoggers(changelogger.New()). // <4>
+	WithTypeRegistryResolver(
+		types.NewRegistry().RegisterResolver(
+			model.NewResolveFunc(func(id, name string) (model.TypeEntry, bool) {
+				if name == "homeHub" { // <5>
+					return model.TypeEntry{
+						Name: "homeHub", Model: reflect.TypeOf(TestModel{}),
+					}, true
+				}
+
+				return model.TypeEntry{}, false
+			}),
+		),
+	).
+	Build()
+
+res := mgr.Report(ctx, manager.ReportOperation{ // <6>
+	ClientID: "myClient",
+	Version:  0, // <7>
+	Model: TestModel{
+		TimeZone: tz,
+		Sensors: map[string]Sensor{
+			"temp": {Value: 23.4, TimeStamp: now},
+		},
+	},
+	ID: persistencemodel.ModelIndependentPersistenceID{ID: "device123", Name: "homeHub"},
+})
+
+chl := changelogger.FindLogger(res[0].MergeLoggers) // <8>
+sns, err := chl.ManagedFromPath(`Sensors\..*`)
+sensors := sns.All()
+
+fmt.Printf("%s: %d", sensors[0].Path, sensors[0].NewValue.GetTimestamp()) // <9>
+----
+<1> Use builder to create a new manager.
+<2> Use in-memory persistence. Swap this e.g. for _DynamoDB_ persistence via `dynamodbpersistence.New(...)`.
+<3> Separate the model persistence by default - can be overridden on each write operation.
+<4> Use the change logger to log changes both managed and plain values for post examination.
+<5> Simple resolver that only resolves the `homeHub` model.
+<6> Report the model and thereby merge with model in the persistence and ensure any desired acknowledgements are done. In this case nothing is persisted so it will create a new model and merge it.
+<7> The version is 0 and will be incremented by the system. If using zero it will always use the latest version to merge with. If explicit version is use, it will only merge if the version is the same (and then increment the version).
+<8> Find the change logger and extract the managed values from the path `Sensors\..*` (_Regular Expression_).
+<9> Outputs e.q. _Sensors.temp: 2021-09-01 12:00:00 +0000 UTC_
 
 TIP: 💡 To view all examples, visit the https://github.com/mariotoffia/godeviceshadow/tree/main/examples[Examples] directory.
 
