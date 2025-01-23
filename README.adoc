@@ -5,11 +5,13 @@ This is an implementation of a device shadow storage and notification for Dynamo
 
 CAUTION: This is work in progress - use it with caution!
 
-This is a somewhat emulation of the existing IoT Core Device Shadow. However, it separates the _Reported_ and _Desired_ states into two different sort keys to allow for more data and better querying.
+This is a somewhat emulation of the existing IoT Core Device Shadow. However, it separates the _Reported_ and _Desired_ states into two different sort keys to allow for more data and better querying and better performance if e.g. most of the time _Reported_ is updated. It is possible to direct the _persistence_ to use combined or separate storage.
 
-The partition key is the "name" of the device shadow and hence, it is possible to do advanced naming e.g. _My House#Basement#Lightning Controller_ as a _PK_. The _SK_(s) are handled by this library.
+It handles reported and desired as with a device shadow but also allows to use `ServerIsMaster` or `ClientIsMaster` to control how merging of reported and desired are performed.
 
-The storage is pluggable, but it comes with a DynamoDB and in-memory implementation out of the box.
+Most are pluggable and components may be used separately or it is possible to write your own manager or all other components. E.g. just use storage to read and write models and diff them.
+
+The storage is pluggable, but it comes with a DynamoDB and in-memory implementation out of the box. It is possible to write your own loggers to participate in the diff/merge process to e.g. update a timeseries database upon add/update of sensor data etc.
 
 .Example Use Embedded and In Memory 
 [source,go]
