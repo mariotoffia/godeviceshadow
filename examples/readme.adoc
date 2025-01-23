@@ -386,9 +386,9 @@ func TestReadUnversionedCombined(t *testing.T) {
 <5> Read it back. Independent on storage, it will return both reported and desired in separate results.
 
 == Manager Package
-
 This package uses persistence, merge, type registry to constitute a manager that can handle high level interactions with a model.
 
+=== Reporting & Desired Handling
 The below example shows how a client sets a desired state and at a later point in time a report that the state has been set will remove
 the desired state and only the value is present in the reported state.
 
