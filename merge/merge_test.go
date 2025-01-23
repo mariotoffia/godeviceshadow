@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/mariotoffia/godeviceshadow/merge"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -364,7 +365,7 @@ func BenchmarkMergeOneNewerInSlice(t *testing.B) {
 	t.ResetTimer()
 
 	for i := 0; i < t.N; i++ {
-		merge.Merge(oldDevice, newDevice, merge.MergeOptions{
+		_, _ = merge.Merge(oldDevice, newDevice, merge.MergeOptions{
 			Mode: merge.ClientIsMaster,
 		})
 	}
