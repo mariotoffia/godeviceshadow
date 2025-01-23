@@ -2,6 +2,7 @@ package manager_test
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 	"testing"
 	"time"
@@ -100,7 +101,7 @@ func TestReportUpdateReport(t *testing.T) {
 
 	mgr := manager.New().
 		WithPersistence(mempersistence.New()).
-		WithSeparation(persistencemodel.SeparateModels).
+		WithSeparation(persistencemodel.CombinedModels).
 		WithReportLoggers(changelogger.New()).
 		WithTypeRegistryResolver(
 			types.NewRegistry().RegisterResolver(
@@ -164,7 +165,7 @@ func TestReportUpdateReportNotChanged(t *testing.T) {
 
 	mgr := manager.New().
 		WithPersistence(mempersistence.New()).
-		WithSeparation(persistencemodel.SeparateModels).
+		WithSeparation(persistencemodel.CombinedModels).
 		WithReportLoggers(changelogger.New()).
 		WithTypeRegistryResolver(
 			types.NewRegistry().RegisterResolver(
@@ -219,4 +220,77 @@ func TestReportUpdateReportNotChanged(t *testing.T) {
 	// Nothing has changed
 	assert.Len(t, chl.PlainLog[model.MergeOperationNotChanged], 1)
 	assert.Len(t, chl.ManagedLog[model.MergeOperationNotChanged], 1)
+}
+
+// BenchmarkNewReportAndUpdateReport benchmarks the creation of a new report and then
+// update the report with a new value.
+//
+// On my machine it takes about 14μs to perform this benchmark.
+func BenchmarkNewReportAndUpdateReport(t *testing.B) {
+	ctx := context.Background()
+	now := time.Now()
+
+	mgr := manager.New().
+		WithPersistence(mempersistence.New()).
+		WithSeparation(persistencemodel.CombinedModels).
+		WithReportLoggers(changelogger.New()).
+		WithTypeRegistryResolver(
+			types.NewRegistry().RegisterResolver(
+				model.NewResolveFunc(func(id, name string) (model.TypeEntry, bool) {
+					if name == "homeHub" {
+						return model.TypeEntry{
+							Name: "homeHub", Model: reflect.TypeOf(TestModel{}),
+						}, true
+					}
+
+					return model.TypeEntry{}, false
+				}),
+			),
+		).
+		Build()
+
+	t.ResetTimer()
+
+	for i := 0; i < t.N; i++ {
+		device := fmt.Sprintf("device%d", i)
+		res := mgr.Report(ctx, managermodel.ReportOperation{
+			ClientID: "myClient",
+			Version:  0,
+			Model: TestModel{
+				TimeZone: tz,
+				Sensors: map[string]Sensor{
+					"temp": {Value: 23.4, TimeStamp: now},
+				},
+			},
+			ID: persistencemodel.ID{ID: device, Name: "homeHub"},
+		})
+
+		require.Len(t, res, 1)
+		require.NoError(t, res[0].Error)
+		assert.True(t, res[0].ReportedProcessed)
+
+		res = mgr.Report(ctx, managermodel.ReportOperation{
+			ClientID: "myClient",
+			Version:  0, // update latest
+			Model: TestModel{
+				TimeZone: tz,
+				Sensors: map[string]Sensor{
+					"temp": {Value: 23.5, TimeStamp: now.Add(1 * time.Minute)},
+				},
+			},
+			ID: persistencemodel.ID{ID: device, Name: "homeHub"},
+		})
+
+		require.Len(t, res, 1)
+		require.NoError(t, res[0].Error)
+		assert.True(t, res[0].ReportedProcessed)
+
+		chl := changelogger.FindLogger(res[0].MergeLoggers)
+		require.NotNil(t, chl)
+		require.Len(t, chl.PlainLog, 1)
+		require.Len(t, chl.ManagedLog, 1)
+
+		assert.Len(t, chl.PlainLog[model.MergeOperationNotChanged], 1, "no change")
+		assert.Len(t, chl.ManagedLog[model.MergeOperationUpdate], 1, "temp sensor shall have been updated")
+	}
 }

@@ -3,6 +3,7 @@ package managermodel
 import (
 	"context"
 
+	"github.com/mariotoffia/godeviceshadow/merge"
 	"github.com/mariotoffia/godeviceshadow/model"
 	"github.com/mariotoffia/godeviceshadow/model/persistencemodel"
 )
@@ -21,6 +22,11 @@ type DesireOperation struct {
 	ModelType string
 	// MergeLoggers will override the default merge loggers, for desired function.
 	MergeLoggers []model.CreatableMergeLogger
+	// MergeMode is the merge mode to use when merging the desired model into the existing one. Default is `merge.ServerIsMaster`.
+	//
+	// TIP: This is useful when removal of items in the desired model is wanted. When `merge.ServerIsMaster` is used, it will only
+	// upsert the model. When `merge.ClientIsMaster` is used, it will add, remove and update items.
+	MergeMode merge.MergeMode
 }
 
 type DesireOperationResult struct {

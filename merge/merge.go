@@ -16,7 +16,7 @@ const (
 	// and deletions are propagated.
 	ClientIsMaster MergeMode = 1
 	// ServerIsMaster, only updates and additions are propagated.
-	ServerIsMaster = 2
+	ServerIsMaster MergeMode = 2
 )
 
 // MergeOptions holds configuration for how the merge should be performed.

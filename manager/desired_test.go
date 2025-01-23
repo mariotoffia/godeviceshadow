@@ -2,6 +2,7 @@ package manager_test
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 	"testing"
 	"time"
@@ -79,7 +80,7 @@ func TestDesiredUpdateDesired(t *testing.T) {
 
 	mgr := manager.New().
 		WithPersistence(mempersistence.New()).
-		WithSeparation(persistencemodel.SeparateModels).
+		WithSeparation(persistencemodel.CombinedModels).
 		WithDesiredMergeLoggers(changelogger.New()).
 		WithTypeRegistryResolver(
 			types.NewRegistry().RegisterResolver(
@@ -202,7 +203,7 @@ func TestDesiredAcknowledge(t *testing.T) {
 
 	mgr := manager.New().
 		WithPersistence(mempersistence.New()).
-		WithSeparation(persistencemodel.SeparateModels).
+		WithSeparation(persistencemodel.CombinedModels).
 		WithTypeRegistryResolver(
 			types.NewRegistry().RegisterResolver(
 				model.NewResolveFunc(func(id, name string) (model.TypeEntry, bool) {
@@ -246,4 +247,126 @@ func TestDesiredAcknowledge(t *testing.T) {
 
 	require.Len(t, resReport, 1)
 	require.NoError(t, resReport[0].Error)
+	assert.True(t, resReport[0].ReportedProcessed)
+	assert.True(t, resReport[0].DesiredProcessed)
+
+	resRead := mgr.Read(ctx,
+		managermodel.ReadOperation{
+			ID: persistencemodel.PersistenceID{ID: "device123", Name: "homeHub", ModelType: persistencemodel.ModelTypeReported},
+		},
+		managermodel.ReadOperation{
+			ID: persistencemodel.PersistenceID{ID: "device123", Name: "homeHub", ModelType: persistencemodel.ModelTypeDesired},
+		},
+	)
+	require.Len(t, resRead, 2)
+	require.NoError(t, resRead[0].Error)
+	require.NoError(t, resRead[1].Error)
+
+	var desired, reported TestModel
+
+	if resRead[0].ID.ModelType == persistencemodel.ModelTypeReported {
+		reported = resRead[0].Model.(TestModel)
+		desired = resRead[1].Model.(TestModel)
+	} else {
+		reported = resRead[1].Model.(TestModel)
+		desired = resRead[0].Model.(TestModel)
+	}
+
+	assert.Len(t, desired.Sensors, 0)
+	require.NotNil(t, reported.Sensors)
+	require.Len(t, reported.Sensors, 1)
+
+	assert.Equal(t, 23.4, reported.Sensors["temp"].Value)
+}
+
+// BenchmarkDesireReportThatAcknowledgesAndReadAgain will benchmark where
+// it will add a desire state, report it and read both desired and reported
+// states. All is done as separate models.
+//
+// This takes around 13μs on my machine.
+func BenchmarkDesireReportThatAcknowledgesAndReadAgain(t *testing.B) {
+	ctx := context.Background()
+	now := time.Now()
+
+	mgr := manager.New().
+		WithPersistence(mempersistence.New()).
+		WithSeparation(persistencemodel.SeparateModels).
+		WithTypeRegistryResolver(
+			types.NewRegistry().RegisterResolver(
+				model.NewResolveFunc(func(id, name string) (model.TypeEntry, bool) {
+					if name == "homeHub" {
+						return model.TypeEntry{
+							Name: "homeHub", Model: reflect.TypeOf(TestModel{}),
+						}, true
+					}
+
+					return model.TypeEntry{}, false
+				}),
+			),
+		).
+		Build()
+
+	t.ResetTimer()
+
+	for i := 0; i < t.N; i++ {
+		device := fmt.Sprintf("device-%d", i)
+		resDesire := mgr.Desire(ctx, managermodel.DesireOperation{
+			ClientID: "myClient",
+			Model: TestModel{
+				TimeZone: tz,
+				Sensors: map[string]Sensor{
+					"temp": {Value: 23.4, TimeStamp: now}, // We desire this to be set to 23.4
+				},
+			},
+			ID: persistencemodel.ID{ID: device, Name: "homeHub"},
+		})
+
+		require.Len(t, resDesire, 1)
+		require.NoError(t, resDesire[0].Error)
+
+		// Report the desired state -> Clears it in the desired
+		resReport := mgr.Report(ctx, managermodel.ReportOperation{
+			ClientID: "myClient",
+			Model: TestModel{
+				TimeZone: tz,
+				Sensors: map[string]Sensor{
+					"temp": {Value: 23.4, TimeStamp: now},
+				},
+			},
+			ID: persistencemodel.ID{ID: device, Name: "homeHub"},
+		})
+
+		require.Len(t, resReport, 1)
+		require.NoError(t, resReport[0].Error)
+		assert.True(t, resReport[0].ReportedProcessed)
+		assert.True(t, resReport[0].DesiredProcessed)
+
+		resRead := mgr.Read(ctx,
+			managermodel.ReadOperation{
+				ID: persistencemodel.PersistenceID{ID: device, Name: "homeHub", ModelType: persistencemodel.ModelTypeReported},
+			},
+			managermodel.ReadOperation{
+				ID: persistencemodel.PersistenceID{ID: device, Name: "homeHub", ModelType: persistencemodel.ModelTypeDesired},
+			},
+		)
+		require.Len(t, resRead, 2)
+		require.NoError(t, resRead[0].Error)
+		require.NoError(t, resRead[1].Error)
+
+		var desired, reported TestModel
+
+		if resRead[0].ID.ModelType == persistencemodel.ModelTypeReported {
+			reported = resRead[0].Model.(TestModel)
+			desired = resRead[1].Model.(TestModel)
+		} else {
+			reported = resRead[1].Model.(TestModel)
+			desired = resRead[0].Model.(TestModel)
+		}
+
+		assert.Len(t, desired.Sensors, 0)
+		require.NotNil(t, reported.Sensors)
+		require.Len(t, reported.Sensors, 1)
+
+		assert.Equal(t, 23.4, reported.Sensors["temp"].Value)
+	}
 }

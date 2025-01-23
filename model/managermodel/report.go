@@ -3,6 +3,7 @@ package managermodel
 import (
 	"context"
 
+	"github.com/mariotoffia/godeviceshadow/merge"
 	"github.com/mariotoffia/godeviceshadow/model"
 	"github.com/mariotoffia/godeviceshadow/model/persistencemodel"
 )
@@ -29,6 +30,11 @@ type ReportOperation struct {
 	// These loggers are invoked when the persisted desired model and the reported acknowledges the desired value and thus is removed,
 	// from the desired model.
 	DesiredLoggers []model.CreatableDesiredLogger
+	// MergeMode is the merge mode to use when merging the reported models. If not set it will use the `merge.ServerIsMaster`.
+	//
+	// TIP: This is useful when removal of items in the reported model is wanted. When `merge.ServerIsMaster` is used, it will only
+	// upsert the model. When `merge.ClientIsMaster` is used, it will add, remove and update items.
+	MergeMode merge.MergeMode
 }
 
 type ReportOperationResult struct {

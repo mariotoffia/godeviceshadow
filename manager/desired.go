@@ -89,6 +89,24 @@ func (mgr *Manager) Desire(ctx context.Context, operations ...managermodel.Desir
 
 				rr.Model = reflect.New(op.Model).Elem().Interface()
 				rr.Error = nil
+
+				if rr.ID.ModelType == 0 /*combined*/ {
+					// Special case, we need to init reported as well
+					desired := rr
+					reported := rr
+
+					desired.ID = desired.ID.ToPersistenceID(persistencemodel.ModelTypeDesired)
+					reported.ID = reported.ID.ToPersistenceID(persistencemodel.ModelTypeReported)
+
+					grouped[rr.ID.StringWithoutModelType()] = &groupedPersistenceResult{
+						id:       rr.ID.ToID(),
+						reported: &reported,
+						desired:  &desired,
+						dop:      desiredOperation(desired.ID),
+					}
+
+					continue
+				}
 			}
 
 			if rr.Error != nil {
@@ -102,9 +120,10 @@ func (mgr *Manager) Desire(ctx context.Context, operations ...managermodel.Desir
 
 		var reported, desired *persistencemodel.ReadResult
 
-		if rr.ID.ModelType == persistencemodel.ModelTypeReported {
+		switch rr.ID.ModelType {
+		case persistencemodel.ModelTypeReported:
 			reported = &rr
-		} else {
+		case persistencemodel.ModelTypeDesired:
 			desired = &rr
 		}
 
@@ -141,8 +160,14 @@ func (mgr *Manager) Desire(ctx context.Context, operations ...managermodel.Desir
 		ml := mgr.createMergeLoggers(false /*report*/, rr.dop.MergeLoggers)
 
 		// Merge the model
+		mergeMode := merge.ServerIsMaster
+
+		if rr.dop.MergeMode > 0 {
+			mergeMode = rr.dop.MergeMode
+		}
+
 		newDesired, err := merge.MergeAny(rr.desired.Model, rr.dop.Model, merge.MergeOptions{
-			Mode:    merge.ServerIsMaster,
+			Mode:    mergeMode,
 			Loggers: ml,
 		})
 

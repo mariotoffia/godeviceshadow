@@ -87,6 +87,11 @@ func (mgr *Manager) reportMergeModels(
 
 	for i, rdr := range readResults {
 		op := getOperation(rdr.id.ID, rdr.id.Name)
+		sep := mgr.separation
+
+		if op.Separation > 0 {
+			sep = op.Separation
+		}
 
 		readResults[i].op = op
 
@@ -99,8 +104,14 @@ func (mgr *Manager) reportMergeModels(
 		if rdr.reported != nil {
 			ml := mgr.createMergeLoggers(true /*report*/, op.MergeLoggers)
 
+			mergeMode := merge.ServerIsMaster
+
+			if op.MergeMode > 0 {
+				mergeMode = op.MergeMode
+			}
+
 			reported, err = merge.MergeAny(rdr.reported.Model, op.Model, merge.MergeOptions{
-				Mode:    merge.ServerIsMaster,
+				Mode:    mergeMode,
 				Loggers: ml,
 			})
 
@@ -165,9 +176,15 @@ func (mgr *Manager) reportMergeModels(
 				}
 			}
 
-			if dla.Dirty {
+			// Always needed when combined independent on dirty
+			if dla.Dirty || sep == persistencemodel.CombinedModels {
 				// need persist -> queue
 				readResults[i].queueDesired = model
+
+				// Make sure reported is persisted as well when combined models
+				if sep == persistencemodel.CombinedModels && readResults[i].queueReported == nil {
+					readResults[i].queueReported = reported
+				}
 			}
 		}
 	}
@@ -268,6 +285,23 @@ func (mgr *Manager) reportReadFromPersistence(
 				if op := findOp(rdr.ID); op != nil && op.Version == 0 /*only when version is 0*/ {
 					rdr.Model = reflect.New(op.Model).Elem().Interface()
 					rdr.Error = nil
+
+					if rdr.ID.ModelType == 0 /*combined*/ {
+						// Special case, we need to init desired as well
+						desired := rdr
+						reported := rdr
+
+						desired.ID = desired.ID.ToPersistenceID(persistencemodel.ModelTypeDesired)
+						reported.ID = reported.ID.ToPersistenceID(persistencemodel.ModelTypeReported)
+
+						res[rdr.ID.StringWithoutModelType()] = &groupedPersistenceResult{
+							id:       rdr.ID.ToID(),
+							reported: &reported,
+							desired:  &desired,
+						}
+
+						continue
+					}
 				}
 			}
 

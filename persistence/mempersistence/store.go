@@ -105,6 +105,8 @@ func (s *Store) StoreEntry(mt persistencemodel.ModelType, pk, sk string, entry *
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
+	id := renderSortKey(mt, sk)
+
 	if p, ok := s.partitions[pk]; ok {
 		if s, ok := p[renderSortKey(mt, sk)]; ok {
 			if entry.version > 0 && s.version != entry.version {
@@ -114,15 +116,15 @@ func (s *Store) StoreEntry(mt persistencemodel.ModelType, pk, sk string, entry *
 			entry.version++
 			entry.modelType = mt
 
-			p[sk] = entry
+			p[id] = entry
 		} else {
 			entry.version = 1
-			p[sk] = entry
+			p[id] = entry
 		}
 	} else {
 		entry.version = 1
 		entry.modelType = mt
-		s.partitions[pk] = Partition{renderSortKey(mt, sk): entry}
+		s.partitions[pk] = Partition{id: entry}
 	}
 
 	return entry, nil
