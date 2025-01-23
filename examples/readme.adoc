@@ -384,3 +384,105 @@ func TestReadUnversionedCombined(t *testing.T) {
 <3> The _DynamoDB_ client to use. If not set it will use `awsconfig.LoadDefaultConfig` to load the default configuration.
 <4> Writes as combined models (i.e. one entry for reported and one for desired). Note that it has to be two write operations so it is no different from writing separate models. It is optional to set the _Separation_, if not passed it will use the `Persistence` default.
 <5> Read it back. Independent on storage, it will return both reported and desired in separate results.
+
+== Manager Package
+
+This package uses persistence, merge, type registry to constitute a manager that can handle high level interactions with a model.
+
+The below example shows how a client sets a desired state and at a later point in time a report that the state has been set will remove
+the desired state and only the value is present in the reported state.
+
+It also shows how to perform a plain _read_ operation to get the reported and desired states.
+
+.Example Reporting & Desired Handling
+[source,go]
+----
+func TestDesireReportThatAcknowledgesAndReadAgain(t *testing.T) {
+	ctx := context.Background()
+	now := time.Now()
+
+	const tz = "Europe/Stockholm"
+
+	mgr := manager.New().
+		WithPersistence(mempersistence.New()).
+		WithSeparation(persistencemodel.CombinedModels). // <1>
+		WithTypeRegistryResolver(
+			types.NewRegistry().RegisterResolver( // <2>
+				model.NewResolveFunc(func(id, name string) (model.TypeEntry, bool) {
+					if name == "homeHub" {
+						return model.TypeEntry{
+							Name: "homeHub", Model: reflect.TypeOf(TestModel{}),
+						}, true
+					}
+
+					return model.TypeEntry{}, false
+				}),
+			),
+		).
+		Build()
+
+	resDesire := mgr.Desire(ctx, managermodel.DesireOperation{ // <3>
+		ClientID: "myClient",
+		Model: TestModel{
+			TimeZone: tz,
+			Sensors: map[string]Sensor{
+				"temp": {Value: 23.4, TimeStamp: now},
+			},
+		},
+		ID: persistencemodel.ID{ID: "device1234", Name: "homeHub"},
+	})
+
+	require.Len(t, resDesire, 1)
+	require.NoError(t, resDesire[0].Error)
+
+	resReport := mgr.Report(ctx, managermodel.ReportOperation{ // <4>
+		ClientID: "myClient",
+		Model: TestModel{
+			TimeZone: tz,
+			Sensors: map[string]Sensor{
+				"temp": {Value: 23.4, TimeStamp: now},
+			},
+		},
+		ID: persistencemodel.ID{ID: "device1234", Name: "homeHub"},
+	})
+
+	require.Len(t, resReport, 1)
+	require.NoError(t, resReport[0].Error)
+	assert.True(t, resReport[0].ReportedProcessed)
+	assert.True(t, resReport[0].DesiredProcessed)
+
+	resRead := mgr.Read(ctx,
+		managermodel.ReadOperation{
+			ID: persistencemodel.PersistenceID{ID: "device1234", Name: "homeHub", ModelType: persistencemodel.ModelTypeReported},
+		},
+		managermodel.ReadOperation{
+			ID: persistencemodel.PersistenceID{ID: "device1234", Name: "homeHub", ModelType: persistencemodel.ModelTypeDesired},
+		},
+	)
+	require.Len(t, resRead, 2)
+	require.NoError(t, resRead[0].Error)
+	require.NoError(t, resRead[1].Error)
+
+	var desired, reported TestModel
+
+	if resRead[0].ID.ModelType == persistencemodel.ModelTypeReported {
+		reported = resRead[0].Model.(TestModel)
+		desired = resRead[1].Model.(TestModel)
+	} else {
+		reported = resRead[1].Model.(TestModel)
+		desired = resRead[0].Model.(TestModel)
+	}
+
+	assert.Len(t, desired.Sensors, 0) // <5>
+	require.NotNil(t, reported.Sensors)
+	require.Len(t, reported.Sensors, 1) // <6>
+
+	assert.Equal(t, 23.4, reported.Sensors["temp"].Value)
+}
+----
+<1> In this example, we store both reported and desired as a combined entry in the persistence.
+<2> Extremely simple resolver that translates all _homeHub_ to `TestModel`.
+<3> We desire temp to to be set to _23.4_, reported is still nothing.
+<4> Simulates a report back that the temp has been set to _23.4_ at a later stage.
+<5> Desired state is removed.
+<6> Reported state is present and it is of value _23.4_.
