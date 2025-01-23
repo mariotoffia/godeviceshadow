@@ -12,7 +12,7 @@ func (s *Store) List(pk string) persistencemodel.ListResults {
 
 	toListResult := func(id, name string, mt persistencemodel.ModelType, entry *modelEntry) persistencemodel.ListResult {
 		return persistencemodel.ListResult{
-			ID:          persistencemodel.PersistenceID{ID: id, Name: name, ModelType: mt},
+			ID:          persistencemodel.PersistenceID{ID: id, Name: name[4:], ModelType: mt},
 			Version:     entry.version,
 			TimeStamp:   entry.timestamp,
 			ClientToken: entry.clientToken,
@@ -69,12 +69,14 @@ func (s *Store) DeleteEntry(mt persistencemodel.ModelType, pk, sk string, versio
 	defer s.mu.Unlock()
 
 	if partition, ok := s.partitions[pk]; ok {
-		if entry, ok := partition[renderSortKey(mt, sk)]; ok {
+		id := renderSortKey(mt, sk)
+
+		if entry, ok := partition[id]; ok {
 			if version > 0 && entry.version != version {
 				return persistencemodel.Error409("Conflict, version mismatch")
 			}
 
-			delete(partition, sk)
+			delete(partition, id)
 			return nil
 		}
 
