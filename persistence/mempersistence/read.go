@@ -49,7 +49,7 @@ func (p *Persistence) Read(
 	}
 
 	for _, op := range operations {
-		entry, err := p.store.GetEntry(op.ID.ID, op.ID.Name, op.Version)
+		entry, err := p.store.GetEntry(op.ID.ModelType, op.ID.ID, op.ID.Name, op.Version)
 
 		if err != nil {
 			results = append(results, persistencemodel.ReadResult{

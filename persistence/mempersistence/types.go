@@ -20,9 +20,9 @@ type Persistence struct {
 }
 
 type modelEntry struct {
+	modelType   persistencemodel.ModelType
 	reported    any
 	desired     any
-	modelType   persistencemodel.ModelType // when zero it is combined
 	version     int64
 	timestamp   int64
 	clientToken string

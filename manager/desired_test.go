@@ -18,34 +18,14 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var tz = "Europe/Stockholm"
-
-type Sensor struct {
-	Value     any
-	TimeStamp time.Time
-}
-
-type TestModel struct {
-	TimeZone string
-	Sensors  map[string]Sensor
-}
-
-func (sp *Sensor) GetTimestamp() time.Time {
-	return sp.TimeStamp
-}
-
-func (sp *Sensor) GetValue() any {
-	return sp.Value
-}
-
-func TestReportCreateNew(t *testing.T) {
+func TestDesiredCreateNew(t *testing.T) {
 	ctx := context.Background()
 	now := time.Now()
 
 	mgr := manager.New().
 		WithPersistence(mempersistence.New()).
 		WithSeparation(persistencemodel.SeparateModels).
-		WithReportLoggers(changelogger.New()).
+		WithDesiredMergeLoggers(changelogger.New()).
 		WithTypeRegistryResolver(
 			types.NewRegistry().RegisterResolver(
 				model.NewResolveFunc(func(id, name string) (model.TypeEntry, bool) {
@@ -61,13 +41,12 @@ func TestReportCreateNew(t *testing.T) {
 		).
 		Build()
 
-	res := mgr.Report(ctx, managermodel.ReportOperation{
+	res := mgr.Desire(ctx, managermodel.DesireOperation{
 		ClientID: "myClient",
-		Version:  0,
 		Model: TestModel{
 			TimeZone: tz,
 			Sensors: map[string]Sensor{
-				"temp": {Value: 23.4, TimeStamp: now},
+				"temp": {Value: 23.4, TimeStamp: now}, // We desire this to be set to 23.4
 			},
 		},
 		ID: persistencemodel.ID{ID: "device123", Name: "homeHub"},
@@ -94,14 +73,14 @@ func TestReportCreateNew(t *testing.T) {
 	assert.Equal(t, now, sensors[0].NewValue.GetTimestamp())
 }
 
-func TestReportUpdateReport(t *testing.T) {
+func TestDesiredUpdateDesired(t *testing.T) {
 	ctx := context.Background()
 	now := time.Now()
 
 	mgr := manager.New().
 		WithPersistence(mempersistence.New()).
 		WithSeparation(persistencemodel.SeparateModels).
-		WithReportLoggers(changelogger.New()).
+		WithDesiredMergeLoggers(changelogger.New()).
 		WithTypeRegistryResolver(
 			types.NewRegistry().RegisterResolver(
 				model.NewResolveFunc(func(id, name string) (model.TypeEntry, bool) {
@@ -117,9 +96,8 @@ func TestReportUpdateReport(t *testing.T) {
 		).
 		Build()
 
-	res := mgr.Report(ctx, managermodel.ReportOperation{
+	res := mgr.Desire(ctx, managermodel.DesireOperation{
 		ClientID: "myClient",
-		Version:  0,
 		Model: TestModel{
 			TimeZone: tz,
 			Sensors: map[string]Sensor{
@@ -131,11 +109,10 @@ func TestReportUpdateReport(t *testing.T) {
 
 	require.Len(t, res, 1)
 	require.NoError(t, res[0].Error)
-	assert.True(t, res[0].ReportedProcessed)
+	assert.True(t, res[0].Processed)
 
-	res = mgr.Report(ctx, managermodel.ReportOperation{
+	res = mgr.Desire(ctx, managermodel.DesireOperation{
 		ClientID: "myClient",
-		Version:  0, // update latest
 		Model: TestModel{
 			TimeZone: tz,
 			Sensors: map[string]Sensor{
@@ -147,7 +124,7 @@ func TestReportUpdateReport(t *testing.T) {
 
 	require.Len(t, res, 1)
 	require.NoError(t, res[0].Error)
-	assert.True(t, res[0].ReportedProcessed)
+	assert.True(t, res[0].Processed)
 
 	chl := changelogger.FindLogger(res[0].MergeLoggers)
 	require.NotNil(t, chl)
@@ -158,14 +135,14 @@ func TestReportUpdateReport(t *testing.T) {
 	assert.Len(t, chl.ManagedLog[model.MergeOperationUpdate], 1, "temp sensor shall have been updated")
 }
 
-func TestReportUpdateReportNotChanged(t *testing.T) {
+func TestDesiredUpdateDesiredNotChanged(t *testing.T) {
 	ctx := context.Background()
 	now := time.Now()
 
 	mgr := manager.New().
 		WithPersistence(mempersistence.New()).
 		WithSeparation(persistencemodel.SeparateModels).
-		WithReportLoggers(changelogger.New()).
+		WithDesiredMergeLoggers(changelogger.New()).
 		WithTypeRegistryResolver(
 			types.NewRegistry().RegisterResolver(
 				model.NewResolveFunc(func(id, name string) (model.TypeEntry, bool) {
@@ -181,9 +158,8 @@ func TestReportUpdateReportNotChanged(t *testing.T) {
 		).
 		Build()
 
-	res := mgr.Report(ctx, managermodel.ReportOperation{
+	res := mgr.Desire(ctx, managermodel.DesireOperation{
 		ClientID: "myClient",
-		Version:  0,
 		Model: TestModel{
 			TimeZone: tz,
 			Sensors: map[string]Sensor{
@@ -196,9 +172,8 @@ func TestReportUpdateReportNotChanged(t *testing.T) {
 	require.Len(t, res, 1)
 	require.NoError(t, res[0].Error)
 
-	res = mgr.Report(ctx, managermodel.ReportOperation{
+	res = mgr.Desire(ctx, managermodel.DesireOperation{
 		ClientID: "myClient",
-		Version:  0, // update latest
 		Model: TestModel{
 			TimeZone: tz,
 			Sensors: map[string]Sensor{
@@ -219,4 +194,56 @@ func TestReportUpdateReportNotChanged(t *testing.T) {
 	// Nothing has changed
 	assert.Len(t, chl.PlainLog[model.MergeOperationNotChanged], 1)
 	assert.Len(t, chl.ManagedLog[model.MergeOperationNotChanged], 1)
+}
+
+func TestDesiredAcknowledge(t *testing.T) {
+	ctx := context.Background()
+	now := time.Now()
+
+	mgr := manager.New().
+		WithPersistence(mempersistence.New()).
+		WithSeparation(persistencemodel.SeparateModels).
+		WithTypeRegistryResolver(
+			types.NewRegistry().RegisterResolver(
+				model.NewResolveFunc(func(id, name string) (model.TypeEntry, bool) {
+					if name == "homeHub" {
+						return model.TypeEntry{
+							Name: "homeHub", Model: reflect.TypeOf(TestModel{}),
+						}, true
+					}
+
+					return model.TypeEntry{}, false
+				}),
+			),
+		).
+		Build()
+
+	resDesire := mgr.Desire(ctx, managermodel.DesireOperation{
+		ClientID: "myClient",
+		Model: TestModel{
+			TimeZone: tz,
+			Sensors: map[string]Sensor{
+				"temp": {Value: 23.4, TimeStamp: now}, // We desire this to be set to 23.4
+			},
+		},
+		ID: persistencemodel.ID{ID: "device123", Name: "homeHub"},
+	})
+
+	require.Len(t, resDesire, 1)
+	require.NoError(t, resDesire[0].Error)
+
+	// Report the desired state -> Clears it in the desired
+	resReport := mgr.Report(ctx, managermodel.ReportOperation{
+		ClientID: "myClient",
+		Model: TestModel{
+			TimeZone: tz,
+			Sensors: map[string]Sensor{
+				"temp": {Value: 23.4, TimeStamp: now},
+			},
+		},
+		ID: persistencemodel.ID{ID: "device123", Name: "homeHub"},
+	})
+
+	require.Len(t, resReport, 1)
+	require.NoError(t, resReport[0].Error)
 }

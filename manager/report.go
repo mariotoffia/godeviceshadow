@@ -97,7 +97,7 @@ func (mgr *Manager) reportMergeModels(
 		)
 
 		if rdr.reported != nil {
-			ml := mgr.createMergeLoggers(op.MergeLoggers)
+			ml := mgr.createMergeLoggers(true /*report*/, op.MergeLoggers)
 
 			reported, err = merge.MergeAny(rdr.reported.Model, op.Model, merge.MergeOptions{
 				Mode:    merge.ServerIsMaster,
@@ -240,28 +240,6 @@ func (mgr *Manager) createDesiredLoggers(loggers []model.CreatableDesiredLogger)
 	return res
 }
 
-// createMergeLoggers will create logger instance from _loggers_ (if any), if none where submitted, it will use the `Manager.reportedLoggers`.
-//
-// If the `MergeDirtyLogger` is not present in the _loggers_ it will be automatically added.
-func (mgr *Manager) createMergeLoggers(loggers []model.CreatableMergeLogger) []model.MergeLogger {
-	if len(loggers) == 0 {
-		loggers = mgr.reportedMergeLoggers
-	}
-
-	// Add dirty detection
-	if !HasMergeDirtyLoggerCreator(loggers) {
-		loggers = append(loggers, &MergeDirtyLogger{})
-	}
-
-	res := make([]model.MergeLogger, 0, len(loggers))
-
-	for _, lg := range loggers {
-		res = append(res, lg.New())
-	}
-
-	return res
-}
-
 func (mgr *Manager) reportReadFromPersistence(
 	ctx context.Context,
 	readOps []persistencemodel.ReadOperation,
@@ -303,6 +281,13 @@ func (mgr *Manager) reportReadFromPersistence(
 			}
 		}
 
+		// In case where there where no model in persistence -> create one
+		if rdr.Model == nil {
+			if op := findOp(rdr.ID); op != nil {
+				rdr.Model = reflect.New(op.Model).Elem().Interface()
+			}
+		}
+
 		if r, ok := res[rdr.ID.StringWithoutModelType()]; !ok {
 			if rdr.ID.ModelType == persistencemodel.ModelTypeReported {
 				res[rdr.ID.StringWithoutModelType()] = &groupedPersistenceResult{id: rdr.ID.ToID(), reported: &rdr}
@@ -313,13 +298,6 @@ func (mgr *Manager) reportReadFromPersistence(
 			if rdr.ID.ModelType == persistencemodel.ModelTypeReported {
 				r.reported = &rdr
 			} else {
-				// In case where there where no desired model in persistence -> create one
-				if rdr.Model == nil {
-					if op := findOp(rdr.ID); op != nil {
-						rdr.Model = reflect.New(op.Model).Elem().Interface()
-					}
-				}
-
 				r.desired = &rdr
 			}
 		}

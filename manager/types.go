@@ -18,6 +18,9 @@ type Manager struct {
 	// reportedMergeLoggers is a slice of instantiator to produce MergeLogger(s) of which is all applied when merge operations when
 	// user invokes the `Report` function.
 	reportedMergeLoggers []model.CreatableMergeLogger
+	// desiredMergeLoggers is a slice of instantiator to produce MergeLogger(s) of which is all applied when merge operations when
+	// user invokes the `Desire` function.
+	desiredMergeLoggers []model.CreatableMergeLogger
 	// reportedDesiredLoggers is a slice of instantiator to produce DesiredLogger(s) of which is all applied when merge operations when
 	// user invokes the `Report` function.
 	reportedDesiredLoggers []model.CreatableDesiredLogger
@@ -32,4 +35,5 @@ type groupedPersistenceResult struct {
 	queueReported any
 	queueDesired  any
 	op            *managermodel.ReportOperation
+	dop           *managermodel.DesireOperation
 }

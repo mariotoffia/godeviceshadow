@@ -4,6 +4,7 @@
     "awscfg",
     "awsconfig",
     "changelogger",
+    "Desireable",
     "deviceshadow",
     "distiguisher",
     "dynamodbattribute",
@@ -36,6 +37,7 @@
     "toclevels",
     "Toffia",
     "unaddressable",
+    "upserting",
     "vtsutils"
   ]
 }

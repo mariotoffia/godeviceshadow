@@ -64,12 +64,12 @@ func (s *Store) List(pk string) persistencemodel.ListResults {
 	return persistencemodel.ListResults{}
 }
 
-func (s *Store) DeleteEntry(pk, sk string, version int64) error {
+func (s *Store) DeleteEntry(mt persistencemodel.ModelType, pk, sk string, version int64) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	if partition, ok := s.partitions[pk]; ok {
-		if entry, ok := partition[sk]; ok {
+		if entry, ok := partition[renderSortKey(mt, sk)]; ok {
 			if version > 0 && entry.version != version {
 				return persistencemodel.Error409("Conflict, version mismatch")
 			}
@@ -84,12 +84,12 @@ func (s *Store) DeleteEntry(pk, sk string, version int64) error {
 	return persistencemodel.Error404(fmt.Sprintf("partition: %s - Not found", pk))
 }
 
-func (s *Store) GetEntry(pk string, sk string, version int64) (*modelEntry, error) {
+func (s *Store) GetEntry(mt persistencemodel.ModelType, pk string, sk string, version int64) (*modelEntry, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
 	if partition, ok := s.partitions[pk]; ok {
-		if entry, ok := partition[sk]; ok {
+		if entry, ok := partition[renderSortKey(mt, sk)]; ok {
 			if version > 0 && entry.version != version {
 				return nil, persistencemodel.Error409("Conflict, version mismatch")
 			}
@@ -101,17 +101,18 @@ func (s *Store) GetEntry(pk string, sk string, version int64) (*modelEntry, erro
 	return nil, persistencemodel.Error404("Not found")
 }
 
-func (s *Store) StoreEntry(pk, sk string, entry *modelEntry) (*modelEntry, error) {
+func (s *Store) StoreEntry(mt persistencemodel.ModelType, pk, sk string, entry *modelEntry) (*modelEntry, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	if p, ok := s.partitions[pk]; ok {
-		if s, ok := p[sk]; ok {
+		if s, ok := p[renderSortKey(mt, sk)]; ok {
 			if entry.version > 0 && s.version != entry.version {
 				return nil, persistencemodel.Error409("Conflict, version mismatch")
 			}
 
 			entry.version++
+			entry.modelType = mt
 
 			p[sk] = entry
 		} else {
@@ -120,7 +121,8 @@ func (s *Store) StoreEntry(pk, sk string, entry *modelEntry) (*modelEntry, error
 		}
 	} else {
 		entry.version = 1
-		s.partitions[pk] = Partition{sk: entry}
+		entry.modelType = mt
+		s.partitions[pk] = Partition{renderSortKey(mt, sk): entry}
 	}
 
 	return entry, nil

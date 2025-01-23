@@ -106,7 +106,7 @@ func (p *Persistence) writeCombined(group persistutils.GroupedWriteOperation) []
 	}
 
 	now := time.Now().UTC().UnixNano()
-	entry, err := p.store.StoreEntry(group.ID, group.Name, &modelEntry{
+	entry, err := p.store.StoreEntry(0 /*combined*/, group.ID, group.Name, &modelEntry{
 		version:   version,
 		timestamp: now,
 		modelType: 0, // Combined
@@ -152,7 +152,7 @@ func (p *Persistence) writeSingle(op persistencemodel.WriteOperation) persistenc
 		entry.reported = op.Model
 	}
 
-	res, err := p.store.StoreEntry(op.ID.ID, op.ID.Name, &entry)
+	res, err := p.store.StoreEntry(op.ID.ModelType, op.ID.ID, op.ID.Name, &entry)
 
 	if res == nil {
 		res = &modelEntry{

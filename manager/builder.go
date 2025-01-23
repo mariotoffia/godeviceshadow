@@ -29,6 +29,7 @@ func (b *builder) Build() *Manager {
 		typeRegistryResolver:   b.m.typeRegistryResolver,
 		reportedMergeLoggers:   b.m.reportedMergeLoggers,
 		reportedDesiredLoggers: b.m.reportedDesiredLoggers,
+		desiredMergeLoggers:    b.m.desiredMergeLoggers,
 	}
 }
 
@@ -67,14 +68,20 @@ func (b *builder) WithTypeRegistryResolver(typeRegistryResolver model.TypeRegist
 	return b
 }
 
-func (b *builder) WithReportedLoggers(reportedLoggers ...model.CreatableMergeLogger) *builder {
+func (b *builder) WithReportLoggers(reportedLoggers ...model.CreatableMergeLogger) *builder {
 	b.m.reportedMergeLoggers = reportedLoggers
 	return b
 }
 
-// WithDesiredLoggers will set the default desired loggers for the manager instance. If none is supplied in the `Report` operation
+// WithDesiredMergeLoggers is the `model.CreatableMergeLogger` instances that will be used when the `Desire` operation is invoked.
+func (b *builder) WithDesiredMergeLoggers(desiredLoggers ...model.CreatableMergeLogger) *builder {
+	b.m.desiredMergeLoggers = desiredLoggers
+	return b
+}
+
+// WithReportDesiredLoggers will set the default desired loggers for the manager instance. If none is supplied in the `Report` operation
 // those will be used.
-func (b *builder) WithDesiredLoggers(desiredLoggers ...model.CreatableDesiredLogger) *builder {
+func (b *builder) WithReportDesiredLoggers(desiredLoggers ...model.CreatableDesiredLogger) *builder {
 	b.m.reportedDesiredLoggers = desiredLoggers
 	return b
 }

@@ -25,6 +25,9 @@ type ReportOperation struct {
 	// MergeLoggers will override the default merge loggers, for report function, in the `Manager`.
 	MergeLoggers []model.CreatableMergeLogger
 	// DesiredLoggers will override the default desired loggers, for report function, in the `Manager`.
+	//
+	// These loggers are invoked when the persisted desired model and the reported acknowledges the desired value and thus is removed,
+	// from the desired model.
 	DesiredLoggers []model.CreatableDesiredLogger
 }
 

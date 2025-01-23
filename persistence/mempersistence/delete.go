@@ -35,7 +35,7 @@ func (p *Persistence) Delete(
 				Name:      op.ID.Name,
 				ModelType: op.ID.ModelType,
 			},
-			Error: p.store.DeleteEntry(op.ID.ID, op.ID.Name, op.Version),
+			Error: p.store.DeleteEntry(op.ID.ModelType, op.ID.ID, op.ID.Name, op.Version),
 		}
 	}
 
