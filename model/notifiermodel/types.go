@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/mariotoffia/godeviceshadow/loggers/changelogger"
+	"github.com/mariotoffia/godeviceshadow/loggers/desirelogger"
 	"github.com/mariotoffia/godeviceshadow/model/persistencemodel"
 )
 
@@ -23,6 +24,8 @@ type NotifierOperation struct {
 	// MergeLogger is the changelogger that contains the changes to be notified. When `OperationTypeReport`
 	// it is the report changes and when `OperationTypeDesired` it is the desired changes.
 	MergeLogger changelogger.ChangeMergeLogger
+	// DesireLogger is the desirelogger that contains the desired state of the model.
+	DesireLogger desirelogger.DesireLogger
 	// Operation specifies which operation to notify about.
 	Operation NotifierOperationType
 	// Reported is set when in a `OperationTypeReport` operation. It is the reported state of the model.

@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/mariotoffia/godeviceshadow/loggers/changelogger"
+	"github.com/mariotoffia/godeviceshadow/loggers/desirelogger"
 	"github.com/mariotoffia/godeviceshadow/manager/stdmgr"
 	"github.com/mariotoffia/godeviceshadow/model"
 	"github.com/mariotoffia/godeviceshadow/model/managermodel"
@@ -56,7 +57,7 @@ func TestDesiredCreateNew(t *testing.T) {
 	require.Len(t, res, 1)
 	require.NoError(t, res[0].Error)
 
-	chl := changelogger.FindLogger(res[0].MergeLoggers)
+	chl := changelogger.Find(res[0].MergeLoggers)
 	require.NotNil(t, chl)
 	require.Len(t, chl.PlainLog, 1)
 	require.Len(t, chl.ManagedLog, 1)
@@ -127,7 +128,7 @@ func TestDesiredUpdateDesired(t *testing.T) {
 	require.NoError(t, res[0].Error)
 	assert.True(t, res[0].Processed)
 
-	chl := changelogger.FindLogger(res[0].MergeLoggers)
+	chl := changelogger.Find(res[0].MergeLoggers)
 	require.NotNil(t, chl)
 	require.Len(t, chl.PlainLog, 1)
 	require.Len(t, chl.ManagedLog, 1)
@@ -187,7 +188,7 @@ func TestDesiredUpdateDesiredNotChanged(t *testing.T) {
 	require.Len(t, res, 1)
 	require.NoError(t, res[0].Error)
 
-	chl := changelogger.FindLogger(res[0].MergeLoggers)
+	chl := changelogger.Find(res[0].MergeLoggers)
 	require.NotNil(t, chl)
 	require.Len(t, chl.PlainLog, 1)
 	require.Len(t, chl.ManagedLog, 1)
@@ -235,7 +236,8 @@ func TestDesiredAcknowledge(t *testing.T) {
 
 	// Report the desired state -> Clears it in the desired
 	resReport := mgr.Report(ctx, managermodel.ReportOperation{
-		ClientID: "myClient",
+		ClientID:       "myClient",
+		DesiredLoggers: []model.CreatableDesiredLogger{desirelogger.New()},
 		Model: TestModel{
 			TimeZone: tz,
 			Sensors: map[string]Sensor{

@@ -77,7 +77,7 @@ func TestReportCreateNew(t *testing.T) {
 	require.Len(t, res, 1)
 	require.NoError(t, res[0].Error)
 
-	chl := changelogger.FindLogger(res[0].MergeLoggers)
+	chl := changelogger.Find(res[0].MergeLoggers)
 	require.NotNil(t, chl)
 	require.Len(t, chl.PlainLog, 1)
 	require.Len(t, chl.ManagedLog, 1)
@@ -150,7 +150,7 @@ func TestReportUpdateReport(t *testing.T) {
 	require.NoError(t, res[0].Error)
 	assert.True(t, res[0].ReportedProcessed)
 
-	chl := changelogger.FindLogger(res[0].MergeLoggers)
+	chl := changelogger.Find(res[0].MergeLoggers)
 	require.NotNil(t, chl)
 	require.Len(t, chl.PlainLog, 1)
 	require.Len(t, chl.ManagedLog, 1)
@@ -212,7 +212,7 @@ func TestReportUpdateReportNotChanged(t *testing.T) {
 	require.Len(t, res, 1)
 	require.NoError(t, res[0].Error)
 
-	chl := changelogger.FindLogger(res[0].MergeLoggers)
+	chl := changelogger.Find(res[0].MergeLoggers)
 	require.NotNil(t, chl)
 	require.Len(t, chl.PlainLog, 1)
 	require.Len(t, chl.ManagedLog, 1)
@@ -285,7 +285,7 @@ func BenchmarkNewReportAndUpdateReport(t *testing.B) {
 		require.NoError(t, res[0].Error)
 		assert.True(t, res[0].ReportedProcessed)
 
-		chl := changelogger.FindLogger(res[0].MergeLoggers)
+		chl := changelogger.Find(res[0].MergeLoggers)
 		require.NotNil(t, chl)
 		require.Len(t, chl.PlainLog, 1)
 		require.Len(t, chl.ManagedLog, 1)

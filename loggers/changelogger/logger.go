@@ -19,9 +19,9 @@ func (sl *ChangeMergeLogger) New() model.MergeLogger {
 	return New()
 }
 
-// FindLogger finds a `ChangeMergeLogger` in a slice of `model.MergeLogger`.
+// Find finds a `ChangeMergeLogger` in a slice of `model.MergeLogger`.
 // If not found, it returns `nil`.
-func FindLogger(loggers []model.MergeLogger) *ChangeMergeLogger {
+func Find(loggers []model.MergeLogger) *ChangeMergeLogger {
 	for _, logger := range loggers {
 		if sl, ok := logger.(*ChangeMergeLogger); ok {
 			return sl

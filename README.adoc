@@ -47,7 +47,7 @@ res := mgr.Report(ctx, managermodel.ReportOperation{ // <2>
   },
 })
 
-chl := changelogger.FindLogger(res[0].MergeLoggers) // <4>
+chl := changelogger.Find(res[0].MergeLoggers) // <4>
 sns, err := chl.ManagedFromPath(`Sensors\..*`)
 sensors := sns.All()
 
