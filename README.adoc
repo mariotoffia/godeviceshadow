@@ -61,7 +61,7 @@ res = mgr.Report(ctx, managermodel.ReportOperation{
 <6> Will add _sp_ to desired state (it is possible to have merge loggers here as well to listen for desire merge).
 <7> Will acknowledge and therefore remove it from desired state (can be listen to, just supply desire loggers).
 
-The above sample shows how to report and desired a certain value including how to access a merge logger. It relies on a manager to be configured and built. It is possible to have several managers with different configuration as well as chain managers, much like a, middleware chain.
+The above sample shows how to report and desired a certain value including how to access a merge logger. It relies on a manager to be configured and built.
 
 .Example Create a In-Memory Persistence Manager
 [source,go]
@@ -207,17 +207,35 @@ type ClimateSensors struct {
 
 == Device Shadow Layout
 
-The device shadow is rather alike the IoT Core Device Shadow but with a few differences. It can split the _Reported_ and _Desired_ states into two different sort keys to allow for more data and better querying. It will not provide with any diff inside the shadow itself. Instead this is reported when a change has been made to the reported/desired shadow as both old, new and diff.
+The device shadow is rather alike the IoT Core Device Shadow but with a few differences. It can split the _Reported_ and _Desired_ states into two different sort keys to allow for more data and better querying and possibly performance.
 
 === Loggers
 
-There is a pluggable logger architecture to allow for multiple loggers to participate in report diff or desired diffs. This allows for e.g. output the changes or to store added/changed values in _Amazon Aurora DSQL_, _Time-Stream_ or similar storage. Loggers may interact with "plain" elements such as simple string or the "managed" (those who implements the `model.ValueAndTimestamp` interface).
+There is a pluggable logger architecture to allow for multiple loggers to participate in report diff or desired acknowledges/diffs. This allows for e.g. output the changes or to store added/changed values in _Amazon Aurora DSQL_, _Time-Stream_ or similar storage. Loggers may interact with "plain" elements such as simple string or the "managed" (those who implements the `model.ValueAndTimestamp` interface).
+
+Loggers ar very easy to create since they rely on two functions only to allow for add, remove, changed, and not changed. Thus it is possible to check what has not changed as well!
+
+.Logger Interface
+[source,go]
+----
+type MergeLogger interface {
+  Managed(
+    path string,
+    operation MergeOperation, // <1>
+    oldValue, newValue ValueAndTimestamp,
+    oldTimeStamp, newTimeStamp time.Time)
+
+  Plain(path string, operation MergeOperation, oldValue, newValue any) // <2>
+}
+----
+<1> The `MergeOperation` specifies if it is an add, remove, change or not changed operation.
+<2> The `Plain` method is used for plain values that does not implement the `ValueAndTimestamp` interface such as a `string`.
 
 === Notifications
 
 When a shadow is updated, a notification can be sent to listeners. This is done by the notification implementation. 
 
-Each target registration specifies what type of plugin (e.g. SQS), attributes such as the queue name, topic name, etc.
+Each target registration specifies what type of plugin (e.g. _SQS_), attributes such as the queue name, topic name, etc.
 
 In addition the attributes specifies what type of events to listen for:
 * Report, Desired or Both
@@ -231,7 +249,9 @@ The registrations are stored as _JSON_ with the event lambda itself (for dynamod
 
 === Deviations
 
-There are many deviations from the IoT Core Device Shadow. One of the most prominent is the notion of the device shadow _MODEL_. It will be replaced in full every time a write is done.
+There are many deviations from the IoT Core Device Shadow. One of the most prominent is the notion of the device shadow _MODEL_ in go struct instead of plain _JSON_. This allows for a more type-safe way of handling the device shadow.
+
+In this implementation, it is possible to control how the merge is done i.e. if server is master or client is master where the latter allows for client to delete entries that are not present in the client model. The former do not allow for deletion of entries, instead it only supports addition, updates and no changes.
 
 === Timestamps
 
@@ -264,10 +284,11 @@ type Circuit struct {
 }
 ----
 <1> This is the timestamp that the sensor value was read for this example, it is possible to have many different types as long as it implements the `ValueAndTimestamp` interface.
-<2> For this sensor we decided the use _RFC3339_ timestamp for user readability (not efficient though). If unix timestamp use `UnixTimestamp32` or for (64 bit `UnixTimestamp64` nano resolution) instead.
-<3> Here all sensor values are stored as a map with the sensor name as the key and the value as the value. The value is a struct that implements the `ValueAndTimestamp` interface. The system only handles timestamps for a certain value and ignores the rest.
+<2> The value may be anything. If it is a map[string]any, it will compare each entry in the map to determine if it has changed or not. In that way it is possible to present a set of values that this sensor value represents.
+<3> Here all sensor values are stored as a map with the sensor name as the key and the value as the value. The value is a struct that implements the `ValueAndTimestamp` interface.
 
 === Creating or Updating the Device Shadow
+
 When writing to the device shadow, for example _Report_, the _SDK_ will read the whole document and marshal it to the registered model. For example `Building` it will iterate all the fields and check if they implement the `ValueAndTimestamp` interface. If they do, it will use it to check if the client model is newer than the device shadow model. If it is, the client model value will be kept, if older, the device shadow model value will be copied to the client model.
 
 If any field is missing in the client model but present in the shadow model, it will be added to the client model. If any field is present in the client model but not in the shadow model, it will be kept (se _Deleting an Element_ for the options).
@@ -290,8 +311,6 @@ When _ServerIsMaster_ it is not possible to delete elements only add and updates
 
 === Desired State
 
-This is a separate sort key and must match a _Reported_ sort key name. This is to denote the desired state and when the client wants to report a state it may also include that the _SDK_ shall load the desired state and clear it when the desired state value are the same as reported.
+This is to denote the desired state and when the client wants to report a state it may also include that the _SDK_ shall load the desired state and clear it when the desired state value are the same as reported.
 
-In this case it will need to do this in a transaction since it is two different sort keys. For DynamoDB this is done using the transaction _API_.
-
-It is possible for a client to state that it should ignore the desired state and only report the reported state. This is done by setting the _IgnoreDesiredState_ mode instead of the default _UseDesiredState_ mode when doing reporting.
+In this case it will need to do this in a transaction since it is two different sort keys. For example in DynamoDB this is done using the transaction _API_.

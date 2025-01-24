@@ -23,7 +23,7 @@ func TestDesiredCreateNew(t *testing.T) {
 	ctx := context.Background()
 	now := time.Now()
 
-	mgr := stdmgr.New().
+	var mgr managermodel.Manager = stdmgr.New().
 		WithPersistence(mempersistence.New()).
 		WithSeparation(persistencemodel.SeparateModels).
 		WithDesiredMergeLoggers(changelogger.New()).
