@@ -5,6 +5,7 @@
     "awscfg",
     "awsconfig",
     "changelogger",
+    "Deleter",
     "Desireable",
     "deviceshadow",
     "distiguisher",
