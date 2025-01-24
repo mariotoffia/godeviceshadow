@@ -42,10 +42,7 @@ res := mgr.Report(ctx, managermodel.ReportOperation{ // <6>
   ClientID: "myClient",
   Version:  0, // <7>
   Model: TestModel{
-    TimeZone: tz,
-    Sensors: map[string]Sensor{
-      "temp": {Value: 23.4, TimeStamp: now},
-    },
+    TimeZone: tz, Sensors: map[string]Sensor{ "temp": {Value: 23.4, TimeStamp: now} },
   },
   ID: persistencemodel.ID{ID: "device123", Name: "homeHub"},
 })
@@ -55,6 +52,22 @@ sns, err := chl.ManagedFromPath(`Sensors\..*`)
 sensors := sns.All()
 
 fmt.Printf("%s: %s", sensors[0].Path, sensors[0].NewValue.GetTimestamp().Format(time.RFC3339)) // <9>
+
+res2 := mgr.Desire(ctx, managermodel.DesireOperation{ // <10>
+  ClientID: "myClient",
+  Model: TestModel{
+    TimeZone: tz, Sensors: map[string]Sensor{ "sp": {Value: 99.2, TimeStamp: now} } },
+  ID: persistencemodel.ID{ID: "device123", Name: "homeHub"},
+})
+
+res = mgr.Report(ctx, managermodel.ReportOperation{
+  ClientID: "myClient",
+  Version:  0, // <7>
+  Model: TestModel{
+    TimeZone: tz, Sensors: map[string]Sensor{ "sp": {Value: 99.2, TimeStamp: now} }, // <11>
+  },
+  ID: persistencemodel.ID{ID: "device123", Name: "homeHub"},
+})
 ----
 <1> Use builder to create a new manager. This manager is _go routine safe_.
 <2> Use in-memory persistence. Swap this e.g. for _DynamoDB_ persistence via `dynamodbpersistence.New(...)`.
@@ -65,6 +78,8 @@ fmt.Printf("%s: %s", sensors[0].Path, sensors[0].NewValue.GetTimestamp().Format(
 <7> The version is 0 and will be incremented by the system. If using zero it will always use the latest version to merge with. If explicit version is use, it will only merge if the version is the same (and then increment the version).
 <8> Find the change logger and extract the managed values from the path `Sensors\..*` (_Regular Expression_).
 <9> Outputs e.q. _Sensors.temp: 2025-01-22T13:22:26+01:00_
+<10> Will add _sp_ to desired state (it is possible to have merge loggers here as well to listen for desire merge).
+<11> Will acknowledge and therefore remove it from desired state (can be listen to, just supply desire loggers).
 
 == TIP 💡: View All Examples
 To view all examples, visit the https://github.com/mariotoffia/godeviceshadow/tree/main/examples[Examples] directory.
