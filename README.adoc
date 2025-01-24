@@ -1,6 +1,8 @@
 = Go Device Shadow (godeviceshadow)
 This is an implementation of a device shadow storage and notification for DynamoDB and SQS/SNS. It is pluggable for other storage/notifications.
 
+TIP: 💡 *The core runtime do not have any dependencies except for the go framework. Only plugins may have dependencies.*
+
 == Introduction
 
 CAUTION: This is work in progress - use it with caution!
