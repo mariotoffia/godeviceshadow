@@ -99,21 +99,18 @@ To view all examples, visit the https://github.com/mariotoffia/godeviceshadow/tr
 [cols="3a,2",options="header"]
 |===
 | Module
-| Description
 
 | .godeviceshadow
 [source,bash]
 ----
 go get github.com/mariotoffia/godeviceshadow@latest
 ----
-| The _core_ runtime with no dependencies.
 
 | .dynamodbpersistence
 [source,bash]
 ----
 go get github.com/mariotoffia/godeviceshadow/persistence/dynamodbpersistence@latest
 ----
-| _AWS DynamoDB_ persistence module.
 |===
 
 == Core Concepts
