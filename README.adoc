@@ -3,6 +3,26 @@
 == Introduction
 This is an implementation of a device shadow storage and notification for DynamoDB and SQS/SNS. It is pluggable for other storage/notifications.
 
+== Modules
+
+[cols="4a",options="header"]
+|===
+| Module
+
+| .godeviceshadow
+[source,bash]
+----
+go get github.com/mariotoffia/godeviceshadow@latest
+----
+
+| .dynamodbpersistence
+[source,bash]
+----
+go get github.com/mariotoffia/godeviceshadow/persistence/dynamodbpersistence@latest
+----
+|===
+
+
 TIP: 💡 *The core runtime do not have any dependencies except for the go framework. Only plugins may have dependencies.*
 
 This is a somewhat emulation of the existing IoT Core Device Shadow. However, it separates the _Reported_ and _Desired_ states into two different sort keys to allow for more data and better querying and better performance if e.g. most of the time _Reported_ is updated. It is possible to direct the _persistence_ to use combined or separate storage.
@@ -93,25 +113,6 @@ mgr := stdmgr.New(). // <1>
 
 == TIP 💡: View All Examples
 To view all examples, visit the https://github.com/mariotoffia/godeviceshadow/tree/main/examples[Examples] directory.
-
-== Modules
-
-[cols="3a,2",options="header"]
-|===
-| Module
-
-| .godeviceshadow
-[source,bash]
-----
-go get github.com/mariotoffia/godeviceshadow@latest
-----
-
-| .dynamodbpersistence
-[source,bash]
-----
-go get github.com/mariotoffia/godeviceshadow/persistence/dynamodbpersistence@latest
-----
-|===
 
 == Core Concepts
 
