@@ -22,6 +22,13 @@ version:
 
 	@echo "==> Updating go.mod..."
 	@go mod tidy
+	@if [ -n "$$(git status --porcelain go.mod go.sum)" ]; then \
+	  echo "==> Changes detected in go.mod or go.sum... committing."; \
+	  git add go.mod go.sum; \
+	  git commit -m "updated references"; \
+	else \
+	  echo "==> No changes to commit in go.mod or go.sum."; \
+	fi
 	
 	@echo "==> Creating new tag..."
 	@if module_tag="$(SUB_MODULE)/$(v)"; then \
