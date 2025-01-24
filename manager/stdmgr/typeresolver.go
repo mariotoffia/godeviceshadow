@@ -1,4 +1,4 @@
-package manager
+package stdmgr
 
 import (
 	"github.com/mariotoffia/godeviceshadow/model"
@@ -12,7 +12,7 @@ import (
 // a last resort.
 //
 // NOTE: It is possible to provide with a set of _id_(s).
-func (mgr *Manager) ResolveType(name string, id ...persistencemodel.ID) (model.TypeEntry, bool) {
+func (mgr *ManagerImpl) ResolveType(name string, id ...persistencemodel.ID) (model.TypeEntry, bool) {
 	if name != "" && mgr.typeRegistry != nil {
 		if t, ok := mgr.typeRegistry.Get(name); ok {
 			return t, true

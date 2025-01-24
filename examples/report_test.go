@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/mariotoffia/godeviceshadow/manager"
+	"github.com/mariotoffia/godeviceshadow/manager/stdmgr"
 	"github.com/mariotoffia/godeviceshadow/model"
 	"github.com/mariotoffia/godeviceshadow/model/managermodel"
 	"github.com/mariotoffia/godeviceshadow/model/persistencemodel"
@@ -23,7 +23,7 @@ func TestDesireReportThatAcknowledgesAndReadAgain(t *testing.T) {
 
 	const tz = "Europe/Stockholm"
 
-	mgr := manager.New().
+	mgr := stdmgr.New().
 		WithPersistence(mempersistence.New()).
 		WithSeparation(persistencemodel.SeparateModels).
 		WithTypeRegistryResolver(

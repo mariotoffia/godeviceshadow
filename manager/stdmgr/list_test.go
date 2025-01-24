@@ -1,4 +1,4 @@
-package manager_test
+package stdmgr_test
 
 import (
 	"context"
@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/mariotoffia/godeviceshadow/manager"
+	"github.com/mariotoffia/godeviceshadow/manager/stdmgr"
 	"github.com/mariotoffia/godeviceshadow/model"
 	"github.com/mariotoffia/godeviceshadow/model/managermodel"
 	"github.com/mariotoffia/godeviceshadow/model/persistencemodel"
@@ -23,7 +23,7 @@ func TestListAllModels(t *testing.T) {
 	ctx := context.Background()
 	now := time.Now()
 
-	mgr := manager.New().
+	mgr := stdmgr.New().
 		WithPersistence(mempersistence.New()).
 		WithSeparation(persistencemodel.CombinedModels).
 		WithTypeRegistryResolver(
@@ -91,7 +91,7 @@ func TestListWithinID(t *testing.T) {
 	ctx := context.Background()
 	now := time.Now()
 
-	mgr := manager.New().
+	mgr := stdmgr.New().
 		WithPersistence(mempersistence.New()).
 		WithSeparation(persistencemodel.SeparateModels).
 		WithTypeRegistryResolver(

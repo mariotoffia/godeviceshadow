@@ -1,4 +1,4 @@
-package manager
+package stdmgr
 
 import (
 	"context"
@@ -12,7 +12,7 @@ import (
 //
 // If model type is _zero_ in the operation it will delete both reported and desired model in one go since it signals a combined storage.
 // If separate storage the model type *must* be provided.
-func (mgr *Manager) Delete(ctx context.Context, operations ...managermodel.DeleteOperation) []managermodel.DeleteOperationOperationResult {
+func (mgr *ManagerImpl) Delete(ctx context.Context, operations ...managermodel.DeleteOperation) []managermodel.DeleteOperationOperationResult {
 	if len(operations) == 0 {
 		return nil
 	}

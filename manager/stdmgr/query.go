@@ -1,4 +1,4 @@
-package manager
+package stdmgr
 
 import (
 	"context"
@@ -9,7 +9,7 @@ import (
 )
 
 // Query implements the read function in `managermodel.Receiver` interface.
-func (mgr *Manager) Read(ctx context.Context, operations ...managermodel.ReadOperation) []managermodel.ReadOperationResult {
+func (mgr *ManagerImpl) Read(ctx context.Context, operations ...managermodel.ReadOperation) []managermodel.ReadOperationResult {
 	if len(operations) == 0 {
 		return nil
 	}

@@ -1,4 +1,4 @@
-package manager
+package stdmgr
 
 import (
 	"context"
@@ -12,7 +12,7 @@ import (
 	"github.com/mariotoffia/godeviceshadow/model/persistencemodel"
 )
 
-func (mgr *Manager) Desire(ctx context.Context, operations ...managermodel.DesireOperation) []managermodel.DesireOperationResult {
+func (mgr *ManagerImpl) Desire(ctx context.Context, operations ...managermodel.DesireOperation) []managermodel.DesireOperationResult {
 	if len(operations) == 0 {
 		return nil
 	}

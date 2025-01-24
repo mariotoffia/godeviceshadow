@@ -35,6 +35,7 @@
     "Println",
     "processmodel",
     "reutils",
+    "stdmgr",
     "stretchr",
     "strlogger",
     "toclevels",

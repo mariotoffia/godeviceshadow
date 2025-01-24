@@ -1,4 +1,4 @@
-package manager
+package stdmgr
 
 import "github.com/mariotoffia/godeviceshadow/model"
 
@@ -7,7 +7,7 @@ import "github.com/mariotoffia/godeviceshadow/model"
 // If the `MergeDirtyLogger` is not present in the _loggers_ it will be automatically added.
 //
 // If _report_ is `true` it will use the `Manager.reportedLoggers` when _loggers_ is empty. Otherwise it will use `Manager.desiredMergeLoggers`.
-func (mgr *Manager) createMergeLoggers(report bool, loggers []model.CreatableMergeLogger) []model.MergeLogger {
+func (mgr *ManagerImpl) createMergeLoggers(report bool, loggers []model.CreatableMergeLogger) []model.MergeLogger {
 	if len(loggers) == 0 {
 		if report {
 			loggers = mgr.reportedMergeLoggers

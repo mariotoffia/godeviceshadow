@@ -1,4 +1,4 @@
-package manager
+package stdmgr
 
 import (
 	"context"
@@ -9,7 +9,7 @@ import (
 
 // List will list the models. If no id or search expression is provided all models will be listed. It may be
 // paged, thus check the `managermodel.ListResults.Token` to see if there's more to fetch.
-func (mgr *Manager) List(ctx context.Context, options ...managermodel.ListOptions) (managermodel.ListResults, error) {
+func (mgr *ManagerImpl) List(ctx context.Context, options ...managermodel.ListOptions) (managermodel.ListResults, error) {
 	var opt persistencemodel.ListOptions
 
 	if len(options) > 0 {

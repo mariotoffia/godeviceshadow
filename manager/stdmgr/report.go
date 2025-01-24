@@ -1,4 +1,4 @@
-package manager
+package stdmgr
 
 import (
 	"context"
@@ -22,7 +22,7 @@ import (
 // TIP: It will *always* return a slice of `  managermodel.ReportOperationResult` with the same length as the input `operations`.
 //
 // This implements the `managermodel.Reportable` interface.
-func (mgr *Manager) Report(ctx context.Context, operations ...managermodel.ReportOperation) []managermodel.ReportOperationResult {
+func (mgr *ManagerImpl) Report(ctx context.Context, operations ...managermodel.ReportOperation) []managermodel.ReportOperationResult {
 	if len(operations) == 0 {
 		return nil
 	}
@@ -69,7 +69,7 @@ func (mgr *Manager) Report(ctx context.Context, operations ...managermodel.Repor
 	return toResults(results)
 }
 
-func (mgr *Manager) reportMergeModels(
+func (mgr *ManagerImpl) reportMergeModels(
 	readResults []groupedPersistenceResult,
 	operations []managermodel.ReportOperation,
 	results map[string]*managermodel.ReportOperationResult,
@@ -192,7 +192,7 @@ func (mgr *Manager) reportMergeModels(
 	return readResults
 }
 
-func (mgr *Manager) reportWriteBack(ctx context.Context, writes []persistencemodel.WriteOperation, results map[string]*managermodel.ReportOperationResult) {
+func (mgr *ManagerImpl) reportWriteBack(ctx context.Context, writes []persistencemodel.WriteOperation, results map[string]*managermodel.ReportOperationResult) {
 	result := mgr.persistence.Write(ctx, persistencemodel.WriteOptions{
 		Config: persistencemodel.WriteConfig{
 			Separation: mgr.separation,
@@ -238,7 +238,7 @@ func (mgr *Manager) reportWriteBack(ctx context.Context, writes []persistencemod
 // createDesiredLoggers will create logger instance from _loggers_ (if any), if none where submitted, it will use the `Manager.desiredLoggers`.
 //
 // If the `DesiredAckLogger` is not present in the _loggers_ it will be automatically added.
-func (mgr *Manager) createDesiredLoggers(loggers []model.CreatableDesiredLogger) []model.DesiredLogger {
+func (mgr *ManagerImpl) createDesiredLoggers(loggers []model.CreatableDesiredLogger) []model.DesiredLogger {
 	if len(loggers) == 0 {
 		loggers = mgr.reportedDesiredLoggers
 	}
@@ -257,7 +257,7 @@ func (mgr *Manager) createDesiredLoggers(loggers []model.CreatableDesiredLogger)
 	return res
 }
 
-func (mgr *Manager) reportReadFromPersistence(
+func (mgr *ManagerImpl) reportReadFromPersistence(
 	ctx context.Context,
 	readOps []persistencemodel.ReadOperation,
 	results map[string]*managermodel.ReportOperationResult,
@@ -346,7 +346,7 @@ func (mgr *Manager) reportReadFromPersistence(
 	return r
 }
 
-func (mgr *Manager) reportPrepareForRead(operations []managermodel.ReportOperation, results map[string]*managermodel.ReportOperationResult) []persistencemodel.ReadOperation {
+func (mgr *ManagerImpl) reportPrepareForRead(operations []managermodel.ReportOperation, results map[string]*managermodel.ReportOperationResult) []persistencemodel.ReadOperation {
 	// Prepare for read
 	readOps := make([]persistencemodel.ReadOperation, 0, len(operations))
 

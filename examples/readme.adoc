@@ -385,7 +385,7 @@ func TestReadUnversionedCombined(t *testing.T) {
 <4> Writes as combined models (i.e. one entry for reported and one for desired). Note that it has to be two write operations so it is no different from writing separate models. It is optional to set the _Separation_, if not passed it will use the `Persistence` default.
 <5> Read it back. Independent on storage, it will return both reported and desired in separate results.
 
-== Manager Package
+== Std Manager Package
 This package uses persistence, merge, type registry to constitute a manager that can handle high level interactions with a model.
 
 === Reporting & Desired Handling
@@ -403,7 +403,7 @@ func TestDesireReportThatAcknowledgesAndReadAgain(t *testing.T) {
 
   const tz = "Europe/Stockholm"
 
-  mgr := manager.New().
+  mgr := stdmgr.New().
     WithPersistence(mempersistence.New()).
     WithSeparation(persistencemodel.CombinedModels). // <1>
     WithTypeRegistryResolver(

@@ -1,4 +1,4 @@
-package manager
+package stdmgr
 
 import (
 	"github.com/mariotoffia/godeviceshadow/model"
@@ -6,7 +6,8 @@ import (
 	"github.com/mariotoffia/godeviceshadow/model/persistencemodel"
 )
 
-type Manager struct {
+// ManagerImpl is a implementation of a "standard" manager that can be used to manage models.
+type ManagerImpl struct {
 	// persistence to use for _CRUD_ operations
 	persistence persistencemodel.Persistence
 	// typeRegistry is the type registry that is used when no `TypeRegistryResolver` is

@@ -1,4 +1,4 @@
-package manager
+package stdmgr
 
 import (
 	"github.com/mariotoffia/godeviceshadow/model"
@@ -6,23 +6,23 @@ import (
 )
 
 type builder struct {
-	m *Manager
+	m *ManagerImpl
 }
 
 func New() *builder {
 	return &builder{
-		m: &Manager{},
+		m: &ManagerImpl{},
 	}
 }
 
-func (b *builder) Build() *Manager {
+func (b *builder) Build() *ManagerImpl {
 	sep := b.m.separation
 
 	if sep == 0 {
 		sep = persistencemodel.CombinedModels
 	}
 
-	return &Manager{
+	return &ManagerImpl{
 		persistence:            b.m.persistence,
 		separation:             sep,
 		typeRegistry:           b.m.typeRegistry,

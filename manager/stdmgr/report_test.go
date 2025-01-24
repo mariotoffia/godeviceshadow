@@ -1,4 +1,4 @@
-package manager_test
+package stdmgr_test
 
 import (
 	"context"
@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/mariotoffia/godeviceshadow/loggers/changelogger"
-	"github.com/mariotoffia/godeviceshadow/manager"
+	"github.com/mariotoffia/godeviceshadow/manager/stdmgr"
 	"github.com/mariotoffia/godeviceshadow/model"
 	"github.com/mariotoffia/godeviceshadow/model/managermodel"
 	"github.com/mariotoffia/godeviceshadow/model/persistencemodel"
@@ -43,7 +43,7 @@ func TestReportCreateNew(t *testing.T) {
 	ctx := context.Background()
 	now := time.Now()
 
-	mgr := manager.New().
+	mgr := stdmgr.New().
 		WithPersistence(mempersistence.New()).
 		WithSeparation(persistencemodel.SeparateModels).
 		WithReportLoggers(changelogger.New()).
@@ -99,7 +99,7 @@ func TestReportUpdateReport(t *testing.T) {
 	ctx := context.Background()
 	now := time.Now()
 
-	mgr := manager.New().
+	mgr := stdmgr.New().
 		WithPersistence(mempersistence.New()).
 		WithSeparation(persistencemodel.CombinedModels).
 		WithReportLoggers(changelogger.New()).
@@ -163,7 +163,7 @@ func TestReportUpdateReportNotChanged(t *testing.T) {
 	ctx := context.Background()
 	now := time.Now()
 
-	mgr := manager.New().
+	mgr := stdmgr.New().
 		WithPersistence(mempersistence.New()).
 		WithSeparation(persistencemodel.CombinedModels).
 		WithReportLoggers(changelogger.New()).
@@ -230,7 +230,7 @@ func BenchmarkNewReportAndUpdateReport(t *testing.B) {
 	ctx := context.Background()
 	now := time.Now()
 
-	mgr := manager.New().
+	mgr := stdmgr.New().
 		WithPersistence(mempersistence.New()).
 		WithSeparation(persistencemodel.CombinedModels).
 		WithReportLoggers(changelogger.New()).
