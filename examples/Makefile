@@ -1,6 +1,6 @@
 SHELL := /bin/bash
 
-SUB_MODULE := persistence/dynamodbpersistence
+SUB_MODULE := examples
 
 .PHONY: version
 version:
@@ -22,7 +22,7 @@ version:
 
 	@echo "==> Updating go.mod..."
 	@go mod tidy
-
+	
 	@echo "==> Creating new tag..."
 	@if module_tag="$(SUB_MODULE)/$(v)"; then \
 	  echo "git tag -a \"$$module_tag\" -m \"Release $$module_tag\""; \

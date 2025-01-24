@@ -4,13 +4,13 @@ go 1.23.5
 
 toolchain go1.23.4
 
-replace github.com/mariotoffia/godeviceshadow => ..
+// replace github.com/mariotoffia/godeviceshadow => ..
 
-replace github.com/mariotoffia/godeviceshadow/persistence/dynamodbpersistence => ../persistence/dynamodbpersistence/
+// replace github.com/mariotoffia/godeviceshadow/persistence/dynamodbpersistence => ../persistence/dynamodbpersistence/
 
 require (
-	github.com/mariotoffia/godeviceshadow v0.0.0
-	github.com/mariotoffia/godeviceshadow/persistence/dynamodbpersistence v0.0.0
+	github.com/mariotoffia/godeviceshadow v0.0.1
+	github.com/mariotoffia/godeviceshadow/persistence/dynamodbpersistence v0.1.1
 	github.com/stretchr/testify v1.10.0
 )
 
