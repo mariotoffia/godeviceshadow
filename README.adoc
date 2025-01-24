@@ -94,6 +94,28 @@ mgr := stdmgr.New(). // <1>
 == TIP 💡: View All Examples
 To view all examples, visit the https://github.com/mariotoffia/godeviceshadow/tree/main/examples[Examples] directory.
 
+== Modules
+
+[cols="3a,2",options="header"]
+|===
+| Module
+| Description
+
+| .godeviceshadow
+[source,bash]
+----
+go get github.com/mariotoffia/godeviceshadow@latest
+----
+| The _core_ runtime with no dependencies.
+
+| .dynamodbpersistence
+[source,bash]
+----
+go get github.com/mariotoffia/godeviceshadow/persistence/dynamodbpersistence@latest
+----
+| _AWS DynamoDB_ persistence module.
+|===
+
 == Core Concepts
 
 This is a model runtime and not a plain _JSON_ runtime, thus it handles golang models. The main interface is the `model.ValueAndTimestamp` of which it uses to discover variables and handle them.
