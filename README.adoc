@@ -5,22 +5,17 @@ This is an implementation of a device shadow storage and notification for Dynamo
 
 === Modules
 
-[cols="4a",options="header"]
-|===
-| Module
-
-| .godeviceshadow
+.godeviceshadow
 [source,bash]
 ----
 go get github.com/mariotoffia/godeviceshadow@latest
 ----
 
-| .dynamodbpersistence
+.dynamodbpersistence
 [source,bash]
 ----
 go get github.com/mariotoffia/godeviceshadow/persistence/dynamodbpersistence@latest
 ----
-|===
 
 
 TIP: 💡 *The core runtime do not have any dependencies except for the go framework. Only plugins may have dependencies.*
@@ -335,3 +330,11 @@ When _ServerIsMaster_ it is not possible to delete elements only add and updates
 This is to denote the desired state and when the client wants to report a state it may also include that the _SDK_ shall load the desired state and clear it when the desired state value are the same as reported.
 
 In this case it will need to do this in a transaction since it is two different sort keys. For example in DynamoDB this is done using the transaction _API_.
+
+== Development
+
+=== Submodules
+
+When a plugin needs to have a external dependency it is *REQUIRED* that it will be it's own module in order to have the core framework free from other dependencies that the go framework and the test framework.
+
+Add the `Makefile` to do versioning see https://github.com/mariotoffia/godeviceshadow/blob/main/examples/Makefile[Makefile] and copy the _version_ target to allow for versioning of the plugin. Add the module in this readme under the <<Modules>> section so it is clear that this is a submodule that may be referenced in a external project (or this).

@@ -56,8 +56,10 @@ type ReportOperationResult struct {
 	//
 	// If neither of those (reported, desired), nothing was changed.
 	DesiredProcessed bool
-	// Model is the resulting model after merge operation
-	Model any
+	// ReportModel is the resulting model after merge operation of the report model
+	ReportModel any
+	// DesiredModel is the resulting model after acknowledge operation of the desired model
+	DesiredModel any
 }
 
 type Reportable interface {

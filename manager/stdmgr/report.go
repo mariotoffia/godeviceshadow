@@ -142,13 +142,13 @@ func (mgr *ManagerImpl) reportMergeModels(
 			results[rdr.id.String()] = &managermodel.ReportOperationResult{
 				ID:           rdr.id,
 				MergeLoggers: ml,
-				Model:        reported,
+				ReportModel:  reported,
 			}
 		}
 
 		if rdr.desired != nil && reported != nil {
 			dl := mgr.createDesiredLoggers(op.DesiredLoggers)
-			model, err := merge.DesiredAny(reported, rdr.desired.Model, merge.DesiredOptions{
+			modelDesired, err := merge.DesiredAny(reported, rdr.desired.Model, merge.DesiredOptions{
 				Loggers: dl,
 			})
 
@@ -169,17 +169,19 @@ func (mgr *ManagerImpl) reportMergeModels(
 
 			if r, ok := results[rdr.id.String()]; ok {
 				r.DesiredLoggers = dl
+				r.DesiredModel = modelDesired
 			} else {
 				results[rdr.id.String()] = &managermodel.ReportOperationResult{
 					ID:             rdr.id,
 					DesiredLoggers: dl,
+					DesiredModel:   modelDesired,
 				}
 			}
 
 			// Always needed when combined independent on dirty
 			if dla.Dirty || sep == persistencemodel.CombinedModels {
 				// need persist -> queue
-				readResults[i].queueDesired = model
+				readResults[i].queueDesired = modelDesired
 
 				// Make sure reported is persisted as well when combined models
 				if sep == persistencemodel.CombinedModels && readResults[i].queueReported == nil {
