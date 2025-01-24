@@ -1,11 +1,9 @@
 = Go Device Shadow (godeviceshadow)
+
+== Introduction
 This is an implementation of a device shadow storage and notification for DynamoDB and SQS/SNS. It is pluggable for other storage/notifications.
 
 TIP: 💡 *The core runtime do not have any dependencies except for the go framework. Only plugins may have dependencies.*
-
-== Introduction
-
-CAUTION: This is work in progress - use it with caution!
 
 This is a somewhat emulation of the existing IoT Core Device Shadow. However, it separates the _Reported_ and _Desired_ states into two different sort keys to allow for more data and better querying and better performance if e.g. most of the time _Reported_ is updated. It is possible to direct the _persistence_ to use combined or separate storage.
 
