@@ -33,6 +33,8 @@ type NotifierOperation struct {
 	// Desired is set when in a `OperationTypeDesired` operation. It is the desired state of the model.
 	//
 	// NOTE: It may be part of a `OperationTypeReport` operation as well since desired is loaded and acknowledged.
+	//       This is then the resulting desired state after acknowledging the desired state. Which can be discovered
+	//       in `DesireLogger` instance.
 	Desired any
 }
 

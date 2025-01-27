@@ -1,6 +1,7 @@
 {
   "cSpell.words": [
     "adoc",
+    "antlr",
     "attributevalue",
     "awscfg",
     "awsconfig",
@@ -23,6 +24,7 @@
     "instantiator",
     "jsonutils",
     "limhamn",
+    "LPAREN",
     "managermodel",
     "mariotoffia",
     "mempersistence",
@@ -40,6 +42,9 @@
     "Println",
     "processmodel",
     "reutils",
+    "RPAREN",
+    "selectlang",
+    "seletlang",
     "stdmgr",
     "stretchr",
     "strlogger",
