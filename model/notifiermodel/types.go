@@ -36,6 +36,8 @@ type NotifierOperation struct {
 	//       This is then the resulting desired state after acknowledging the desired state. Which can be discovered
 	//       in `DesireLogger` instance.
 	Desired any
+	// Custom is custom properties
+	Custom map[string]any
 }
 
 type NotifierOperationResult struct {

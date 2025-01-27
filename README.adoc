@@ -17,6 +17,12 @@ go get github.com/mariotoffia/godeviceshadow@latest
 go get github.com/mariotoffia/godeviceshadow/persistence/dynamodbpersistence@latest
 ----
 
+.selectlang
+[source,bash]
+----
+go get github.com/mariotoffia/godeviceshadow/notify/selectlang@latest
+----
+
 
 TIP: 💡 *The core runtime do not have any dependencies except for the go framework. Only plugins may have dependencies.*
 
