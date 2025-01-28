@@ -37,6 +37,9 @@ type selectlangListener interface {
 	// EnterLoggerOp is called when entering the loggerOp production.
 	EnterLoggerOp(c *LoggerOpContext)
 
+	// EnterLoggerConstraints is called when entering the loggerConstraints production.
+	EnterLoggerConstraints(c *LoggerConstraintsContext)
+
 	// EnterValueComparison is called when entering the valueComparison production.
 	EnterValueComparison(c *ValueComparisonContext)
 
@@ -96,6 +99,9 @@ type selectlangListener interface {
 
 	// ExitLoggerOp is called when exiting the loggerOp production.
 	ExitLoggerOp(c *LoggerOpContext)
+
+	// ExitLoggerConstraints is called when exiting the loggerConstraints production.
+	ExitLoggerConstraints(c *LoggerConstraintsContext)
 
 	// ExitValueComparison is called when exiting the valueComparison production.
 	ExitValueComparison(c *ValueComparisonContext)

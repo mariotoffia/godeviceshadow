@@ -80,6 +80,12 @@ func (s *BaseselectlangListener) EnterLoggerOp(ctx *LoggerOpContext) {}
 // ExitLoggerOp is called when production loggerOp is exited.
 func (s *BaseselectlangListener) ExitLoggerOp(ctx *LoggerOpContext) {}
 
+// EnterLoggerConstraints is called when production loggerConstraints is entered.
+func (s *BaseselectlangListener) EnterLoggerConstraints(ctx *LoggerConstraintsContext) {}
+
+// ExitLoggerConstraints is called when production loggerConstraints is exited.
+func (s *BaseselectlangListener) ExitLoggerConstraints(ctx *LoggerConstraintsContext) {}
+
 // EnterValueComparison is called when production valueComparison is entered.
 func (s *BaseselectlangListener) EnterValueComparison(ctx *ValueComparisonContext) {}
 

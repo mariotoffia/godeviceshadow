@@ -40,19 +40,19 @@ The above example checks if the id matches the regexp `/myDevice-\d+/` and the o
 Example Logger expressions:
 
 ```
-(add,update:/^Sensors-.*-indoor$/ == 'temp' AND (value > 20 OR value < 10))
+(add,update:/^Sensors-.*-indoor$/ == 'temp' WHERE (value > 20 OR value < 10))
 ```
 The above example checks the add, update operations if any path matches the regexp `^Sensors-.*-indoor$` and the value is a map that has
 "temp" as key and the value is either greater than 20 or less than 10.
 
 ```
-(add,update:/^Sensors-.*-indoor$/ AND (value > 20 OR value < 10))
+(add,update:/^Sensors-.*-indoor$/ WHERE (value > 20 OR value < 10))
 ```
 All add, update operations that has a path matching the regexp `^Sensors-.*-indoor$` and the value is either greater than 20 or less than 10.
 This requires the value to be a scalar value.
 
 ```
-(add,update AND (value > 20 OR value < 10))
+(add,update WHERE (value > 20 OR value < 10))
 ```
 This captures all add, update operation and checks all scalars if they are greater than 20 or less than 10.
 
@@ -63,9 +63,9 @@ This captures all add, update, acknowledge operations.
 
 Combine all Examples:
 ```
-(id: /myDevice-\d+/ AND operation: report,delete) AND (add,update:/^Sensors-.*-indoor$/ AND (value > 20 OR value < 10))
+(id: /myDevice-\d+/ AND operation: report,delete) AND (add,update:/^Sensors-.*-indoor$/ WHERE (value > 20 OR value < 10))
 ```
 
 ```
-(id: /myDevice-\d+/ AND name: 'myShadow') AND (add,update:/^Sensors-.*-indoor$/ == 'temp' AND (value > 20 OR value < 10)) OR (add,update)
+(id: /myDevice-\d+/ AND name: 'myShadow') AND (add,update:/^Sensors-.*-indoor$/ == 'temp' WHERE (value > 20 OR value < 10)) OR (add,update)
 ```

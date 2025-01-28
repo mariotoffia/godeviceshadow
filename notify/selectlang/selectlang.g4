@@ -10,7 +10,6 @@ expression
     | LPAREN expression RPAREN
     | expression AND expression
     | expression OR expression
-    | NOT expression
     ;
 
 primaryExpr
@@ -36,7 +35,7 @@ operations
     ;
 
 loggerExpr
-    : loggerOp (':' regex)? mapVarExpr? ('AND' LPAREN valueComparison RPAREN)? 
+    : loggerOp (':' regex)? mapVarExpr? loggerConstraints? 
     ;
 
 mapVarExpr
@@ -46,6 +45,10 @@ mapVarExpr
 loggerOp
     : ('add' | 'remove' | 'update' | 'acknowledge' | 'no-change' | 'all') 
       (',' ('add' | 'remove' | 'update' | 'acknowledge' | 'no-change' | 'all'))*
+    ;
+
+loggerConstraints
+    : WHERE LPAREN valueComparison RPAREN
     ;
 
 valueComparison
@@ -62,7 +65,7 @@ valueFactor
     ;
 
 compareOp
-    : EQ | NE | '>' | '<' | '>=' | '<=' | 'before' | 'after' | 'regexp'
+    : EQ | NE | GT | LT | GE | LE | BEFORE | AFTER
     ;
 
 constantOrRegex
@@ -81,6 +84,10 @@ regex
     : REGEX
     ;
 
+WHERE:
+    'WHERE'
+    ;
+
 LPAREN
     : '('
     ;
@@ -95,6 +102,30 @@ EQ
 
 NE
     : '!='
+    ;
+
+GT
+    : '>'
+    ;
+
+LT
+    : '<'
+    ;
+
+GE
+    : '>='
+    ;
+
+LE
+    : '<='
+    ;
+
+BEFORE
+    : 'before'
+    ;
+
+AFTER
+    : 'after'
     ;
 
 ID

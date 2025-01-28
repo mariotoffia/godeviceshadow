@@ -33,83 +33,84 @@ func selectlangParserInit() {
 	staticData := &SelectlangParserStaticData
 	staticData.LiteralNames = []string{
 		"", "'report'", "'desired'", "'delete'", "'all'", "','", "':'", "'add'",
-		"'remove'", "'update'", "'acknowledge'", "'no-change'", "'value'", "'>'",
-		"'<'", "'>='", "'<='", "'before'", "'after'", "'regexp'", "'('", "')'",
-		"'=='", "'!='", "'id:'", "'AND'", "'OR'", "'NOT'", "'name:'", "'operation:'",
+		"'remove'", "'update'", "'acknowledge'", "'no-change'", "'value'", "'WHERE'",
+		"'('", "')'", "'=='", "'!='", "'>'", "'<'", "'>='", "'<='", "'before'",
+		"'after'", "'id:'", "'AND'", "'OR'", "'NOT'", "'name:'", "'operation:'",
 	}
 	staticData.SymbolicNames = []string{
-		"", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "",
-		"", "", "", "LPAREN", "RPAREN", "EQ", "NE", "ID", "AND", "OR", "NOT",
-		"NAME", "OPERATION", "NUMBER", "STRING", "TIME", "REGEX", "WS",
+		"", "", "", "", "", "", "", "", "", "", "", "", "", "WHERE", "LPAREN",
+		"RPAREN", "EQ", "NE", "GT", "LT", "GE", "LE", "BEFORE", "AFTER", "ID",
+		"AND", "OR", "NOT", "NAME", "OPERATION", "NUMBER", "STRING", "TIME",
+		"REGEX", "WS",
 	}
 	staticData.RuleNames = []string{
 		"filter", "expression", "primaryExpr", "idExpr", "nameExpr", "operationExpr",
-		"operations", "loggerExpr", "mapVarExpr", "loggerOp", "valueComparison",
-		"valueCondition", "valueFactor", "compareOp", "constantOrRegex", "regexOrString",
-		"regex",
+		"operations", "loggerExpr", "mapVarExpr", "loggerOp", "loggerConstraints",
+		"valueComparison", "valueCondition", "valueFactor", "compareOp", "constantOrRegex",
+		"regexOrString", "regex",
 	}
 	staticData.PredictionContextCache = antlr.NewPredictionContextCache()
 	staticData.serializedATN = []int32{
-		4, 1, 34, 146, 2, 0, 7, 0, 2, 1, 7, 1, 2, 2, 7, 2, 2, 3, 7, 3, 2, 4, 7,
+		4, 1, 34, 147, 2, 0, 7, 0, 2, 1, 7, 1, 2, 2, 7, 2, 2, 3, 7, 3, 2, 4, 7,
 		4, 2, 5, 7, 5, 2, 6, 7, 6, 2, 7, 7, 7, 2, 8, 7, 8, 2, 9, 7, 9, 2, 10, 7,
 		10, 2, 11, 7, 11, 2, 12, 7, 12, 2, 13, 7, 13, 2, 14, 7, 14, 2, 15, 7, 15,
-		2, 16, 7, 16, 1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+		2, 16, 7, 16, 2, 17, 7, 17, 1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1,
 		1, 1, 1, 1, 1, 3, 1, 47, 8, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 5, 1,
 		55, 8, 1, 10, 1, 12, 1, 58, 9, 1, 1, 2, 1, 2, 1, 2, 3, 2, 63, 8, 2, 1,
 		3, 1, 3, 1, 3, 1, 4, 1, 4, 1, 4, 1, 5, 1, 5, 1, 5, 1, 6, 1, 6, 1, 6, 5,
 		6, 77, 8, 6, 10, 6, 12, 6, 80, 9, 6, 1, 7, 1, 7, 1, 7, 3, 7, 85, 8, 7,
-		1, 7, 3, 7, 88, 8, 7, 1, 7, 1, 7, 1, 7, 1, 7, 1, 7, 3, 7, 95, 8, 7, 1,
-		8, 1, 8, 1, 8, 1, 9, 1, 9, 1, 9, 5, 9, 103, 8, 9, 10, 9, 12, 9, 106, 9,
-		9, 1, 10, 1, 10, 1, 10, 5, 10, 111, 8, 10, 10, 10, 12, 10, 114, 9, 10,
-		1, 11, 1, 11, 1, 11, 5, 11, 119, 8, 11, 10, 11, 12, 11, 122, 9, 11, 1,
-		12, 1, 12, 1, 12, 1, 12, 1, 12, 1, 12, 1, 12, 1, 12, 3, 12, 132, 8, 12,
-		1, 13, 1, 13, 1, 14, 1, 14, 1, 14, 1, 14, 3, 14, 140, 8, 14, 1, 15, 1,
-		15, 1, 16, 1, 16, 1, 16, 0, 1, 2, 17, 0, 2, 4, 6, 8, 10, 12, 14, 16, 18,
-		20, 22, 24, 26, 28, 30, 32, 0, 5, 1, 0, 1, 4, 1, 0, 1, 3, 2, 0, 4, 4, 7,
-		11, 2, 0, 13, 19, 22, 23, 2, 0, 31, 31, 33, 33, 146, 0, 34, 1, 0, 0, 0,
-		2, 46, 1, 0, 0, 0, 4, 62, 1, 0, 0, 0, 6, 64, 1, 0, 0, 0, 8, 67, 1, 0, 0,
-		0, 10, 70, 1, 0, 0, 0, 12, 73, 1, 0, 0, 0, 14, 81, 1, 0, 0, 0, 16, 96,
-		1, 0, 0, 0, 18, 99, 1, 0, 0, 0, 20, 107, 1, 0, 0, 0, 22, 115, 1, 0, 0,
-		0, 24, 131, 1, 0, 0, 0, 26, 133, 1, 0, 0, 0, 28, 139, 1, 0, 0, 0, 30, 141,
-		1, 0, 0, 0, 32, 143, 1, 0, 0, 0, 34, 35, 3, 2, 1, 0, 35, 36, 5, 0, 0, 1,
-		36, 1, 1, 0, 0, 0, 37, 38, 6, 1, -1, 0, 38, 47, 3, 4, 2, 0, 39, 47, 3,
-		14, 7, 0, 40, 41, 5, 20, 0, 0, 41, 42, 3, 2, 1, 0, 42, 43, 5, 21, 0, 0,
-		43, 47, 1, 0, 0, 0, 44, 45, 5, 27, 0, 0, 45, 47, 3, 2, 1, 1, 46, 37, 1,
-		0, 0, 0, 46, 39, 1, 0, 0, 0, 46, 40, 1, 0, 0, 0, 46, 44, 1, 0, 0, 0, 47,
-		56, 1, 0, 0, 0, 48, 49, 10, 3, 0, 0, 49, 50, 5, 25, 0, 0, 50, 55, 3, 2,
-		1, 4, 51, 52, 10, 2, 0, 0, 52, 53, 5, 26, 0, 0, 53, 55, 3, 2, 1, 3, 54,
-		48, 1, 0, 0, 0, 54, 51, 1, 0, 0, 0, 55, 58, 1, 0, 0, 0, 56, 54, 1, 0, 0,
-		0, 56, 57, 1, 0, 0, 0, 57, 3, 1, 0, 0, 0, 58, 56, 1, 0, 0, 0, 59, 63, 3,
-		6, 3, 0, 60, 63, 3, 8, 4, 0, 61, 63, 3, 10, 5, 0, 62, 59, 1, 0, 0, 0, 62,
-		60, 1, 0, 0, 0, 62, 61, 1, 0, 0, 0, 63, 5, 1, 0, 0, 0, 64, 65, 5, 24, 0,
-		0, 65, 66, 3, 30, 15, 0, 66, 7, 1, 0, 0, 0, 67, 68, 5, 28, 0, 0, 68, 69,
-		3, 30, 15, 0, 69, 9, 1, 0, 0, 0, 70, 71, 5, 29, 0, 0, 71, 72, 3, 12, 6,
-		0, 72, 11, 1, 0, 0, 0, 73, 78, 7, 0, 0, 0, 74, 75, 5, 5, 0, 0, 75, 77,
-		7, 1, 0, 0, 76, 74, 1, 0, 0, 0, 77, 80, 1, 0, 0, 0, 78, 76, 1, 0, 0, 0,
-		78, 79, 1, 0, 0, 0, 79, 13, 1, 0, 0, 0, 80, 78, 1, 0, 0, 0, 81, 84, 3,
-		18, 9, 0, 82, 83, 5, 6, 0, 0, 83, 85, 3, 32, 16, 0, 84, 82, 1, 0, 0, 0,
-		84, 85, 1, 0, 0, 0, 85, 87, 1, 0, 0, 0, 86, 88, 3, 16, 8, 0, 87, 86, 1,
-		0, 0, 0, 87, 88, 1, 0, 0, 0, 88, 94, 1, 0, 0, 0, 89, 90, 5, 25, 0, 0, 90,
-		91, 5, 20, 0, 0, 91, 92, 3, 20, 10, 0, 92, 93, 5, 21, 0, 0, 93, 95, 1,
-		0, 0, 0, 94, 89, 1, 0, 0, 0, 94, 95, 1, 0, 0, 0, 95, 15, 1, 0, 0, 0, 96,
-		97, 5, 22, 0, 0, 97, 98, 5, 31, 0, 0, 98, 17, 1, 0, 0, 0, 99, 104, 7, 2,
-		0, 0, 100, 101, 5, 5, 0, 0, 101, 103, 7, 2, 0, 0, 102, 100, 1, 0, 0, 0,
-		103, 106, 1, 0, 0, 0, 104, 102, 1, 0, 0, 0, 104, 105, 1, 0, 0, 0, 105,
-		19, 1, 0, 0, 0, 106, 104, 1, 0, 0, 0, 107, 112, 3, 22, 11, 0, 108, 109,
-		5, 26, 0, 0, 109, 111, 3, 22, 11, 0, 110, 108, 1, 0, 0, 0, 111, 114, 1,
-		0, 0, 0, 112, 110, 1, 0, 0, 0, 112, 113, 1, 0, 0, 0, 113, 21, 1, 0, 0,
-		0, 114, 112, 1, 0, 0, 0, 115, 120, 3, 24, 12, 0, 116, 117, 5, 25, 0, 0,
-		117, 119, 3, 24, 12, 0, 118, 116, 1, 0, 0, 0, 119, 122, 1, 0, 0, 0, 120,
-		118, 1, 0, 0, 0, 120, 121, 1, 0, 0, 0, 121, 23, 1, 0, 0, 0, 122, 120, 1,
-		0, 0, 0, 123, 124, 5, 12, 0, 0, 124, 125, 3, 26, 13, 0, 125, 126, 3, 28,
-		14, 0, 126, 132, 1, 0, 0, 0, 127, 128, 5, 20, 0, 0, 128, 129, 3, 20, 10,
-		0, 129, 130, 5, 21, 0, 0, 130, 132, 1, 0, 0, 0, 131, 123, 1, 0, 0, 0, 131,
-		127, 1, 0, 0, 0, 132, 25, 1, 0, 0, 0, 133, 134, 7, 3, 0, 0, 134, 27, 1,
-		0, 0, 0, 135, 140, 5, 30, 0, 0, 136, 140, 5, 31, 0, 0, 137, 140, 5, 32,
-		0, 0, 138, 140, 3, 32, 16, 0, 139, 135, 1, 0, 0, 0, 139, 136, 1, 0, 0,
-		0, 139, 137, 1, 0, 0, 0, 139, 138, 1, 0, 0, 0, 140, 29, 1, 0, 0, 0, 141,
-		142, 7, 4, 0, 0, 142, 31, 1, 0, 0, 0, 143, 144, 5, 33, 0, 0, 144, 33, 1,
-		0, 0, 0, 13, 46, 54, 56, 62, 78, 84, 87, 94, 104, 112, 120, 131, 139,
+		1, 7, 3, 7, 88, 8, 7, 1, 7, 3, 7, 91, 8, 7, 1, 8, 1, 8, 1, 8, 1, 9, 1,
+		9, 1, 9, 5, 9, 99, 8, 9, 10, 9, 12, 9, 102, 9, 9, 1, 10, 1, 10, 1, 10,
+		1, 10, 1, 10, 1, 11, 1, 11, 1, 11, 5, 11, 112, 8, 11, 10, 11, 12, 11, 115,
+		9, 11, 1, 12, 1, 12, 1, 12, 5, 12, 120, 8, 12, 10, 12, 12, 12, 123, 9,
+		12, 1, 13, 1, 13, 1, 13, 1, 13, 1, 13, 1, 13, 1, 13, 1, 13, 3, 13, 133,
+		8, 13, 1, 14, 1, 14, 1, 15, 1, 15, 1, 15, 1, 15, 3, 15, 141, 8, 15, 1,
+		16, 1, 16, 1, 17, 1, 17, 1, 17, 0, 1, 2, 18, 0, 2, 4, 6, 8, 10, 12, 14,
+		16, 18, 20, 22, 24, 26, 28, 30, 32, 34, 0, 5, 1, 0, 1, 4, 1, 0, 1, 3, 2,
+		0, 4, 4, 7, 11, 1, 0, 16, 23, 2, 0, 31, 31, 33, 33, 145, 0, 36, 1, 0, 0,
+		0, 2, 46, 1, 0, 0, 0, 4, 62, 1, 0, 0, 0, 6, 64, 1, 0, 0, 0, 8, 67, 1, 0,
+		0, 0, 10, 70, 1, 0, 0, 0, 12, 73, 1, 0, 0, 0, 14, 81, 1, 0, 0, 0, 16, 92,
+		1, 0, 0, 0, 18, 95, 1, 0, 0, 0, 20, 103, 1, 0, 0, 0, 22, 108, 1, 0, 0,
+		0, 24, 116, 1, 0, 0, 0, 26, 132, 1, 0, 0, 0, 28, 134, 1, 0, 0, 0, 30, 140,
+		1, 0, 0, 0, 32, 142, 1, 0, 0, 0, 34, 144, 1, 0, 0, 0, 36, 37, 3, 2, 1,
+		0, 37, 38, 5, 0, 0, 1, 38, 1, 1, 0, 0, 0, 39, 40, 6, 1, -1, 0, 40, 47,
+		3, 4, 2, 0, 41, 47, 3, 14, 7, 0, 42, 43, 5, 14, 0, 0, 43, 44, 3, 2, 1,
+		0, 44, 45, 5, 15, 0, 0, 45, 47, 1, 0, 0, 0, 46, 39, 1, 0, 0, 0, 46, 41,
+		1, 0, 0, 0, 46, 42, 1, 0, 0, 0, 47, 56, 1, 0, 0, 0, 48, 49, 10, 2, 0, 0,
+		49, 50, 5, 25, 0, 0, 50, 55, 3, 2, 1, 3, 51, 52, 10, 1, 0, 0, 52, 53, 5,
+		26, 0, 0, 53, 55, 3, 2, 1, 2, 54, 48, 1, 0, 0, 0, 54, 51, 1, 0, 0, 0, 55,
+		58, 1, 0, 0, 0, 56, 54, 1, 0, 0, 0, 56, 57, 1, 0, 0, 0, 57, 3, 1, 0, 0,
+		0, 58, 56, 1, 0, 0, 0, 59, 63, 3, 6, 3, 0, 60, 63, 3, 8, 4, 0, 61, 63,
+		3, 10, 5, 0, 62, 59, 1, 0, 0, 0, 62, 60, 1, 0, 0, 0, 62, 61, 1, 0, 0, 0,
+		63, 5, 1, 0, 0, 0, 64, 65, 5, 24, 0, 0, 65, 66, 3, 32, 16, 0, 66, 7, 1,
+		0, 0, 0, 67, 68, 5, 28, 0, 0, 68, 69, 3, 32, 16, 0, 69, 9, 1, 0, 0, 0,
+		70, 71, 5, 29, 0, 0, 71, 72, 3, 12, 6, 0, 72, 11, 1, 0, 0, 0, 73, 78, 7,
+		0, 0, 0, 74, 75, 5, 5, 0, 0, 75, 77, 7, 1, 0, 0, 76, 74, 1, 0, 0, 0, 77,
+		80, 1, 0, 0, 0, 78, 76, 1, 0, 0, 0, 78, 79, 1, 0, 0, 0, 79, 13, 1, 0, 0,
+		0, 80, 78, 1, 0, 0, 0, 81, 84, 3, 18, 9, 0, 82, 83, 5, 6, 0, 0, 83, 85,
+		3, 34, 17, 0, 84, 82, 1, 0, 0, 0, 84, 85, 1, 0, 0, 0, 85, 87, 1, 0, 0,
+		0, 86, 88, 3, 16, 8, 0, 87, 86, 1, 0, 0, 0, 87, 88, 1, 0, 0, 0, 88, 90,
+		1, 0, 0, 0, 89, 91, 3, 20, 10, 0, 90, 89, 1, 0, 0, 0, 90, 91, 1, 0, 0,
+		0, 91, 15, 1, 0, 0, 0, 92, 93, 5, 16, 0, 0, 93, 94, 5, 31, 0, 0, 94, 17,
+		1, 0, 0, 0, 95, 100, 7, 2, 0, 0, 96, 97, 5, 5, 0, 0, 97, 99, 7, 2, 0, 0,
+		98, 96, 1, 0, 0, 0, 99, 102, 1, 0, 0, 0, 100, 98, 1, 0, 0, 0, 100, 101,
+		1, 0, 0, 0, 101, 19, 1, 0, 0, 0, 102, 100, 1, 0, 0, 0, 103, 104, 5, 13,
+		0, 0, 104, 105, 5, 14, 0, 0, 105, 106, 3, 22, 11, 0, 106, 107, 5, 15, 0,
+		0, 107, 21, 1, 0, 0, 0, 108, 113, 3, 24, 12, 0, 109, 110, 5, 26, 0, 0,
+		110, 112, 3, 24, 12, 0, 111, 109, 1, 0, 0, 0, 112, 115, 1, 0, 0, 0, 113,
+		111, 1, 0, 0, 0, 113, 114, 1, 0, 0, 0, 114, 23, 1, 0, 0, 0, 115, 113, 1,
+		0, 0, 0, 116, 121, 3, 26, 13, 0, 117, 118, 5, 25, 0, 0, 118, 120, 3, 26,
+		13, 0, 119, 117, 1, 0, 0, 0, 120, 123, 1, 0, 0, 0, 121, 119, 1, 0, 0, 0,
+		121, 122, 1, 0, 0, 0, 122, 25, 1, 0, 0, 0, 123, 121, 1, 0, 0, 0, 124, 125,
+		5, 12, 0, 0, 125, 126, 3, 28, 14, 0, 126, 127, 3, 30, 15, 0, 127, 133,
+		1, 0, 0, 0, 128, 129, 5, 14, 0, 0, 129, 130, 3, 22, 11, 0, 130, 131, 5,
+		15, 0, 0, 131, 133, 1, 0, 0, 0, 132, 124, 1, 0, 0, 0, 132, 128, 1, 0, 0,
+		0, 133, 27, 1, 0, 0, 0, 134, 135, 7, 3, 0, 0, 135, 29, 1, 0, 0, 0, 136,
+		141, 5, 30, 0, 0, 137, 141, 5, 31, 0, 0, 138, 141, 5, 32, 0, 0, 139, 141,
+		3, 34, 17, 0, 140, 136, 1, 0, 0, 0, 140, 137, 1, 0, 0, 0, 140, 138, 1,
+		0, 0, 0, 140, 139, 1, 0, 0, 0, 141, 31, 1, 0, 0, 0, 142, 143, 7, 4, 0,
+		0, 143, 33, 1, 0, 0, 0, 144, 145, 5, 33, 0, 0, 145, 35, 1, 0, 0, 0, 13,
+		46, 54, 56, 62, 78, 84, 87, 90, 100, 113, 121, 132, 140,
 	}
 	deserializer := antlr.NewATNDeserializer(nil)
 	staticData.atn = deserializer.Deserialize(staticData.serializedATN)
@@ -160,17 +161,17 @@ const (
 	selectlangParserT__9      = 10
 	selectlangParserT__10     = 11
 	selectlangParserT__11     = 12
-	selectlangParserT__12     = 13
-	selectlangParserT__13     = 14
-	selectlangParserT__14     = 15
-	selectlangParserT__15     = 16
-	selectlangParserT__16     = 17
-	selectlangParserT__17     = 18
-	selectlangParserT__18     = 19
-	selectlangParserLPAREN    = 20
-	selectlangParserRPAREN    = 21
-	selectlangParserEQ        = 22
-	selectlangParserNE        = 23
+	selectlangParserWHERE     = 13
+	selectlangParserLPAREN    = 14
+	selectlangParserRPAREN    = 15
+	selectlangParserEQ        = 16
+	selectlangParserNE        = 17
+	selectlangParserGT        = 18
+	selectlangParserLT        = 19
+	selectlangParserGE        = 20
+	selectlangParserLE        = 21
+	selectlangParserBEFORE    = 22
+	selectlangParserAFTER     = 23
 	selectlangParserID        = 24
 	selectlangParserAND       = 25
 	selectlangParserOR        = 26
@@ -186,23 +187,24 @@ const (
 
 // selectlangParser rules.
 const (
-	selectlangParserRULE_filter          = 0
-	selectlangParserRULE_expression      = 1
-	selectlangParserRULE_primaryExpr     = 2
-	selectlangParserRULE_idExpr          = 3
-	selectlangParserRULE_nameExpr        = 4
-	selectlangParserRULE_operationExpr   = 5
-	selectlangParserRULE_operations      = 6
-	selectlangParserRULE_loggerExpr      = 7
-	selectlangParserRULE_mapVarExpr      = 8
-	selectlangParserRULE_loggerOp        = 9
-	selectlangParserRULE_valueComparison = 10
-	selectlangParserRULE_valueCondition  = 11
-	selectlangParserRULE_valueFactor     = 12
-	selectlangParserRULE_compareOp       = 13
-	selectlangParserRULE_constantOrRegex = 14
-	selectlangParserRULE_regexOrString   = 15
-	selectlangParserRULE_regex           = 16
+	selectlangParserRULE_filter            = 0
+	selectlangParserRULE_expression        = 1
+	selectlangParserRULE_primaryExpr       = 2
+	selectlangParserRULE_idExpr            = 3
+	selectlangParserRULE_nameExpr          = 4
+	selectlangParserRULE_operationExpr     = 5
+	selectlangParserRULE_operations        = 6
+	selectlangParserRULE_loggerExpr        = 7
+	selectlangParserRULE_mapVarExpr        = 8
+	selectlangParserRULE_loggerOp          = 9
+	selectlangParserRULE_loggerConstraints = 10
+	selectlangParserRULE_valueComparison   = 11
+	selectlangParserRULE_valueCondition    = 12
+	selectlangParserRULE_valueFactor       = 13
+	selectlangParserRULE_compareOp         = 14
+	selectlangParserRULE_constantOrRegex   = 15
+	selectlangParserRULE_regexOrString     = 16
+	selectlangParserRULE_regex             = 17
 )
 
 // IFilterContext is an interface to support dynamic dispatch.
@@ -297,11 +299,11 @@ func (p *selectlangParser) Filter() (localctx IFilterContext) {
 	p.EnterRule(localctx, 0, selectlangParserRULE_filter)
 	p.EnterOuterAlt(localctx, 1)
 	{
-		p.SetState(34)
+		p.SetState(36)
 		p.expression(0)
 	}
 	{
-		p.SetState(35)
+		p.SetState(37)
 		p.Match(selectlangParserEOF)
 		if p.HasError() {
 			// Recognition error - abort rule
@@ -336,7 +338,6 @@ type IExpressionContext interface {
 	AllExpression() []IExpressionContext
 	Expression(i int) IExpressionContext
 	RPAREN() antlr.TerminalNode
-	NOT() antlr.TerminalNode
 	AND() antlr.TerminalNode
 	OR() antlr.TerminalNode
 
@@ -457,10 +458,6 @@ func (s *ExpressionContext) RPAREN() antlr.TerminalNode {
 	return s.GetToken(selectlangParserRPAREN, 0)
 }
 
-func (s *ExpressionContext) NOT() antlr.TerminalNode {
-	return s.GetToken(selectlangParserNOT, 0)
-}
-
 func (s *ExpressionContext) AND() antlr.TerminalNode {
 	return s.GetToken(selectlangParserAND, 0)
 }
@@ -514,19 +511,19 @@ func (p *selectlangParser) expression(_p int) (localctx IExpressionContext) {
 	switch p.GetTokenStream().LA(1) {
 	case selectlangParserID, selectlangParserNAME, selectlangParserOPERATION:
 		{
-			p.SetState(38)
+			p.SetState(40)
 			p.PrimaryExpr()
 		}
 
 	case selectlangParserT__3, selectlangParserT__6, selectlangParserT__7, selectlangParserT__8, selectlangParserT__9, selectlangParserT__10:
 		{
-			p.SetState(39)
+			p.SetState(41)
 			p.LoggerExpr()
 		}
 
 	case selectlangParserLPAREN:
 		{
-			p.SetState(40)
+			p.SetState(42)
 			p.Match(selectlangParserLPAREN)
 			if p.HasError() {
 				// Recognition error - abort rule
@@ -534,30 +531,16 @@ func (p *selectlangParser) expression(_p int) (localctx IExpressionContext) {
 			}
 		}
 		{
-			p.SetState(41)
+			p.SetState(43)
 			p.expression(0)
 		}
 		{
-			p.SetState(42)
+			p.SetState(44)
 			p.Match(selectlangParserRPAREN)
 			if p.HasError() {
 				// Recognition error - abort rule
 				goto errorExit
 			}
-		}
-
-	case selectlangParserNOT:
-		{
-			p.SetState(44)
-			p.Match(selectlangParserNOT)
-			if p.HasError() {
-				// Recognition error - abort rule
-				goto errorExit
-			}
-		}
-		{
-			p.SetState(45)
-			p.expression(1)
 		}
 
 	default:
@@ -592,8 +575,8 @@ func (p *selectlangParser) expression(_p int) (localctx IExpressionContext) {
 				p.PushNewRecursionContext(localctx, _startState, selectlangParserRULE_expression)
 				p.SetState(48)
 
-				if !(p.Precpred(p.GetParserRuleContext(), 3)) {
-					p.SetError(antlr.NewFailedPredicateException(p, "p.Precpred(p.GetParserRuleContext(), 3)", ""))
+				if !(p.Precpred(p.GetParserRuleContext(), 2)) {
+					p.SetError(antlr.NewFailedPredicateException(p, "p.Precpred(p.GetParserRuleContext(), 2)", ""))
 					goto errorExit
 				}
 				{
@@ -606,7 +589,7 @@ func (p *selectlangParser) expression(_p int) (localctx IExpressionContext) {
 				}
 				{
 					p.SetState(50)
-					p.expression(4)
+					p.expression(3)
 				}
 
 			case 2:
@@ -614,8 +597,8 @@ func (p *selectlangParser) expression(_p int) (localctx IExpressionContext) {
 				p.PushNewRecursionContext(localctx, _startState, selectlangParserRULE_expression)
 				p.SetState(51)
 
-				if !(p.Precpred(p.GetParserRuleContext(), 2)) {
-					p.SetError(antlr.NewFailedPredicateException(p, "p.Precpred(p.GetParserRuleContext(), 2)", ""))
+				if !(p.Precpred(p.GetParserRuleContext(), 1)) {
+					p.SetError(antlr.NewFailedPredicateException(p, "p.Precpred(p.GetParserRuleContext(), 1)", ""))
 					goto errorExit
 				}
 				{
@@ -628,7 +611,7 @@ func (p *selectlangParser) expression(_p int) (localctx IExpressionContext) {
 				}
 				{
 					p.SetState(53)
-					p.expression(3)
+					p.expression(2)
 				}
 
 			case antlr.ATNInvalidAltNumber:
@@ -1323,10 +1306,7 @@ type ILoggerExprContext interface {
 	LoggerOp() ILoggerOpContext
 	Regex() IRegexContext
 	MapVarExpr() IMapVarExprContext
-	AND() antlr.TerminalNode
-	LPAREN() antlr.TerminalNode
-	ValueComparison() IValueComparisonContext
-	RPAREN() antlr.TerminalNode
+	LoggerConstraints() ILoggerConstraintsContext
 
 	// IsLoggerExprContext differentiates from other interfaces.
 	IsLoggerExprContext()
@@ -1412,18 +1392,10 @@ func (s *LoggerExprContext) MapVarExpr() IMapVarExprContext {
 	return t.(IMapVarExprContext)
 }
 
-func (s *LoggerExprContext) AND() antlr.TerminalNode {
-	return s.GetToken(selectlangParserAND, 0)
-}
-
-func (s *LoggerExprContext) LPAREN() antlr.TerminalNode {
-	return s.GetToken(selectlangParserLPAREN, 0)
-}
-
-func (s *LoggerExprContext) ValueComparison() IValueComparisonContext {
+func (s *LoggerExprContext) LoggerConstraints() ILoggerConstraintsContext {
 	var t antlr.RuleContext
 	for _, ctx := range s.GetChildren() {
-		if _, ok := ctx.(IValueComparisonContext); ok {
+		if _, ok := ctx.(ILoggerConstraintsContext); ok {
 			t = ctx.(antlr.RuleContext)
 			break
 		}
@@ -1433,11 +1405,7 @@ func (s *LoggerExprContext) ValueComparison() IValueComparisonContext {
 		return nil
 	}
 
-	return t.(IValueComparisonContext)
-}
-
-func (s *LoggerExprContext) RPAREN() antlr.TerminalNode {
-	return s.GetToken(selectlangParserRPAREN, 0)
+	return t.(ILoggerConstraintsContext)
 }
 
 func (s *LoggerExprContext) GetRuleContext() antlr.RuleContext {
@@ -1500,37 +1468,13 @@ func (p *selectlangParser) LoggerExpr() (localctx ILoggerExprContext) {
 	} else if p.HasError() { // JIM
 		goto errorExit
 	}
-	p.SetState(94)
+	p.SetState(90)
 	p.GetErrorHandler().Sync(p)
 
 	if p.GetInterpreter().AdaptivePredict(p.BaseParser, p.GetTokenStream(), 7, p.GetParserRuleContext()) == 1 {
 		{
 			p.SetState(89)
-			p.Match(selectlangParserAND)
-			if p.HasError() {
-				// Recognition error - abort rule
-				goto errorExit
-			}
-		}
-		{
-			p.SetState(90)
-			p.Match(selectlangParserLPAREN)
-			if p.HasError() {
-				// Recognition error - abort rule
-				goto errorExit
-			}
-		}
-		{
-			p.SetState(91)
-			p.ValueComparison()
-		}
-		{
-			p.SetState(92)
-			p.Match(selectlangParserRPAREN)
-			if p.HasError() {
-				// Recognition error - abort rule
-				goto errorExit
-			}
+			p.LoggerConstraints()
 		}
 
 	} else if p.HasError() { // JIM
@@ -1630,7 +1574,7 @@ func (p *selectlangParser) MapVarExpr() (localctx IMapVarExprContext) {
 	p.EnterRule(localctx, 16, selectlangParserRULE_mapVarExpr)
 	p.EnterOuterAlt(localctx, 1)
 	{
-		p.SetState(96)
+		p.SetState(92)
 		p.Match(selectlangParserEQ)
 		if p.HasError() {
 			// Recognition error - abort rule
@@ -1638,7 +1582,7 @@ func (p *selectlangParser) MapVarExpr() (localctx IMapVarExprContext) {
 		}
 	}
 	{
-		p.SetState(97)
+		p.SetState(93)
 		p.Match(selectlangParserSTRING)
 		if p.HasError() {
 			// Recognition error - abort rule
@@ -1729,7 +1673,7 @@ func (p *selectlangParser) LoggerOp() (localctx ILoggerOpContext) {
 
 	p.EnterOuterAlt(localctx, 1)
 	{
-		p.SetState(99)
+		p.SetState(95)
 		_la = p.GetTokenStream().LA(1)
 
 		if !((int64(_la) & ^0x3f) == 0 && ((int64(1)<<_la)&3984) != 0) {
@@ -1739,7 +1683,7 @@ func (p *selectlangParser) LoggerOp() (localctx ILoggerOpContext) {
 			p.Consume()
 		}
 	}
-	p.SetState(104)
+	p.SetState(100)
 	p.GetErrorHandler().Sync(p)
 	if p.HasError() {
 		goto errorExit
@@ -1751,7 +1695,7 @@ func (p *selectlangParser) LoggerOp() (localctx ILoggerOpContext) {
 	for _alt != 2 && _alt != antlr.ATNInvalidAltNumber {
 		if _alt == 1 {
 			{
-				p.SetState(100)
+				p.SetState(96)
 				p.Match(selectlangParserT__4)
 				if p.HasError() {
 					// Recognition error - abort rule
@@ -1759,7 +1703,7 @@ func (p *selectlangParser) LoggerOp() (localctx ILoggerOpContext) {
 				}
 			}
 			{
-				p.SetState(101)
+				p.SetState(97)
 				_la = p.GetTokenStream().LA(1)
 
 				if !((int64(_la) & ^0x3f) == 0 && ((int64(1)<<_la)&3984) != 0) {
@@ -1771,13 +1715,156 @@ func (p *selectlangParser) LoggerOp() (localctx ILoggerOpContext) {
 			}
 
 		}
-		p.SetState(106)
+		p.SetState(102)
 		p.GetErrorHandler().Sync(p)
 		if p.HasError() {
 			goto errorExit
 		}
 		_alt = p.GetInterpreter().AdaptivePredict(p.BaseParser, p.GetTokenStream(), 8, p.GetParserRuleContext())
 		if p.HasError() {
+			goto errorExit
+		}
+	}
+
+errorExit:
+	if p.HasError() {
+		v := p.GetError()
+		localctx.SetException(v)
+		p.GetErrorHandler().ReportError(p, v)
+		p.GetErrorHandler().Recover(p, v)
+		p.SetError(nil)
+	}
+	p.ExitRule()
+	return localctx
+	goto errorExit // Trick to prevent compiler error if the label is not used
+}
+
+// ILoggerConstraintsContext is an interface to support dynamic dispatch.
+type ILoggerConstraintsContext interface {
+	antlr.ParserRuleContext
+
+	// GetParser returns the parser.
+	GetParser() antlr.Parser
+
+	// Getter signatures
+	WHERE() antlr.TerminalNode
+	LPAREN() antlr.TerminalNode
+	ValueComparison() IValueComparisonContext
+	RPAREN() antlr.TerminalNode
+
+	// IsLoggerConstraintsContext differentiates from other interfaces.
+	IsLoggerConstraintsContext()
+}
+
+type LoggerConstraintsContext struct {
+	antlr.BaseParserRuleContext
+	parser antlr.Parser
+}
+
+func NewEmptyLoggerConstraintsContext() *LoggerConstraintsContext {
+	var p = new(LoggerConstraintsContext)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
+	p.RuleIndex = selectlangParserRULE_loggerConstraints
+	return p
+}
+
+func InitEmptyLoggerConstraintsContext(p *LoggerConstraintsContext) {
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
+	p.RuleIndex = selectlangParserRULE_loggerConstraints
+}
+
+func (*LoggerConstraintsContext) IsLoggerConstraintsContext() {}
+
+func NewLoggerConstraintsContext(parser antlr.Parser, parent antlr.ParserRuleContext, invokingState int) *LoggerConstraintsContext {
+	var p = new(LoggerConstraintsContext)
+
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, parent, invokingState)
+
+	p.parser = parser
+	p.RuleIndex = selectlangParserRULE_loggerConstraints
+
+	return p
+}
+
+func (s *LoggerConstraintsContext) GetParser() antlr.Parser { return s.parser }
+
+func (s *LoggerConstraintsContext) WHERE() antlr.TerminalNode {
+	return s.GetToken(selectlangParserWHERE, 0)
+}
+
+func (s *LoggerConstraintsContext) LPAREN() antlr.TerminalNode {
+	return s.GetToken(selectlangParserLPAREN, 0)
+}
+
+func (s *LoggerConstraintsContext) ValueComparison() IValueComparisonContext {
+	var t antlr.RuleContext
+	for _, ctx := range s.GetChildren() {
+		if _, ok := ctx.(IValueComparisonContext); ok {
+			t = ctx.(antlr.RuleContext)
+			break
+		}
+	}
+
+	if t == nil {
+		return nil
+	}
+
+	return t.(IValueComparisonContext)
+}
+
+func (s *LoggerConstraintsContext) RPAREN() antlr.TerminalNode {
+	return s.GetToken(selectlangParserRPAREN, 0)
+}
+
+func (s *LoggerConstraintsContext) GetRuleContext() antlr.RuleContext {
+	return s
+}
+
+func (s *LoggerConstraintsContext) ToStringTree(ruleNames []string, recog antlr.Recognizer) string {
+	return antlr.TreesStringTree(s, ruleNames, recog)
+}
+
+func (s *LoggerConstraintsContext) EnterRule(listener antlr.ParseTreeListener) {
+	if listenerT, ok := listener.(selectlangListener); ok {
+		listenerT.EnterLoggerConstraints(s)
+	}
+}
+
+func (s *LoggerConstraintsContext) ExitRule(listener antlr.ParseTreeListener) {
+	if listenerT, ok := listener.(selectlangListener); ok {
+		listenerT.ExitLoggerConstraints(s)
+	}
+}
+
+func (p *selectlangParser) LoggerConstraints() (localctx ILoggerConstraintsContext) {
+	localctx = NewLoggerConstraintsContext(p, p.GetParserRuleContext(), p.GetState())
+	p.EnterRule(localctx, 20, selectlangParserRULE_loggerConstraints)
+	p.EnterOuterAlt(localctx, 1)
+	{
+		p.SetState(103)
+		p.Match(selectlangParserWHERE)
+		if p.HasError() {
+			// Recognition error - abort rule
+			goto errorExit
+		}
+	}
+	{
+		p.SetState(104)
+		p.Match(selectlangParserLPAREN)
+		if p.HasError() {
+			// Recognition error - abort rule
+			goto errorExit
+		}
+	}
+	{
+		p.SetState(105)
+		p.ValueComparison()
+	}
+	{
+		p.SetState(106)
+		p.Match(selectlangParserRPAREN)
+		if p.HasError() {
+			// Recognition error - abort rule
 			goto errorExit
 		}
 	}
@@ -1915,15 +2002,15 @@ func (s *ValueComparisonContext) ExitRule(listener antlr.ParseTreeListener) {
 
 func (p *selectlangParser) ValueComparison() (localctx IValueComparisonContext) {
 	localctx = NewValueComparisonContext(p, p.GetParserRuleContext(), p.GetState())
-	p.EnterRule(localctx, 20, selectlangParserRULE_valueComparison)
+	p.EnterRule(localctx, 22, selectlangParserRULE_valueComparison)
 	var _la int
 
 	p.EnterOuterAlt(localctx, 1)
 	{
-		p.SetState(107)
+		p.SetState(108)
 		p.ValueCondition()
 	}
-	p.SetState(112)
+	p.SetState(113)
 	p.GetErrorHandler().Sync(p)
 	if p.HasError() {
 		goto errorExit
@@ -1932,7 +2019,7 @@ func (p *selectlangParser) ValueComparison() (localctx IValueComparisonContext) 
 
 	for _la == selectlangParserOR {
 		{
-			p.SetState(108)
+			p.SetState(109)
 			p.Match(selectlangParserOR)
 			if p.HasError() {
 				// Recognition error - abort rule
@@ -1940,11 +2027,11 @@ func (p *selectlangParser) ValueComparison() (localctx IValueComparisonContext) 
 			}
 		}
 		{
-			p.SetState(109)
+			p.SetState(110)
 			p.ValueCondition()
 		}
 
-		p.SetState(114)
+		p.SetState(115)
 		p.GetErrorHandler().Sync(p)
 		if p.HasError() {
 			goto errorExit
@@ -2085,15 +2172,15 @@ func (s *ValueConditionContext) ExitRule(listener antlr.ParseTreeListener) {
 
 func (p *selectlangParser) ValueCondition() (localctx IValueConditionContext) {
 	localctx = NewValueConditionContext(p, p.GetParserRuleContext(), p.GetState())
-	p.EnterRule(localctx, 22, selectlangParserRULE_valueCondition)
+	p.EnterRule(localctx, 24, selectlangParserRULE_valueCondition)
 	var _la int
 
 	p.EnterOuterAlt(localctx, 1)
 	{
-		p.SetState(115)
+		p.SetState(116)
 		p.ValueFactor()
 	}
-	p.SetState(120)
+	p.SetState(121)
 	p.GetErrorHandler().Sync(p)
 	if p.HasError() {
 		goto errorExit
@@ -2102,7 +2189,7 @@ func (p *selectlangParser) ValueCondition() (localctx IValueConditionContext) {
 
 	for _la == selectlangParserAND {
 		{
-			p.SetState(116)
+			p.SetState(117)
 			p.Match(selectlangParserAND)
 			if p.HasError() {
 				// Recognition error - abort rule
@@ -2110,11 +2197,11 @@ func (p *selectlangParser) ValueCondition() (localctx IValueConditionContext) {
 			}
 		}
 		{
-			p.SetState(117)
+			p.SetState(118)
 			p.ValueFactor()
 		}
 
-		p.SetState(122)
+		p.SetState(123)
 		p.GetErrorHandler().Sync(p)
 		if p.HasError() {
 			goto errorExit
@@ -2263,8 +2350,8 @@ func (s *ValueFactorContext) ExitRule(listener antlr.ParseTreeListener) {
 
 func (p *selectlangParser) ValueFactor() (localctx IValueFactorContext) {
 	localctx = NewValueFactorContext(p, p.GetParserRuleContext(), p.GetState())
-	p.EnterRule(localctx, 24, selectlangParserRULE_valueFactor)
-	p.SetState(131)
+	p.EnterRule(localctx, 26, selectlangParserRULE_valueFactor)
+	p.SetState(132)
 	p.GetErrorHandler().Sync(p)
 	if p.HasError() {
 		goto errorExit
@@ -2274,7 +2361,7 @@ func (p *selectlangParser) ValueFactor() (localctx IValueFactorContext) {
 	case selectlangParserT__11:
 		p.EnterOuterAlt(localctx, 1)
 		{
-			p.SetState(123)
+			p.SetState(124)
 			p.Match(selectlangParserT__11)
 			if p.HasError() {
 				// Recognition error - abort rule
@@ -2282,18 +2369,18 @@ func (p *selectlangParser) ValueFactor() (localctx IValueFactorContext) {
 			}
 		}
 		{
-			p.SetState(124)
+			p.SetState(125)
 			p.CompareOp()
 		}
 		{
-			p.SetState(125)
+			p.SetState(126)
 			p.ConstantOrRegex()
 		}
 
 	case selectlangParserLPAREN:
 		p.EnterOuterAlt(localctx, 2)
 		{
-			p.SetState(127)
+			p.SetState(128)
 			p.Match(selectlangParserLPAREN)
 			if p.HasError() {
 				// Recognition error - abort rule
@@ -2301,11 +2388,11 @@ func (p *selectlangParser) ValueFactor() (localctx IValueFactorContext) {
 			}
 		}
 		{
-			p.SetState(128)
+			p.SetState(129)
 			p.ValueComparison()
 		}
 		{
-			p.SetState(129)
+			p.SetState(130)
 			p.Match(selectlangParserRPAREN)
 			if p.HasError() {
 				// Recognition error - abort rule
@@ -2341,6 +2428,12 @@ type ICompareOpContext interface {
 	// Getter signatures
 	EQ() antlr.TerminalNode
 	NE() antlr.TerminalNode
+	GT() antlr.TerminalNode
+	LT() antlr.TerminalNode
+	GE() antlr.TerminalNode
+	LE() antlr.TerminalNode
+	BEFORE() antlr.TerminalNode
+	AFTER() antlr.TerminalNode
 
 	// IsCompareOpContext differentiates from other interfaces.
 	IsCompareOpContext()
@@ -2386,6 +2479,30 @@ func (s *CompareOpContext) NE() antlr.TerminalNode {
 	return s.GetToken(selectlangParserNE, 0)
 }
 
+func (s *CompareOpContext) GT() antlr.TerminalNode {
+	return s.GetToken(selectlangParserGT, 0)
+}
+
+func (s *CompareOpContext) LT() antlr.TerminalNode {
+	return s.GetToken(selectlangParserLT, 0)
+}
+
+func (s *CompareOpContext) GE() antlr.TerminalNode {
+	return s.GetToken(selectlangParserGE, 0)
+}
+
+func (s *CompareOpContext) LE() antlr.TerminalNode {
+	return s.GetToken(selectlangParserLE, 0)
+}
+
+func (s *CompareOpContext) BEFORE() antlr.TerminalNode {
+	return s.GetToken(selectlangParserBEFORE, 0)
+}
+
+func (s *CompareOpContext) AFTER() antlr.TerminalNode {
+	return s.GetToken(selectlangParserAFTER, 0)
+}
+
 func (s *CompareOpContext) GetRuleContext() antlr.RuleContext {
 	return s
 }
@@ -2408,15 +2525,15 @@ func (s *CompareOpContext) ExitRule(listener antlr.ParseTreeListener) {
 
 func (p *selectlangParser) CompareOp() (localctx ICompareOpContext) {
 	localctx = NewCompareOpContext(p, p.GetParserRuleContext(), p.GetState())
-	p.EnterRule(localctx, 26, selectlangParserRULE_compareOp)
+	p.EnterRule(localctx, 28, selectlangParserRULE_compareOp)
 	var _la int
 
 	p.EnterOuterAlt(localctx, 1)
 	{
-		p.SetState(133)
+		p.SetState(134)
 		_la = p.GetTokenStream().LA(1)
 
-		if !((int64(_la) & ^0x3f) == 0 && ((int64(1)<<_la)&13623296) != 0) {
+		if !((int64(_la) & ^0x3f) == 0 && ((int64(1)<<_la)&16711680) != 0) {
 			p.GetErrorHandler().RecoverInline(p)
 		} else {
 			p.GetErrorHandler().ReportMatch(p)
@@ -2641,8 +2758,8 @@ func (s *TimeLiteralContext) ExitRule(listener antlr.ParseTreeListener) {
 
 func (p *selectlangParser) ConstantOrRegex() (localctx IConstantOrRegexContext) {
 	localctx = NewConstantOrRegexContext(p, p.GetParserRuleContext(), p.GetState())
-	p.EnterRule(localctx, 28, selectlangParserRULE_constantOrRegex)
-	p.SetState(139)
+	p.EnterRule(localctx, 30, selectlangParserRULE_constantOrRegex)
+	p.SetState(140)
 	p.GetErrorHandler().Sync(p)
 	if p.HasError() {
 		goto errorExit
@@ -2653,7 +2770,7 @@ func (p *selectlangParser) ConstantOrRegex() (localctx IConstantOrRegexContext) 
 		localctx = NewNumericLiteralContext(p, localctx)
 		p.EnterOuterAlt(localctx, 1)
 		{
-			p.SetState(135)
+			p.SetState(136)
 			p.Match(selectlangParserNUMBER)
 			if p.HasError() {
 				// Recognition error - abort rule
@@ -2665,7 +2782,7 @@ func (p *selectlangParser) ConstantOrRegex() (localctx IConstantOrRegexContext) 
 		localctx = NewStringLiteralContext(p, localctx)
 		p.EnterOuterAlt(localctx, 2)
 		{
-			p.SetState(136)
+			p.SetState(137)
 			p.Match(selectlangParserSTRING)
 			if p.HasError() {
 				// Recognition error - abort rule
@@ -2677,7 +2794,7 @@ func (p *selectlangParser) ConstantOrRegex() (localctx IConstantOrRegexContext) 
 		localctx = NewTimeLiteralContext(p, localctx)
 		p.EnterOuterAlt(localctx, 3)
 		{
-			p.SetState(137)
+			p.SetState(138)
 			p.Match(selectlangParserTIME)
 			if p.HasError() {
 				// Recognition error - abort rule
@@ -2689,7 +2806,7 @@ func (p *selectlangParser) ConstantOrRegex() (localctx IConstantOrRegexContext) 
 		localctx = NewRegexLiteralContext(p, localctx)
 		p.EnterOuterAlt(localctx, 4)
 		{
-			p.SetState(138)
+			p.SetState(139)
 			p.Regex()
 		}
 
@@ -2788,12 +2905,12 @@ func (s *RegexOrStringContext) ExitRule(listener antlr.ParseTreeListener) {
 
 func (p *selectlangParser) RegexOrString() (localctx IRegexOrStringContext) {
 	localctx = NewRegexOrStringContext(p, p.GetParserRuleContext(), p.GetState())
-	p.EnterRule(localctx, 30, selectlangParserRULE_regexOrString)
+	p.EnterRule(localctx, 32, selectlangParserRULE_regexOrString)
 	var _la int
 
 	p.EnterOuterAlt(localctx, 1)
 	{
-		p.SetState(141)
+		p.SetState(142)
 		_la = p.GetTokenStream().LA(1)
 
 		if !(_la == selectlangParserSTRING || _la == selectlangParserREGEX) {
@@ -2889,10 +3006,10 @@ func (s *RegexContext) ExitRule(listener antlr.ParseTreeListener) {
 
 func (p *selectlangParser) Regex() (localctx IRegexContext) {
 	localctx = NewRegexContext(p, p.GetParserRuleContext(), p.GetState())
-	p.EnterRule(localctx, 32, selectlangParserRULE_regex)
+	p.EnterRule(localctx, 34, selectlangParserRULE_regex)
 	p.EnterOuterAlt(localctx, 1)
 	{
-		p.SetState(143)
+		p.SetState(144)
 		p.Match(selectlangParserREGEX)
 		if p.HasError() {
 			// Recognition error - abort rule
@@ -2930,10 +3047,10 @@ func (p *selectlangParser) Sempred(localctx antlr.RuleContext, ruleIndex, predIn
 func (p *selectlangParser) Expression_Sempred(localctx antlr.RuleContext, predIndex int) bool {
 	switch predIndex {
 	case 0:
-		return p.Precpred(p.GetParserRuleContext(), 3)
+		return p.Precpred(p.GetParserRuleContext(), 2)
 
 	case 1:
-		return p.Precpred(p.GetParserRuleContext(), 2)
+		return p.Precpred(p.GetParserRuleContext(), 1)
 
 	default:
 		panic("No predicate with index: " + fmt.Sprint(predIndex))
