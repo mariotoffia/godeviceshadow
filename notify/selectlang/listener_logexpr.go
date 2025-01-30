@@ -65,6 +65,8 @@ func (s *LogExprListener) Exit(ctx *LoggerExprContext) *LoggerExpression {
 		return nil
 	}
 
+	s.expr.Where = s.currentConstraint
+
 	return &s.expr
 }
 
@@ -128,26 +130,10 @@ func (s *LogExprListener) EnterValueCondition(ctx *ValueFactorContext) {
 }
 
 func (s *LogExprListener) And() {
-	if s.currentOperation == ConstraintLogicalLHS {
-		if s.expr.Where == nil {
-			s.expr.Where = s.currentConstraint
-		} else {
-			s.currentConstraint.And = append(s.currentConstraint.And, s.currentConstraint)
-		}
-	}
-
 	s.currentOperation = ConstraintLogicalOpAnd
 }
 
 func (s *LogExprListener) Or() {
-	if s.currentOperation == ConstraintLogicalLHS {
-		if s.expr.Where == nil {
-			s.expr.Where = s.currentConstraint
-		} else {
-			s.currentConstraint.Or = append(s.currentConstraint.Or, s.currentConstraint)
-		}
-	}
-
 	s.currentOperation = ConstraintLogicalOpOr
 }
 
@@ -161,7 +147,11 @@ func (s *LogExprListener) ScopeStart() {
 		s.currentConstraint.Or = append(s.currentConstraint.Or, c)
 	}
 
-	s.stack.Push(cop{c: s.currentConstraint, op: s.currentOperation})
+	if s.currentConstraint == nil {
+		s.stack.Push(cop{c: c, op: s.currentOperation})
+	} else {
+		s.stack.Push(cop{c: s.currentConstraint, op: s.currentOperation})
+	}
 
 	s.currentConstraint = c
 

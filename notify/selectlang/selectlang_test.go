@@ -42,7 +42,7 @@ func TestSimpleIdNameExpression(t *testing.T) {
 	antlr.ParseTreeWalkerDefault.Walk(listener, tree)
 
 	var buff bytes.Buffer
-	listener.RootScope().PrintScopeTree(&buff, 0 /*indent*/)
+	listener.RootScope().Dump(&buff, 0 /*indent*/)
 	fmt.Println()
 	fmt.Println("-----------------------------")
 	fmt.Println(buff.String())

@@ -69,7 +69,7 @@ func (s *ExpressionListener) VisitTerminal(node antlr.TerminalNode) {
 		}
 
 		if s.currentLogExpr != nil {
-			// This is not supported in the log expression
+			// NOT is not supported in the log expression
 		} else {
 			s.scopes.Update(func(scp Scope) Scope {
 				return scp
