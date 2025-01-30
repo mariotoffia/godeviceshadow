@@ -6,47 +6,6 @@ import (
 	"strings"
 )
 
-/*
-(
-ID: /myDevice-\d+/
-AND
-NAME: 'myShadow'
-AND
-    OPERATION:[]string{"report", "desired"}
-)
-AND
-(
-LOGGER START
-    LOGGER_OP:[]string{"add", "update"}
-    REGEX: /^Sensors-.*-indoor$/
-    MAP_VAR_EXPR: 'temp'
-   ENTER_LOGGER_CONSTRAINTS
-(
-    VARIABLE: var
-    COMPARE_OP: GT
-    NUMBER: 20
-OR
-(
-    VARIABLE: var
-    COMPARE_OP: LT
-    REGEX: /re-\d+/
-AND
-    VARIABLE: var
-    COMPARE_OP: NE
-    STRING: 'apa'
-)
-)
-   EXIT_LOGGER_CONSTRAINTS
-LOGGER END
-)
-OR
-(
-LOGGER START
-    LOGGER_OP:[]string{"add", "update"}
-LOGGER END
-)
-*/
-
 // Scope encapsulates a '(' and ')' pair with type info and
 // collects the expression within the scope.
 type Scope struct {
@@ -55,9 +14,10 @@ type Scope struct {
 	// it will be set to correct type.
 	ScopeType ScopeType
 	Primary   *PrimaryExpression
-	Logger    []LoggerExpression
-	Operator  OperatorType
-	Children  []*Scope
+	Logger    *LoggerExpression
+	And       []Scope
+	Or        []Scope
+	Not       *Scope
 }
 
 type PrimaryExpression struct {
@@ -70,24 +30,55 @@ type LoggerExpression struct {
 	CaptureOperations   []string
 	CaptureRegex        string
 	CaptureEqMapVarExpr string
-	Constraints         Constraint
+	Where               *Constraint
 }
 
 type Constraint struct {
 	Variable  string
 	CompareOp string
-	Value     any          // string, number, or regex
-	Operator  OperatorType // AND/OR operator for nested conditions
-	Children  []Constraint // Nested constraints
+	Value     any // string, number, or regex
+	ValueType ConstrainValueType
+	And       []*Constraint
+	Or        []*Constraint
 }
 
-type OperatorType int
+func (c Constraint) String() string {
+	return fmt.Sprintf("%s %s %v (%s)", c.Variable, c.CompareOp, c.Value, c.ValueType)
+}
+
+type ConstraintLogicalOp int
 
 const (
-	OperatorNone OperatorType = iota
-	OperatorAnd
-	OperatorOr
+	// ConstraintLogicalLHS is no logical operation, instead it is the left hand side
+	// of a logical operation.
+	ConstraintLogicalLHS ConstraintLogicalOp = iota
+	ConstraintLogicalOpAnd
+	ConstraintLogicalOpOr
 )
+
+type ConstrainValueType int
+
+const (
+	// ConstrainValueString is a plain string
+	ConstrainValueString ConstrainValueType = iota
+	// ConstrainValueNumber is a float64 number
+	ConstrainValueNumber
+	// is a string that represents a regex
+	ConstrainValueRegex
+)
+
+func (cvt ConstrainValueType) String() string {
+	switch cvt {
+	case ConstrainValueString:
+		return "string"
+	case ConstrainValueNumber:
+		return "number"
+	case ConstrainValueRegex:
+		return "regex"
+	}
+
+	return "unknown"
+}
 
 type ScopeType int
 
@@ -97,28 +88,47 @@ const (
 	ScopeTypePrimaryExpr
 )
 
+func (scope Scope) Children() []Scope {
+	res := append(scope.And, scope.Or...)
+
+	if scope.Not != nil {
+		return append(res, *scope.Not)
+	}
+
+	return res
+}
+
 func (scope Scope) PrintScopeTree(writer io.Writer, indent int) {
 	prefix := strings.Repeat("  ", indent)
 
-	if scope.Operator == OperatorAnd {
-		fmt.Fprintln(writer, prefix, "AND {")
-	} else if scope.Operator == OperatorOr {
-		fmt.Fprintln(writer, prefix, "OR {")
-	}
+	fmt.Fprintln(writer, prefix, "{")
+	defer fmt.Fprintln(writer, prefix, "}")
 
 	if scope.Primary != nil {
 		fmt.Fprintln(writer, prefix, "  Primary:", scope.Primary)
-	}
-
-	if len(scope.Logger) > 0 {
+	} else if scope.Logger != nil {
 		fmt.Fprintln(writer, prefix, "  Logger:", scope.Logger)
 	}
 
-	for _, child := range scope.Children {
-		child.PrintScopeTree(writer, indent+1)
+	if len(scope.And) > 0 {
+		fmt.Fprint(writer, prefix, "AND ")
+
+		for _, and := range scope.And {
+			and.PrintScopeTree(writer, indent+1)
+		}
 	}
 
-	if scope.Operator == OperatorAnd || scope.Operator == OperatorOr {
-		fmt.Fprintln(writer, prefix, "}")
+	if len(scope.Or) > 0 {
+		fmt.Fprint(writer, prefix, "OR ")
+
+		for _, or := range scope.Or {
+			or.PrintScopeTree(writer, indent+1)
+		}
+	}
+
+	if scope.Not != nil {
+		fmt.Fprint(writer, prefix, "NOT ")
+
+		scope.Not.PrintScopeTree(writer, indent+1)
 	}
 }

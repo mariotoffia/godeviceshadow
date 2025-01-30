@@ -18,8 +18,9 @@ func TestSimpleIdNameExpression(t *testing.T) {
 			operation: report,desired
 		)
 		AND
-		(add,update:/^Sensors-.*-indoor$/ == 'temp' WHERE
-				(value > 20 OR (value < /re-\d+/ AND value != 'apa'))
+		(add,update:/^Sensors-.*-indoor$/ == 'temp'  
+		WHERE (
+			value > 20 OR (value < /re-\d+/ AND value != 'apa'))
 		)
 		OR 
 		(add,update)
