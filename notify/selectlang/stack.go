@@ -8,6 +8,14 @@ func (s *Stack[T]) Push(item T) {
 	s.stack = append(s.stack, item)
 }
 
+func (s *Stack[T]) Size() int {
+	return len(s.stack)
+}
+
+func (s *Stack[T]) IsEmpty() bool {
+	return len(s.stack) == 0
+}
+
 func (s *Stack[T]) Pop() T {
 	if len(s.stack) == 0 {
 		var zero T
