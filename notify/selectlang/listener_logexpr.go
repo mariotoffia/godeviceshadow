@@ -80,7 +80,7 @@ func (s *LogExprListener) EnterConstraints(ctx *LoggerConstraintsContext) {
 
 func (s *LogExprListener) ExitConstraints(ctx *LoggerConstraintsContext) {
 	if s.debug {
-		fmt.Println("   EXIT_LOGGER_CONSTRAINTS")
+		fmt.Println("EXIT_LOGGER_CONSTRAINTS")
 	}
 	// NOOP
 }
@@ -154,7 +154,6 @@ func (s *LogExprListener) ScopeStart() {
 	}
 
 	s.currentConstraint = c
-
 	s.currentOperation = ConstraintLogicalLHS // start with left hand side
 }
 

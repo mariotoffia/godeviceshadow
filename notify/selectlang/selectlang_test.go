@@ -36,7 +36,7 @@ func TestSimpleIdNameExpression(t *testing.T) {
 	//fmt.Println(tree.ToStringTree(nil, p))
 
 	listener := selectlang.NewExpressionListener(selectlang.ExpressionListenerOpts{
-		Debug: true,
+		Debug: false,
 	})
 
 	antlr.ParseTreeWalkerDefault.Walk(listener, tree)

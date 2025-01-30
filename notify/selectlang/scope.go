@@ -15,8 +15,8 @@ type Scope struct {
 	ScopeType ScopeType
 	Primary   *PrimaryExpression
 	Logger    *LoggerExpression
-	And       []Scope
-	Or        []Scope
+	And       []*Scope
+	Or        []*Scope
 	Not       *Scope
 }
 
@@ -43,7 +43,7 @@ type Constraint struct {
 }
 
 func (le LoggerExpression) String() string {
-	return fmt.Sprintf("CaptureOperations: %v, CaptureRegex: %s, CaptureEqMapVarExpr: %s",
+	return fmt.Sprintf("op: %v, re: %s, eq: %s",
 		le.CaptureOperations, le.CaptureRegex, le.CaptureEqMapVarExpr)
 }
 
@@ -137,6 +137,8 @@ const (
 	ConstraintLogicalLHS ConstraintLogicalOp = iota
 	ConstraintLogicalOpAnd
 	ConstraintLogicalOpOr
+	// ConstraintLogicalOpNot can only be used by `Scope` and not `Constraint`
+	ConstraintLogicalOpNot
 )
 
 type ConstrainValueType int
@@ -171,11 +173,11 @@ const (
 	ScopeTypePrimaryExpr
 )
 
-func (scope Scope) Children() []Scope {
+func (scope Scope) Children() []*Scope {
 	res := append(scope.And, scope.Or...)
 
 	if scope.Not != nil {
-		return append(res, *scope.Not)
+		return append(res, scope.Not)
 	}
 
 	return res

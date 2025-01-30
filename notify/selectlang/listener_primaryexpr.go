@@ -1,67 +1,66 @@
 package selectlang
 
-import "fmt"
+import (
+	"fmt"
+)
 
-func (s *ExpressionListener) EnterIdExpr(ctx *IdExprContext) {
-	if child := FirstChild[*RegexOrStringContext](ctx); child != nil {
-		if s.debug {
-			fmt.Println("ID:", child.GetText())
-		}
+// PrimaryExprListener handles parsing of primary expressions (ID, Name, Operations)
+type PrimaryExprListener struct {
+	debug   bool
+	primary *PrimaryExpression
+}
 
-		s.scopes.Update(func(scp Scope) Scope {
-			scp.ScopeType = ScopeTypePrimaryExpr
-
-			if scp.Primary == nil {
-				scp.Primary = &PrimaryExpression{ID: child.GetText()}
-			} else {
-				scp.Primary.ID = child.GetText()
-			}
-
-			return scp
-		})
+func NewPrimaryExprListener(debug bool) *PrimaryExprListener {
+	return &PrimaryExprListener{
+		debug:   debug,
+		primary: &PrimaryExpression{},
 	}
 }
 
-func (s *ExpressionListener) EnterNameExpr(ctx *NameExprContext) {
-	if child := FirstChild[*RegexOrStringContext](ctx); child != nil {
-		if s.debug {
-			fmt.Println("NAME:", child.GetText())
-		}
-
-		s.scopes.Update(func(scp Scope) Scope {
-			scp.ScopeType = ScopeTypePrimaryExpr
-
-			if scp.Primary == nil {
-				scp.Primary = &PrimaryExpression{Name: child.GetText()}
-			} else {
-				scp.Primary.Name = child.GetText()
-			}
-
-			return scp
-		})
+func (p *PrimaryExprListener) Enter() {
+	if p.debug {
+		fmt.Println("PRIMARY ENTER")
 	}
 }
 
-func (s *ExpressionListener) EnterOperationExpr(ctx *OperationExprContext) {
+func (p *PrimaryExprListener) Exit() *PrimaryExpression {
+	if p.debug {
+		fmt.Println("PRIMARY EXIT")
+	}
+
+	return p.primary
+}
+
+func (p *PrimaryExprListener) EnterIdExpr(ctx *IdExprContext) {
+	if child := FirstChild[*RegexOrStringContext](ctx); child != nil {
+		if p.debug {
+			fmt.Println("    ID:", child.GetText())
+		}
+
+		p.primary.ID = child.GetText()
+	}
+}
+
+func (p *PrimaryExprListener) EnterNameExpr(ctx *NameExprContext) {
+	if child := FirstChild[*RegexOrStringContext](ctx); child != nil {
+		if p.debug {
+			fmt.Println("    NAME:", child.GetText())
+		}
+
+		p.primary.Name = child.GetText()
+	}
+}
+
+func (p *PrimaryExprListener) EnterOperationExpr(ctx *OperationExprContext) {
 	operation := ctx.Operations()
 
 	if operation == nil {
 		return
 	}
 
-	s.scopes.Update(func(scp Scope) Scope {
-		scp.ScopeType = ScopeTypePrimaryExpr
+	p.primary.Operation = ToStringList(operation, ",")
 
-		if scp.Primary == nil {
-			scp.Primary = &PrimaryExpression{Operation: ToStringList(operation, ",")}
-		} else {
-			scp.Primary.Operation = ToStringList(operation, ",")
-		}
-
-		return scp
-	})
-
-	if s.debug {
-		fmt.Printf("    OPERATION:%#v\n", ToStringList(operation, ","))
+	if p.debug {
+		fmt.Printf("    OPERATION:%#v\n", p.primary.Operation)
 	}
 }
