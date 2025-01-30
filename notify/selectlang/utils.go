@@ -2,9 +2,27 @@ package selectlang
 
 import (
 	"slices"
+	"strings"
 
 	"github.com/antlr4-go/antlr/v4"
 )
+
+func AsRegex(str string) (string, bool) {
+	if strings.HasPrefix(str, "/") && strings.HasSuffix(str, "/") {
+		return str[1 : len(str)-1], true
+	}
+
+	return "", false
+}
+
+func AsString(str string) (string, bool) {
+	if (strings.HasPrefix(str, "'") && strings.HasSuffix(str, "'")) ||
+		(strings.HasPrefix(str, "\"") && strings.HasSuffix(str, "\"")) {
+		return str[1 : len(str)-1], true
+	}
+
+	return "", false
+}
 
 // FirstChild returns the first available child that implements the `T` interface.
 //

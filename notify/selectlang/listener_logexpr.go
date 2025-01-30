@@ -109,9 +109,7 @@ func (s *LogExprListener) EnterValueCondition(ctx *ValueFactorContext) {
 				constraint.Value = t.STRING().GetText()
 				constraint.ValueType = ConstrainValueString
 			case *RegexLiteralContext:
-				re := t.Regex().REGEX().GetText()
-				// strip the pre and postfix '/' to get the regex
-				constraint.Value = re[1 : len(re)-1]
+				constraint.Value = t.Regex().REGEX().GetText()
 				constraint.ValueType = ConstrainValueRegex
 			}
 		}
