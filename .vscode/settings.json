@@ -17,6 +17,7 @@
     "Dlanguage",
     "dupl",
     "dynamodbattribute",
+    "dynamodbnotifier",
     "dynamodbpersistence",
     "dynamodbutils",
     "exportloopref",

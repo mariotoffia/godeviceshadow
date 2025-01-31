@@ -27,7 +27,7 @@ func NewRegistry() *TypeRegistryImpl {
 
 // Register implements the `model.TypeRegistry` interface. If name is empty, it will
 // use _'{pkg name}.{type name}'_ as the name.
-func (r *TypeRegistryImpl) Register(name string, t any, meta ...map[string]string) *TypeRegistryImpl {
+func (r *TypeRegistryImpl) Register(name string, t any, meta ...map[string]string) {
 	te := toEntry(t, name, meta)
 
 	r.mtx.Lock()
@@ -35,8 +35,6 @@ func (r *TypeRegistryImpl) Register(name string, t any, meta ...map[string]strin
 	r.types[te.Name] = te
 
 	r.mtx.Unlock()
-
-	return r
 }
 
 // Get implements the `model.TypeRegistry` interface.
