@@ -41,6 +41,12 @@ version:
 	@git tag "$(v)"
 	@git push --tags
 
+# Update references and commit changes
+	@$(MAKE) update-refs v=$(v)
+	@git add .
+	@git commit -m "Update dependencies to $(v)"
+	@git push
+
 .PHONY: update-refs
 update-refs:
 # Update submodule references to root module version
