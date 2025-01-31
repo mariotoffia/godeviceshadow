@@ -43,9 +43,25 @@ version:
 
 .PHONY: update-refs
 update-refs:
-# Iterate sub-repositories where the root module is referenced and update that version
-	@for d in $(shell go list -m -f '{{.Dir}}' all); do \
-		if [ -f "$$d/go.mod" ]; then \
-			sed -i '' -e "s|github.com/$(shell go list -m).*/v[0-9]\+\.[0-9]\+\.[0-9]\+|github.com/$(shell go list -m)/$(v)|g" "$$d/go.mod"; \
-		fi; \
+# Update submodule references to root module version
+	@if [ -z "$(v)" ]; then \
+		echo "Usage: make update-refs v=vX.Y.Z"; \
+		exit 1; \
+	fi
+	@if ! echo "$(v)" | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$$' > /dev/null; then \
+		echo "Error: Version must be of the form vMAJOR.MINOR.PATCH (e.g. v1.2.3)"; \
+		exit 1; \
+	fi
+	$(eval ROOT_MODULE := $(shell head -1 go.mod | awk '{print $$2}'))
+	@echo "Updating references to root module $(ROOT_MODULE) to version $(v)"
+	@find . -type f -name go.mod ! -path './go.mod' | while read -r modfile; do \
+		dir=$$(dirname "$$modfile"); \
+		(cd "$$dir" && \
+			if go list -m $(ROOT_MODULE) >/dev/null 2>&1; then \
+				echo "Updating $$dir/go.mod"; \
+				go mod edit -require "$(ROOT_MODULE)@$(v)"; \
+				go mod tidy; \
+			else \
+				echo "No reference to $(ROOT_MODULE) in $$dir/go.mod"; \
+			fi); \
 	done
