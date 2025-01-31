@@ -16,13 +16,12 @@ lint:
 
 .PHONY: version
 version:
-# Sets the version number on all references and tags the repository for consistent versioning
-# even if the repo contains a bunch of sub-modules.
-#
+# Sets version of the root project - for sub-repositories use their respective 
+# make version -v=v{MAJOR}.{MINOR}.{PATCH}
+
 # Usage
 	@if [ -z "$(v)" ]; then \
-		echo "Usage: make version v=v{MAJOR}.{MINOR}.{PATCH} [NO_TAG=true]"; \
-		echo "       Where NO_TAG=true will omit the actual git tagging"; \
+		echo "Usage: make version v=v{MAJOR}.{MINOR}.{PATCH}"; \
 		exit 1; \
 	fi
 
@@ -32,49 +31,12 @@ version:
 		exit 1; \
 	fi
 
-# Check if any tags already exist under this version
-	@echo "Checking existing tags for version $(v)..."
-	@for module in $$(find . -name "go.mod" -exec dirname {} \;); do \
-		# Fix the root so it doesn't produce a leading slash
-		if [ "$$module" = "." ]; then \
-			module_tag="$(v)"; \
-		else \
-			module_tag="$${module#./}/$(v)"; \
-		fi; \
-		if git rev-parse "$$module_tag" >/dev/null 2>&1; then \
-			echo "Error: Tag '$$module_tag' already exists"; \
-			exit 1; \
-		fi; \
-	done
+# Check if the tag already exist in this git repository -> fail
+	@if git rev-parse "$(v)" >/dev/null 2>&1; then \
+		echo "Error: Tag '$(v)' already exists"; \
+		exit 1; \
+	fi
 
-# Update dependencies in each module
-	@echo "Updating internal module dependencies to $(v)..."
-	@for module in $$(find . -name "go.mod" -exec dirname {} \;); do \
-		echo "Updating dependencies in $$module"; \
-		cd $$module; \
-		# Filter out modules that share the same import path prefix
-		for dep in $$(go list -m all | grep "^$$(go list -m)/" | cut -d' ' -f1); do \
-			echo "  - Updating $$dep to $(v)"; \
-			go get "$$dep@$(v)"; \
-		done; \
-		go mod tidy; \
-		cd - > /dev/null; \
-	done
-
-# Create or display tag commands after updates
-	@echo "Tagging modules with version $(v)..."
-	@for module in $$(find . -name "go.mod" -exec dirname {} \;); do \
-		if [ "$$module" = "." ]; then \
-			module_tag="$(v)"; \
-		else \
-			module_tag="$${module#./}/$(v)"; \
-		fi; \
-		if [ "$(NO_TAG)" = "true" ]; then \
-			echo "Would run: git tag -a '$$module_tag' -m 'Release $$module_tag'"; \
-		else \
-			echo "Tagging $$module_tag"; \
-			git tag -a "$$module_tag" -m "Release $$module_tag"; \
-		fi; \
-	done
-
-	@echo "Done. If you did not use NO_TAG=true, don't forget to run: git push --follow-tags"
+# Tag the repository && push the tag to the remote repository
+	@git tag "$(v)"
+	@git push --tags
