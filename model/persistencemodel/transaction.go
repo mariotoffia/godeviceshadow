@@ -58,14 +58,14 @@ import "context"
 type Transactional interface {
 	Persistence
 	// Begin will start a new transaction.
-	Begin(ctx context.Context, opts ...BeginTxOptions) (*Transaction, error)
+	Begin(ctx context.Context, opts ...BeginTxOptions) (*TransactionImpl, error)
 	// Release will either commit or rollback the transaction.
 	//
 	// If the transaction is already committed or aborted, it will not return an error so it is possible to do a
 	// defer and explicit call to `Release` in the code without any errors are returned.
-	Release(ctx context.Context, tx *Transaction) error
+	Release(ctx context.Context, tx *TransactionImpl) error
 	// Abort will mark the the transaction as aborted.
-	Abort(ctx context.Context, tx *Transaction) error
+	Abort(ctx context.Context, tx *TransactionImpl) error
 }
 
 type BeginTxOptions struct {
@@ -80,7 +80,7 @@ type BeginTxOptions struct {
 	ModelIDs []PersistenceID
 }
 
-type Transaction struct {
+type TransactionImpl struct {
 	// ID is the unique identifier of the transaction.
 	ID string
 	// EnlistedIDs is the list of `PersistenceID`s that the transaction is currently working with. If

@@ -38,6 +38,12 @@ type NotifierOperation struct {
 	Desired any
 	// Custom is custom properties
 	Custom map[string]any
+	// SelectedValues are appended in the `Selection` filters or by an external actor. Those are
+	// optional and the `NotificationTarget` may choose to ignore this.
+	//
+	// This property should be not set when invoking a `Notifier`, instead it is used to pass
+	// when `NotificationTarget` is invoked.
+	SelectedValues []SelectedValue
 }
 
 type NotifierOperationResult struct {

@@ -14,6 +14,7 @@ import (
 //
 // The notifier is processing selections that is coupled with targets that in it's turn invokes a `NotifyPlugin`.
 type NotifierImpl struct {
+	Filters []notifiermodel.Selection
 }
 
 // Process implements the `notifiermodel.Notifier` interface and will process the operations and notify

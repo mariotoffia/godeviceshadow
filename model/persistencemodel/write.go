@@ -37,7 +37,7 @@ type WriteConfig struct {
 
 type WriteOptions struct {
 	// Tx is a optional transaction that the write operation shall be performed in.
-	Tx *Transaction
+	Tx *TransactionImpl
 	// Config is where any common or `Persistence` specific configuration is set.
 	Config WriteConfig
 }
