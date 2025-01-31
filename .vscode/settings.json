@@ -19,6 +19,7 @@
     "dynamodbattribute",
     "dynamodbnotifier",
     "dynamodbpersistence",
+    "dynamodbstreams",
     "dynamodbutils",
     "exportloopref",
     "godeviceshadow",

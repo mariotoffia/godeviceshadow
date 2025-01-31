@@ -20,11 +20,16 @@ func main() {
 		processor.tr = gtr.NewRegistry()
 	}
 
-	lambda.Start(processor.HandleRequest)
+	processor.StartLambda()
 }
 
 type Processor struct {
 	tr model.TypeRegistry
+}
+
+// StartLambda will start the lambda loop and freeze.
+func (p *Processor) StartLambda() {
+	lambda.Start(p.HandleRequest)
 }
 
 // HandleRequest processes DynamoDB stream events and does the report/desire

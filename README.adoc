@@ -17,6 +17,12 @@ go get github.com/mariotoffia/godeviceshadow@latest
 go get github.com/mariotoffia/godeviceshadow/persistence/dynamodbpersistence@latest
 ----
 
+.dynamodbnotifier (under development)
+[source,bash]
+----
+go get github.com/mariotoffia/godeviceshadow/notify/dynamodbnotifier@latest
+----
+
 .selectlang (experimental DSL to render notification filter)
 [source,bash]
 ----

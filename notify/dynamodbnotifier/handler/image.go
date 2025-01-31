@@ -29,8 +29,6 @@ func processRecord(record events.DynamoDBEventRecord, tr model.TypeRegistry) (an
 	if len(record.Change.NewImage) > 0 {
 		newImage, err = processImage(convertAttributes(record.Change.NewImage), tr)
 		if err != nil {
-			fmt.Errorf("New Image Error: %v\n", err)
-
 			return nil, nil, fmt.Errorf("New Image Error: %v\n", err)
 		}
 	}
