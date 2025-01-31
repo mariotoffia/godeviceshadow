@@ -120,14 +120,14 @@ func (n *NotSelection) Select(op NotifierOperation, value bool) (bool, []Selecte
 	return false, nil
 }
 
-type FuncSelection struct {
+type FuncSelectionImpl struct {
 	F func(op NotifierOperation, value bool) (bool, []SelectedValue)
 }
 
-func (s *FuncSelection) Select(operation NotifierOperation, value bool) (bool, []SelectedValue) {
+func (s *FuncSelectionImpl) Select(operation NotifierOperation, value bool) (bool, []SelectedValue) {
 	return s.F(operation, value)
 }
 
-func Func(f func(op NotifierOperation, value bool) (bool, []SelectedValue)) Selection {
-	return &FuncSelection{F: f}
+func FuncSelection(f func(op NotifierOperation, value bool) (bool, []SelectedValue)) Selection {
+	return &FuncSelectionImpl{F: f}
 }

@@ -58,7 +58,7 @@ func ToSelection(expr string) (notifiermodel.Selection, error) {
 			return nil, fmt.Errorf("must have either primary expression or log expression in a scope")
 		}
 
-		sb := notifiermodel.NewSelectionBuilder(notifiermodel.Func(mf))
+		sb := notifiermodel.NewSelectionBuilder(notifiermodel.FuncSelection(mf))
 
 		if len(ands) > 0 {
 			sb.And(ands...)

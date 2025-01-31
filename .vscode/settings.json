@@ -50,6 +50,7 @@
     "persistutils",
     "Println",
     "processmodel",
+    "randutils",
     "reutils",
     "RPAREN",
     "selectlang",

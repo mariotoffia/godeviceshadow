@@ -14,6 +14,14 @@ func (mid ID) String() string {
 	return fmt.Sprintf("%s#%s", mid.ID, mid.Name)
 }
 
+func (mid ID) ToPersistenceID(modelType ModelType) PersistenceID {
+	return PersistenceID{
+		ID:        mid.ID,
+		Name:      mid.Name,
+		ModelType: modelType,
+	}
+}
+
 type PersistenceID struct {
 	// Is a unique identifier e.g. MyCar 22 or a UUID.
 	ID string
