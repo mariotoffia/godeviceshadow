@@ -510,7 +510,7 @@ There's a experimental `selectlang` package where the filter may be expressed in
       value > 20 OR (value == /^re-\d+/ AND value != 'apa' OR (value > 99 AND value != /^bubben-\d+$/)))
     )
     OR 
-    (acknowledge) // <4>
+    (acknowledge)
   `
 
   sel, err := selectlang.ToSelection(stmt) // <4>
