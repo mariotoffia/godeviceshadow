@@ -1,3 +1,5 @@
+github.com/antlr4-go/antlr/v4 v4.13.1 h1:SqQKkuVZ+zWkMMNkjy5FZe5mr5WURWnlpmOuzYWrPrQ=
+github.com/antlr4-go/antlr/v4 v4.13.1/go.mod h1:GKmUxMtwp6ZgGwZSva4eWPC5mS6vUAmOABFgjdkM7Nw=
 github.com/aws/aws-sdk-go-v2 v1.33.0 h1:Evgm4DI9imD81V0WwD+TN4DCwjUMdc94TrduMLbgZJs=
 github.com/aws/aws-sdk-go-v2 v1.33.0/go.mod h1:P5WJBrYqqbWVaOxgH0X/FYYD47/nooaPOZPlQdmiN2U=
 github.com/aws/aws-sdk-go-v2/config v1.29.1 h1:JZhGawAyZ/EuJeBtbQYnaoftczcb2drR2Iq36Wgz4sQ=
@@ -41,6 +43,8 @@ github.com/jmespath/go-jmespath/internal/testify v1.5.1 h1:shLQSRRSCCPj3f2gpwzGw
 github.com/jmespath/go-jmespath/internal/testify v1.5.1/go.mod h1:L3OGu8Wl2/fWfCI6z80xFu9LTZmf1ZRjMHUOPmWr69U=
 github.com/mariotoffia/godeviceshadow v0.0.3 h1:q7X/SLoS5OTHzNPRTIrg0D2dy5zbbrDLumTctbVC3KE=
 github.com/mariotoffia/godeviceshadow v0.0.3/go.mod h1:eq0Ec4K+PJ94wnrXYt990wNfS5KSJ95sfqJsqbLDI9U=
+github.com/mariotoffia/godeviceshadow/notify/selectlang v0.0.1 h1:JfPbPSvHsf9QiWCSXh9c0/2Pq9fxKMtsIciZd014/MU=
+github.com/mariotoffia/godeviceshadow/notify/selectlang v0.0.1/go.mod h1:ensfqwFOckTlG+GWJhrx4c9fqnS/Bvk9UeeyAZ8XHSA=
 github.com/mariotoffia/godeviceshadow/persistence/dynamodbpersistence v0.1.2 h1:FNCIYCAtMa2T73IVtqhYz14v91K2lOW8XM2BbEtRN5g=
 github.com/mariotoffia/godeviceshadow/persistence/dynamodbpersistence v0.1.2/go.mod h1:+XA8HZEjLQnigT88ttUgtw++nTstDv8Wt4ny4kJuHP8=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=

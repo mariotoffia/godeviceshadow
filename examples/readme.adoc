@@ -486,3 +486,145 @@ func TestDesireReportThatAcknowledgesAndReadAgain(t *testing.T) {
 <4> Simulates a report back that the temp has been set to _23.4_ at a later stage.
 <5> Desired state is removed.
 <6> Reported state is present and it is of value _23.4_.
+
+== Notifications
+
+The notifications package is a generic package that allows for `Selection` and `NotifyTarget`(s) to allow for filtering of changes to direct notifications to a certain target or targets.
+
+The targets may be pure functions or plugins such as _SQS_.
+
+There's a experimental `selectlang` package where the filter may be expressed in a _DSL_ instead of function(s).
+
+.Example Usage of Notifications and selectlang DSL
+[source,go]
+----
+	stmt := `
+		(
+			id: /myDevice-\d+/ AND // <1>
+			name: 'homeHub' AND 
+			operation: report,desired
+		)
+		AND
+		(add,update:/^Sensors.indoor-\d+$/ == 'temp'  // <2>
+		WHERE ( // <3>
+			value > 20 OR (value == /^re-\d+/ AND value != 'apa' OR (value > 99 AND value != /^bubben-\d+$/)))
+		)
+		OR 
+		(acknowledge) // <4>
+	`
+
+	sel, err := selectlang.ToSelection(stmt) // <4>
+	require.NoError(t, err)
+
+	// Build Notification Manager
+	notificationManager := notify.NewBuilder().
+		TargetBuilder( // <5>
+			notifiermodel.FuncTarget(
+				func(
+					ctx context.Context, target notifiermodel.NotificationTarget,
+					tx *persistencemodel.TransactionImpl, operation ...notifiermodel.NotifierOperation,
+				) []notifiermodel.NotificationTargetResult {
+					// Target could e.g. be SQS, SNS, Email, SMS, etc.
+					var res []notifiermodel.NotificationTargetResult
+
+					for _, op := range operation {
+						res = append(res, notifiermodel.NotificationTargetResult{
+							Operation: op,
+							Target:    target,
+							Custom:    map[string]any{"pass": true},
+						})
+					}
+
+					return res
+				})).
+		WithSelection(sel).
+		Build().
+		Build()
+
+	// Build a manager to do report on so we get a proper changelog et.al
+	mgr := stdmgr.New().
+		WithPersistence(mempersistence.New()).
+		WithSeparation(persistencemodel.SeparateModels).
+		WithReportLoggers(changelogger.New()).
+		WithTypeRegistryResolver(
+			types.NewRegistry().RegisterResolver(
+				model.NewResolveFunc(func(id, name string) (model.TypeEntry, bool) {
+					if name == "homeHub" {
+						return model.TypeEntry{
+							Name: "homeHub", Model: reflect.TypeOf(TestModel{}),
+						}, true
+					}
+
+					return model.TypeEntry{}, false
+				}),
+			),
+		).
+		Build()
+
+	id := persistencemodel.ID{ID: "myDevice-992", Name: "homeHub"}
+	res := mgr.Report(context.TODO(), managermodel.ReportOperation{
+		ID: id, Model: TestModel{
+			TimeZone: "Europe/Stockholm",
+			Sensors: map[string]Sensor{
+				"indoor-991": {Value: map[string]any{"temp": 23.4, "rh": 45.6}, TimeStamp: time.Now().UTC()},
+			},
+		},
+	})
+
+	require.Len(t, res, 1)
+	require.NoError(t, res[0].Error)
+
+	chl := changelogger.Find(res[0].MergeLoggers)
+
+	nResult := notificationManager.Process( // <6>
+		context.Background(), nil /*tx*/, notifiermodel.NotifierOperation{
+			ID:          id.ToPersistenceID(persistencemodel.ModelTypeReported), // <7>
+			MergeLogger: *chl, // <8>
+			Operation:   notifiermodel.OperationTypeReport, // <9>
+			Reported:    res[0].ReportModel,
+			Desired:     res[0].DesiredModel,
+		},
+	)
+
+	require.Len(t, nResult, 1)
+	assert.NoError(t, nResult[0].Error)
+	assert.Contains(t, nResult[0].Custom, "pass")
+	assert.True(
+		t, nResult[0].Operation.ID.Equal(id.ToPersistenceID(persistencemodel.ModelTypeReported)),
+		"expected the in param operation")
+----
+<1> When id, name or operations:  it will automatically map it as a primary selector. NOTE: It is not possible to do anything else than _AND_ between the expression in the same scope. If you need to do _OR_ create a additional scope with a primary expression `(id: /^myDevices-[A-Z]\+$/) OR (id: /^myOtherDevices-[0-9]+/ AND name:/.*Hub$/)` etc.
+<2> When it begins with add,update,... or all: (note the colon) it is a log expression where it do selection and constraints on the values themselves. In this expression selects variables on path `Sensors.indoor-\d+` and expects a `map[string]any` to be returned as value. It will then select _temp_ key from that map before doing the comparisons. If `== '...'` is omitted, it expects scalar values.
+<3> The `WHERE` clause is a constraints selection on the selected variables. It may do the usual comparisons including regex checks. It is possible to select different types of variables, it will translate the different types so it may do comparisons. Hence, it is possible to e.g. blend float with strings etc.
+<4> Converts the _DSL_ into "standard" `Selection` interface so it may be used with the notification manager.
+<5> Builds a select that leads to a target (if selection omitted, target will always be notified).
+<6> Processes the notifications and all that got selected will be forwarded to the target. The manager will try to batch as much as possible so the target may get multiple operations in one call.
+<7> This in combination of *(9)* is used as primary expression.
+<8> This is used in log expressions
+<9> This in combination of *(7)* is used as primary expression.
+
+It is quite possible to use without the _DLS_ and write functions that will filter the notifications. Use the `notifiermodel.SelectionBuilder` to build it manually (it is even possible to weave everything completely custom as well).
+
+Below is a sample that builds a complex selection using pre created `Selection`(s) as functions (not included in sample). This realizes: _'\((a OR (b AND (c OR d))) AND e) OR (f AND (g OR h))'_.
+
+.Example using the SelectionBuilder
+[source,go]
+----
+b := notifiermodel.NewSelectionBuilder(
+		notifiermodel.Scoped(&a, func(sb *notifiermodel.SelectionBuilder) {
+			sb.Or(notifiermodel.Scoped(&b, func(sb *notifiermodel.SelectionBuilder) {
+				sb.And(notifiermodel.Scoped(&c, func(sb *notifiermodel.SelectionBuilder) {
+					sb.Or(&d)
+				}))
+			}))
+		})).
+		And(&e).
+		Or(notifiermodel.Scoped(&f, func(sb *notifiermodel.SelectionBuilder) {
+			sb.And(notifiermodel.Scoped(&g, func(sb *notifiermodel.SelectionBuilder) {
+				sb.Or(&h)
+			}))
+		}))
+
+	// Build the final selection
+	finalSelection, err := sb.Build()
+----

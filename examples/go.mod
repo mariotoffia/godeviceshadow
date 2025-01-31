@@ -6,13 +6,20 @@ go 1.23.5
 
 // replace github.com/mariotoffia/godeviceshadow/persistence/dynamodbpersistence => ../persistence/dynamodbpersistence/
 
+// replace github.com/mariotoffia/godeviceshadow/notify/selectlang => ..
+
+// Inter module dependencies
 require (
 	github.com/mariotoffia/godeviceshadow v0.0.3
+	github.com/mariotoffia/godeviceshadow/notify/selectlang v0.0.1
 	github.com/mariotoffia/godeviceshadow/persistence/dynamodbpersistence v0.1.2
-	github.com/stretchr/testify v1.10.0
 )
 
+// Test
+require github.com/stretchr/testify v1.10.0
+
 require (
+	github.com/antlr4-go/antlr/v4 v4.13.1 // indirect
 	github.com/aws/aws-sdk-go-v2 v1.33.0 // indirect
 	github.com/aws/aws-sdk-go-v2/config v1.29.1 // indirect
 	github.com/aws/aws-sdk-go-v2/credentials v1.17.54 // indirect
