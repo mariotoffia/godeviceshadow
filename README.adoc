@@ -119,17 +119,17 @@ It is then possible to notify using a notification manager. Then it is possible 
 [source,go]
 ----
 stmt := `(
-			id: /myDevice-\d+/ AND // <1>
-			name: 'homeHub' AND 
-			operation: report,desired
-		)
-		AND
-		(add,update:/^Sensors.indoor-\d+$/ == 'temp'  // <2>
-		WHERE ( // <3>
-			value > 20 OR (value == /^re-\d+/ AND value != 'apa' OR (value > 99 AND value != /^bubben-\d+$/)))
-		)
-		OR 
-		(acknowledge) // <4>
+      id: /myDevice-\d+/ AND // <1>
+      name: 'homeHub' AND 
+      operation: report,desired
+    )
+    AND
+    (add,update:/^Sensors.indoor-\d+$/ == 'temp'  // <2>
+    WHERE ( // <3>
+      value > 20 OR (value == /^re-\d+/ AND value != 'apa' OR (value > 99 AND value != /^bubben-\d+$/)))
+    )
+    OR 
+    (acknowledge) // <4>
 `
 ----
 <1> One or more primary expressions that matches the ID and which operation.
