@@ -44,11 +44,10 @@ func TestBuildSingleTarget(t *testing.T) {
 		TargetBuilder(
 			notifiermodel.FuncTarget(
 				func(
-					ctx context.Context,
-					target notifiermodel.NotificationTarget,
-					tx *persistencemodel.TransactionImpl,
-					operation ...notifiermodel.NotifierOperation,
+					ctx context.Context, target notifiermodel.NotificationTarget,
+					tx *persistencemodel.TransactionImpl, operation ...notifiermodel.NotifierOperation,
 				) []notifiermodel.NotificationTargetResult {
+					// Target could e.g. be SQS, SNS, Email, SMS, etc.
 					var res []notifiermodel.NotificationTargetResult
 
 					for _, op := range operation {
