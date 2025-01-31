@@ -10,7 +10,15 @@ type SelectionBuilder struct {
 
 // NewSelectionBuilder initializes a new builder with a *single* initial Selection.
 func NewSelectionBuilder(initial Selection) *SelectionBuilder {
+	if initial == nil {
+		return &SelectionBuilder{err: fmt.Errorf("cannot initialize with nil selection")}
+	}
+
 	return &SelectionBuilder{current: initial}
+}
+
+func (b *SelectionBuilder) Error() error {
+	return b.err
 }
 
 func (b *SelectionBuilder) String() string {

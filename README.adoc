@@ -17,7 +17,7 @@ go get github.com/mariotoffia/godeviceshadow@latest
 go get github.com/mariotoffia/godeviceshadow/persistence/dynamodbpersistence@latest
 ----
 
-.selectlang
+.selectlang (toy DSL to render notification filer)
 [source,bash]
 ----
 go get github.com/mariotoffia/godeviceshadow/notify/selectlang@latest

@@ -90,6 +90,21 @@ func (op MergeOperation) String() string {
 	}
 }
 
+func MergeOperationFromString(op string) MergeOperation {
+	switch op {
+	case "add":
+		return MergeOperationAdd
+	case "update":
+		return MergeOperationUpdate
+	case "remove":
+		return MergeOperationRemove
+	case "noop":
+		return MergeOperationNotChanged
+	default:
+		return 0
+	}
+}
+
 // In returns `true` if the operation is in the list of _operations_.
 func (op MergeOperation) In(operations ...MergeOperation) bool {
 	for _, o := range operations {

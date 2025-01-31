@@ -1,5 +1,7 @@
 package selectlang
 
+import "github.com/mariotoffia/godeviceshadow/model/notifiermodel"
+
 // Scope encapsulates a '(' and ')' pair with type info and
 // collects the expression within the scope.
 type Scope struct {
@@ -30,4 +32,16 @@ func (scope Scope) Children() []*Scope {
 	}
 
 	return res
+}
+
+func (scope Scope) ToMatchFunc() notifiermodel.ProcessFunc {
+	if scope.Primary != nil {
+		return scope.Primary.ToMatchFunc()
+	}
+
+	if scope.Logger != nil {
+		return scope.Logger.ToMatchFunc()
+	}
+
+	return nil
 }

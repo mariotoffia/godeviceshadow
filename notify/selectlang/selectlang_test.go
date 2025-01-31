@@ -20,7 +20,7 @@ func TestComplexExpression(t *testing.T) {
 		AND
 		(add,update:/^Sensors-.*-indoor$/ == 'temp'  
 		WHERE (
-			value > 20 OR (value < /re-\d+/ AND value != 'apa' OR (value > 99 AND value != /bubben-\d+/)))
+			value > 20 OR (value == /re-\d+/ AND value != 'apa' OR (value > 99 AND value != /bubben-\d+/)))
 		)
 		OR 
 		(add,update)

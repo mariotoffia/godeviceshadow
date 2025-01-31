@@ -127,3 +127,7 @@ type FuncSelection struct {
 func (s *FuncSelection) Select(operation NotifierOperation, value bool) (bool, []SelectedValue) {
 	return s.F(operation, value)
 }
+
+func Func(f func(op NotifierOperation, value bool) (bool, []SelectedValue)) Selection {
+	return &FuncSelection{F: f}
+}

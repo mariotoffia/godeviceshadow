@@ -126,10 +126,6 @@ func (le LoggerExpression) Dump(writer io.Writer, indent int) {
 	}
 }
 
-func (c Constraint) String() string {
-	return fmt.Sprintf("%s %s %v (%s)", c.Variable, c.CompareOp, c.Value, c.ValueType)
-}
-
 func (c Constraint) Dump(writer io.Writer, indent int) {
 	prefix := strings.Repeat("  ", indent)
 

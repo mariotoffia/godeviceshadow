@@ -16,6 +16,16 @@ func (ml ManagedLogMap) All() []ManagedValue {
 	return all
 }
 
+func (ml ManagedLogMap) Size() int {
+	size := 0
+
+	for _, v := range ml {
+		size += len(v)
+	}
+
+	return size
+}
+
 func (pl PlainLogMap) All() []PlainValue {
 	size := 0
 
@@ -30,4 +40,14 @@ func (pl PlainLogMap) All() []PlainValue {
 	}
 
 	return all
+}
+
+func (pl PlainLogMap) Size() int {
+	size := 0
+
+	for _, v := range pl {
+		size += len(v)
+	}
+
+	return size
 }

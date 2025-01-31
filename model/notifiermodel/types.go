@@ -49,3 +49,6 @@ type NotifierOperationResult struct {
 type Notifier interface {
 	Process(ctx context.Context, operations ...NotifierOperation) []NotifierOperationResult
 }
+
+// ProcessFunc is the same as `Notifier.Process` but as a function.
+type ProcessFunc func(op NotifierOperation, value bool) (bool, []SelectedValue)

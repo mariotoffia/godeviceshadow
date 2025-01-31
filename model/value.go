@@ -18,3 +18,18 @@ type ValueAndTimestamp interface {
 	// to e.g. log instead of iterate the whole struct.
 	GetValue() any
 }
+
+// ValueAndTimestampImpl is a standard implementation of the `ValueAndTimestamp` interface
+// mostly used by unit test. Use your own custom logic in production.
+type ValueAndTimestampImpl struct {
+	Timestamp time.Time
+	Value     any
+}
+
+func (v *ValueAndTimestampImpl) GetTimestamp() time.Time {
+	return v.Timestamp
+}
+
+func (v *ValueAndTimestampImpl) GetValue() any {
+	return v.Value
+}
