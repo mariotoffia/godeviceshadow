@@ -56,6 +56,25 @@ func TestExpressionPrimaryAndLogger(t *testing.T) {
 
 	selected, value := sel.Select(oper, false /*value*/)
 
-	require.False(t, selected, "Bug in filters, this need to be fixed")
+	assert.False(t, selected, "Since v == 20 -> Fail")
+	assert.Len(t, value, 0)
+
+	mvs.Value = map[string]any{"temp": 21}
+
+	selected, value = sel.Select(oper, false /*value*/)
+
+	assert.True(t, selected, "Since v > 20 -> Success")
+	assert.Len(t, value, 0)
+
+	mvs.Value = map[string]any{"temp": "re-123"}
+
+	selected, value = sel.Select(oper, false /*value*/)
+	assert.True(t, selected, `Since v == /re-\d+/ -> Success`)
+	assert.Len(t, value, 0)
+
+	mvs.Value = map[string]any{"temp": "rea-123"}
+
+	selected, value = sel.Select(oper, false /*value*/)
+	assert.False(t, selected, `Since v == /re-\d+/ -> Fail`)
 	assert.Len(t, value, 0)
 }

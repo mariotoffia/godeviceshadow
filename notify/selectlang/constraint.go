@@ -125,10 +125,14 @@ func (c *Constraint) match(mv []changelogger.ManagedValue, pl, ack []changelogge
 
 				var rematch bool
 
-				if regex, ok := AsRegex(c.Value.(string)); !ok {
-					if re, err := reutils.Shared.GetOrCompile(regex); (err == nil && re.MatchString(vvs)) || err != nil {
+				if regex, ok := AsRegex(c.Value.(string)); ok {
+					if re, err := reutils.Shared.GetOrCompile(regex); err != nil {
+						continue
+					} else if re.MatchString(vvs) {
 						rematch = true
 					}
+				} else {
+					continue
 				}
 
 				switch c.CompareOp {
@@ -196,12 +200,15 @@ func (c *Constraint) match(mv []changelogger.ManagedValue, pl, ack []changelogge
 		}
 	}
 
-	for _, and := range c.And {
-		if sr, match = and.match(mv, pl, ack, sr); !match {
-			am = false
-			break
-		} else {
-			am = true
+	// Must have a match since A AND B where A is not a match -> fails AND
+	if match {
+		for _, and := range c.And {
+			if sr, match = and.match(mv, pl, ack, sr); !match {
+				am = false
+				break
+			} else {
+				am = true
+			}
 		}
 	}
 

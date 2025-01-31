@@ -69,3 +69,15 @@ Combine all Examples:
 ```
 (id: /myDevice-\d+/ AND name: 'myShadow') AND (add,update:/^Sensors-.*-indoor$/ == 'temp' WHERE (value > 20 OR value < 10)) OR (add,update)
 ```
+
+=== Constraints & Bugs
+
+This is a *toy* _DSL_ and therefore improvement _PR_ are accepted gratefully.
+
+.Constraints Table
+[cols="3,5"]
+|===
+| Constraint                      | Description
+| No direct nested parenthesis    
+| It does not support e.g. `A OR \((B AND C) OR (Q AND R))` it has to have a _LHS_ value e.g. `A OR (B AND C) OR (Q AND R)`
+|===

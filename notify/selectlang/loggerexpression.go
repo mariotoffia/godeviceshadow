@@ -92,6 +92,7 @@ func (le *LoggerExpression) ToMatchFunc() func(op notifiermodel.NotifierOperatio
 			if m, ok := ve.GetValue().(map[string]any); ok {
 				if v, ok := m[captureEqMapVarExpr]; ok {
 					return changelogger.ManagedValue{
+						Path:     mv.Path,
 						NewValue: &model.ValueAndTimestampImpl{Value: v, Timestamp: ve.GetTimestamp()},
 					}, true
 				}
