@@ -39,8 +39,8 @@ github.com/jmespath/go-jmespath v0.4.0 h1:BEgLn5cpjn8UN1mAw4NjwDrS35OdebyEtFe+9Y
 github.com/jmespath/go-jmespath v0.4.0/go.mod h1:T8mJZnbsbmF+m6zOOFylbeCJqk5+pHWvzYPziyZiYoo=
 github.com/jmespath/go-jmespath/internal/testify v1.5.1 h1:shLQSRRSCCPj3f2gpwzGwWFoC7ycTf1rcQZHOlsJ6N8=
 github.com/jmespath/go-jmespath/internal/testify v1.5.1/go.mod h1:L3OGu8Wl2/fWfCI6z80xFu9LTZmf1ZRjMHUOPmWr69U=
-github.com/mariotoffia/godeviceshadow v0.0.1 h1:5x54FbnGMSHeGDP44AdwIp3f0l3tvLznmsQ5Bzf5Buo=
-github.com/mariotoffia/godeviceshadow v0.0.1/go.mod h1:eq0Ec4K+PJ94wnrXYt990wNfS5KSJ95sfqJsqbLDI9U=
+github.com/mariotoffia/godeviceshadow v0.0.3 h1:q7X/SLoS5OTHzNPRTIrg0D2dy5zbbrDLumTctbVC3KE=
+github.com/mariotoffia/godeviceshadow v0.0.3/go.mod h1:eq0Ec4K+PJ94wnrXYt990wNfS5KSJ95sfqJsqbLDI9U=
 github.com/mariotoffia/godeviceshadow/persistence/dynamodbpersistence v0.1.2 h1:FNCIYCAtMa2T73IVtqhYz14v91K2lOW8XM2BbEtRN5g=
 github.com/mariotoffia/godeviceshadow/persistence/dynamodbpersistence v0.1.2/go.mod h1:+XA8HZEjLQnigT88ttUgtw++nTstDv8Wt4ny4kJuHP8=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=

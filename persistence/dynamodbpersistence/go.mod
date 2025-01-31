@@ -2,7 +2,7 @@ module github.com/mariotoffia/godeviceshadow/persistence/dynamodbpersistence
 
 go 1.23.5
 
-require github.com/mariotoffia/godeviceshadow v0.0.1
+require github.com/mariotoffia/godeviceshadow v0.0.3
 
 // replace github.com/mariotoffia/godeviceshadow => ../..
 

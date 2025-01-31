@@ -7,7 +7,7 @@ go 1.23.5
 // replace github.com/mariotoffia/godeviceshadow/persistence/dynamodbpersistence => ../persistence/dynamodbpersistence/
 
 require (
-	github.com/mariotoffia/godeviceshadow v0.0.1
+	github.com/mariotoffia/godeviceshadow v0.0.3
 	github.com/mariotoffia/godeviceshadow/persistence/dynamodbpersistence v0.1.2
 	github.com/stretchr/testify v1.10.0
 )
