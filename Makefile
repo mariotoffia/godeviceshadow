@@ -40,3 +40,12 @@ version:
 # Tag the repository && push the tag to the remote repository
 	@git tag "$(v)"
 	@git push --tags
+
+.PHONY: update-refs
+update-refs:
+# Iterate sub-repositories where the root module is referenced and update that version
+	@for d in $(shell go list -m -f '{{.Dir}}' all); do \
+		if [ -f "$$d/go.mod" ]; then \
+			sed -i '' -e "s|github.com/$(shell go list -m).*/v[0-9]\+\.[0-9]\+\.[0-9]\+|github.com/$(shell go list -m)/$(v)|g" "$$d/go.mod"; \
+		fi; \
+	done
