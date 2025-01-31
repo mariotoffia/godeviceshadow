@@ -17,7 +17,7 @@ go get github.com/mariotoffia/godeviceshadow@latest
 go get github.com/mariotoffia/godeviceshadow/persistence/dynamodbpersistence@latest
 ----
 
-.dynamodbnotifier (under development)
+.dynamodbnotifier (dynamodb streams listener/notifier under development)
 [source,bash]
 ----
 go get github.com/mariotoffia/godeviceshadow/notify/dynamodbnotifier@latest
