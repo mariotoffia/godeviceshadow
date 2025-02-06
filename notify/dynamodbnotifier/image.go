@@ -66,7 +66,7 @@ func processImage(image map[string]types.AttributeValue, tr model.TypeRegistry) 
 		return nil, fmt.Errorf("unmarshal error: %v", err)
 	}
 
-	po.Meta = map[string]any{}
+	po.Meta = map[string]any{"pk": pk, "sk": sk}
 
 	typeEntry, ok := ResolveType(tr, pk, sk)
 

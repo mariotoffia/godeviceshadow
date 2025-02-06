@@ -28,7 +28,7 @@ go get github.com/mariotoffia/godeviceshadow/persistence/dynamodbpersistence@lat
 
 .dynamodbnotifier
 ====
-DynamoDB Streams Listener/Notifier - *under development*
+DynamoDB Streams Listener/Notifier. Check the https://github.com/mariotoffia/godeviceshadow/tree/main/notify/dynamodbnotifier[README] for more information.
 
 [source,bash]
 ----

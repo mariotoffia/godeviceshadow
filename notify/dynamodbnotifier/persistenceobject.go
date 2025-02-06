@@ -1,6 +1,11 @@
 package dynamodbnotifier
 
-import "github.com/aws/aws-lambda-go/events"
+import (
+	"strings"
+
+	"github.com/aws/aws-lambda-go/events"
+	"github.com/mariotoffia/godeviceshadow/model/persistencemodel"
+)
 
 // PersistenceObject is copied from the _dynamodbpersistence_ package.
 type PersistenceObject struct {
@@ -52,4 +57,24 @@ func (p *PersistenceObject) EventType() DynamoDbEventType {
 	}
 
 	return DynamoDbEventTypeUnknown
+}
+
+func (p *PersistenceObject) ID() persistencemodel.ID {
+	if p == nil || p.Meta == nil {
+		return persistencemodel.ID{}
+	}
+
+	if pk, ok := p.Meta["pk"].(string); ok {
+		if sk, ok := p.Meta["sk"].(string); ok {
+			pk = strings.TrimPrefix(pk, "DS#")
+
+			if len(sk) > 4 && sk[3] == '#' {
+				sk = sk[4:]
+			}
+
+			return persistencemodel.ID{ID: pk, Name: sk}
+		}
+	}
+
+	return persistencemodel.ID{}
 }

@@ -117,12 +117,19 @@ func (p *Processor) HandleRequest(ctx context.Context, event events.DynamoDBEven
 			continue
 		}
 
+		var id persistencemodel.ID
+
 		if oldImage != nil {
 			oldImage.Meta["record"] = &record
+			id = oldImage.ID()
 		}
 
 		if newImage != nil {
 			newImage.Meta["record"] = &record
+
+			if id.ID == "" {
+				id = newImage.ID()
+			}
 		}
 
 		if p.cbProcessImage != nil {
@@ -181,7 +188,7 @@ func (p *Processor) HandleRequest(ctx context.Context, event events.DynamoDBEven
 
 		if reported {
 			oper = append(oper, notifiermodel.NotifierOperation{
-				ID:           persistencemodel.PersistenceID{},
+				ID:           id.ToPersistenceID(persistencemodel.ModelTypeReported),
 				MergeLogger:  *loggerutils.FindMerge[*changelogger.ChangeMergeLogger](reportMergeOpts.Loggers),
 				DesireLogger: *loggerutils.FindMerge[*loggers.DynamoDbDesireLogger](desiredMergeOpts.Loggers).DesireLogger,
 				Operation:    notifiermodel.OperationTypeReport,
@@ -192,7 +199,7 @@ func (p *Processor) HandleRequest(ctx context.Context, event events.DynamoDBEven
 
 		if desired {
 			oper = append(oper, notifiermodel.NotifierOperation{
-				ID:          persistencemodel.PersistenceID{},
+				ID:          id.ToPersistenceID(persistencemodel.ModelTypeDesired),
 				MergeLogger: loggerutils.FindMerge[changelogger.ChangeMergeLogger](desiredMergeOpts.Loggers),
 				Operation:   notifiermodel.OperationTypeDesired,
 				Reported:    newImage.Reported,
