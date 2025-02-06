@@ -1,3 +1,5 @@
+:!example-caption:
+
 = Go Device Shadow (godeviceshadow)
 
 == Introduction
