@@ -1,50 +1,34 @@
-package dynamodbnotifier
+= DynamoDB Stream Listener and Notifier
 
-import (
-	"context"
-	"reflect"
-	"sync"
-	"testing"
-	"time"
+== Overview
 
-	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
-	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
-	ddbtypes "github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
-	streamTypes "github.com/aws/aws-sdk-go-v2/service/dynamodbstreams/types"
+This is a simple implementation of listening of DynamoDB events and notifying using the `notifiermodel.Notifier` not process filters/selections and targets (as usual).
 
-	"github.com/mariotoffia/godeviceshadow/model"
-	"github.com/mariotoffia/godeviceshadow/model/notifiermodel"
-	"github.com/mariotoffia/godeviceshadow/model/persistencemodel"
-	"github.com/mariotoffia/godeviceshadow/notify"
-	"github.com/mariotoffia/godeviceshadow/notify/dynamodbnotifier/stream"
-	"github.com/mariotoffia/godeviceshadow/persistence/dynamodbpersistence/dynamodbutils"
-	"github.com/mariotoffia/godeviceshadow/types"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-)
+This allows for a more fault tolerant usage of dynamodb as persistence and notify of e.g. _SQS_ targets of changes. If it fails, it will re-process the event and retry sending to target.
 
-const TestTableName = "go-deviceshadow-test"
-const tz = "Europe/Stockholm"
+== Lambda
 
-type Sensor struct {
-	Value     any
-	TimeStamp time.Time
-}
+Use the lambda in production to listen on the stream and notify the targets. Just deploy the processor as lambda and call `Processor.Start` to start listen for incoming events.
 
-type TestModel struct {
-	TimeZone string
-	Sensors  map[string]Sensor
-}
+== Local/Server Model
 
-func (sp *Sensor) GetTimestamp() time.Time {
-	return sp.TimeStamp
-}
+It is possible to manually poll the stream and process the events. This is still a work in progress since it needs to be tighten up in order to not re-process the same records if it fails (in some occasions).
 
-func (sp *Sensor) GetValue() any {
-	return sp.Value
-}
+However, if this is tolerable, it is possible to deploy it on your local machine or on a server/container to process the events. It will automatically discover new shards and handle merge/split of shards and poll those for records.
 
+It is also possible to query for the shard states to be persisted and re-used if the process is restarted.
+
+== TODO
+
+* Better error handling so processed records are not re-processed as today (in Handler record loop).
+
+== Example
+
+This sample can be run on a local machine that expects a empty table and then the insert is captured and sent to a function that emulates e.g. a _SQS_ target.
+
+.Example Processor Test
+[source,go]
+----
 func TestReceiveOneEvent(t *testing.T) {
 	// DynamoDB test utility
 	tr := dynamodbutils.NewTestTableResource(context.Background(), TestTableName)
@@ -161,3 +145,6 @@ func TestReceiveOneEvent(t *testing.T) {
 	assert.Equal(t, DynamoDbEventTypeInsert, newImage.EventType())
 	assert.Len(t, res, 1)
 }
+----
+
+The above sample uses a unit test class that is able to create a table and wait until it is active.

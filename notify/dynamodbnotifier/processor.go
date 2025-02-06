@@ -182,8 +182,8 @@ func (p *Processor) HandleRequest(ctx context.Context, event events.DynamoDBEven
 		if reported {
 			oper = append(oper, notifiermodel.NotifierOperation{
 				ID:           persistencemodel.PersistenceID{},
-				MergeLogger:  loggerutils.FindMerge[changelogger.ChangeMergeLogger](reportMergeOpts.Loggers),
-				DesireLogger: *loggerutils.FindMerge[loggers.DynamoDbDesireLogger](desiredMergeOpts.Loggers).DesireLogger,
+				MergeLogger:  *loggerutils.FindMerge[*changelogger.ChangeMergeLogger](reportMergeOpts.Loggers),
+				DesireLogger: *loggerutils.FindMerge[*loggers.DynamoDbDesireLogger](desiredMergeOpts.Loggers).DesireLogger,
 				Operation:    notifiermodel.OperationTypeReport,
 				Reported:     newImage.Reported,
 				Desired:      newImage.Desired,
