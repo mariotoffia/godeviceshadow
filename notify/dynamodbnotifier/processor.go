@@ -26,7 +26,7 @@ const (
 // ProcessImagesFunc is called just after the record has been processed and the images (possibly)
 // extracted. The `oldImage` and `newImage` is the images extracted from the record. If the record
 // processing failed, the `err` is set.
-type ProcessImagesFunc func(ctx context.Context, oldImage, newImage any, err error) error
+type ProcessImagesFunc func(ctx context.Context, oldImage, newImage *PersistenceObject, err error) error
 
 // ProcessorDoneFunc is called when the `Start` function has finished processing.
 //
@@ -95,6 +95,14 @@ func (p *Processor) HandleRequest(ctx context.Context, event events.DynamoDBEven
 			fmt.Printf("Error processing record: %v\n", err)
 
 			continue
+		}
+
+		if oldImage != nil {
+			oldImage.Meta["record"] = &record
+		}
+
+		if newImage != nil {
+			newImage.Meta["record"] = &record
 		}
 
 		if p.cbProcessImage != nil {

@@ -17,6 +17,7 @@ import (
 	"github.com/mariotoffia/godeviceshadow/notify/dynamodbnotifier/stream"
 	"github.com/mariotoffia/godeviceshadow/persistence/dynamodbpersistence/dynamodbutils"
 	"github.com/mariotoffia/godeviceshadow/types"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -46,7 +47,7 @@ func TestReceiveOneEvent(t *testing.T) {
 	tr := dynamodbutils.NewTestTableResource(context.Background(), TestTableName)
 	defer tr.Dispose(context.Background(), dynamodbutils.DisposeOpts{DeleteItems: true})
 
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
 	var (
@@ -76,18 +77,10 @@ func TestReceiveOneEvent(t *testing.T) {
 				WithShardIteratorType(streamTypes.ShardIteratorTypeLatest),
 		).
 		WithCallbackProcessorCallback().
-		WithProcessImageCallback(func(ctx context.Context, oldImg, newImg any, err error) error {
-			if po, ok := oldImg.(*PersistenceObject); ok {
-				oldImage = po
-			}
-
-			if po, ok := newImg.(*PersistenceObject); ok {
-				newImage = po
-			}
-
+		WithProcessImageCallback(func(ctx context.Context, oldImg, newImg *PersistenceObject, err error) error {
+			oldImage = oldImg
+			newImage = newImg
 			pcError = err
-
-			ctx.Done() // cancel the context to stop the processor
 
 			return nil
 		}).
@@ -134,4 +127,5 @@ func TestReceiveOneEvent(t *testing.T) {
 	require.NoError(t, pcError)
 	require.Nil(t, oldImage)
 	require.NotNil(t, newImage)
+	assert.Equal(t, DynamoDbEventTypeInsert, newImage.EventType())
 }

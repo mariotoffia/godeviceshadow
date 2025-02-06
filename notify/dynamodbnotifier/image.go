@@ -12,9 +12,9 @@ import (
 	"github.com/mariotoffia/godeviceshadow/model"
 )
 
-func processRecord(record events.DynamoDBEventRecord, tr model.TypeRegistry) (any, any, error) {
+func processRecord(record events.DynamoDBEventRecord, tr model.TypeRegistry) (*PersistenceObject, *PersistenceObject, error) {
 	var (
-		oldImage, newImage any
+		oldImage, newImage *PersistenceObject
 		err                error
 	)
 
@@ -65,6 +65,8 @@ func processImage(image map[string]types.AttributeValue, tr model.TypeRegistry) 
 	if err := attributevalue.UnmarshalMap(image, &po); err != nil {
 		return nil, fmt.Errorf("unmarshal error: %v", err)
 	}
+
+	po.Meta = map[string]any{}
 
 	typeEntry, ok := ResolveType(tr, pk, sk)
 
