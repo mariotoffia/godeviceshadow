@@ -33,6 +33,7 @@
     "interp",
     "jsonutils",
     "limhamn",
+    "loggerutils",
     "LPAREN",
     "managermodel",
     "mariotoffia",

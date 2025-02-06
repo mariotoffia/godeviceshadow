@@ -53,5 +53,8 @@ type Notifier interface {
 	Process(ctx context.Context, tx *persistencemodel.TransactionImpl, operations ...NotifierOperation) []NotifierOperationResult
 }
 
-// ProcessFunc is the same as `Notifier.Process` but as a function.
-type ProcessFunc func(op NotifierOperation, value bool) (bool, []SelectedValue)
+// ProcessFunc is the mirror func `Notifier.Process` but can be used as a type.
+type ProcessFunc func(ctx context.Context, tx *persistencemodel.TransactionImpl, operations ...NotifierOperation) []NotifierOperationResult
+
+// ProcessNotificationFunc is can be weaved when processing inside `Process` function.
+type ProcessNotificationFunc func(op NotifierOperation, value bool) (bool, []SelectedValue)

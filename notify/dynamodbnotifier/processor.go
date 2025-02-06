@@ -3,12 +3,19 @@ package dynamodbnotifier
 import (
 	"context"
 	"fmt"
+	"reflect"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
 
+	"github.com/mariotoffia/godeviceshadow/loggers/changelogger"
+	"github.com/mariotoffia/godeviceshadow/merge"
 	"github.com/mariotoffia/godeviceshadow/model"
+	"github.com/mariotoffia/godeviceshadow/model/notifiermodel"
+	"github.com/mariotoffia/godeviceshadow/model/persistencemodel"
+	"github.com/mariotoffia/godeviceshadow/notify/dynamodbnotifier/loggers"
 	"github.com/mariotoffia/godeviceshadow/notify/dynamodbnotifier/stream"
+	"github.com/mariotoffia/godeviceshadow/utils/loggerutils"
 )
 
 type ProcessorEventModel int
@@ -46,6 +53,19 @@ type Processor struct {
 	cbProcessImage ProcessImagesFunc
 	// startDoneFunc is called when the `Start` function has finished processing.
 	startDoneFunc ProcessorDoneFunc
+	// cbNotifyProcess is invoked before the notification is sent. It will ignore the return values.
+	cbNotifyProcess notifiermodel.ProcessFunc
+	// reportedLoggers are `model.MergeLogger` that are used to log reported values.
+	//
+	// It will automatically add the `changelogger.ChangeMergeLogger`. It will capture the reported model merges.
+	reportedLoggers []model.CreatableMergeLogger
+	// desiredLoggers are `model.MergeLogger` that are used to log desired values.
+	//
+	// It will automatically add the `changelogger.ChangeMergeLogger` and `loggers.DynamoDbDesireLogger` to detect
+	// when a desire has been acknowledged. The former will log a plain desire document merge.
+	desiredLoggers []model.CreatableMergeLogger
+	// notificationManager will be invoked for each event that has been processed.
+	notificationManager notifiermodel.Notifier
 }
 
 // StartLambda will start the lambda loop and freeze.
@@ -111,8 +131,93 @@ func (p *Processor) HandleRequest(ctx context.Context, event events.DynamoDBEven
 			}
 		}
 
-		// TODO: Diff old, new (reported or desired) and notify.
+		// Merge the reported and desired values
+		reportMergeOpts := merge.MergeOptions{
+			Mode:    merge.ClientIsMaster,
+			Loggers: loggerutils.CreateMergeLoggers(p.reportedLoggers...),
+		}
+
+		desiredMergeOpts := merge.MergeOptions{
+			Mode:    merge.ClientIsMaster,
+			Loggers: loggerutils.CreateMergeLoggers(p.desiredLoggers...),
+		}
+
+		var desired, reported bool
+
+		switch DynamoDbEventType(record.EventName) {
+		case DynamoDbEventTypeInsert:
+			if newImage.Reported != nil {
+				merge.MergeAny(createInstance(newImage.Reported), newImage.Reported, reportMergeOpts)
+				reported = true
+			}
+
+			if newImage.Desired != nil {
+				merge.MergeAny(createInstance(newImage.Desired), newImage.Desired, desiredMergeOpts)
+				desired = true
+			}
+		case DynamoDbEventTypeModify:
+			if newImage.Reported != nil && oldImage.Reported != nil {
+				merge.MergeAny(oldImage.Reported, newImage.Reported, reportMergeOpts)
+				reported = true
+			}
+
+			if newImage.Desired != nil && oldImage.Desired != nil {
+				merge.MergeAny(oldImage.Desired, newImage.Desired, desiredMergeOpts)
+				desired = true
+			}
+		case DynamoDbEventTypeRemove:
+			if oldImage.Reported != nil {
+				merge.MergeAny(oldImage.Reported, createInstance(oldImage.Reported), reportMergeOpts)
+				reported = true
+			}
+
+			if oldImage.Desired != nil {
+				merge.MergeAny(oldImage.Desired, createInstance(oldImage.Desired), desiredMergeOpts)
+				desired = true
+			}
+		}
+
+		oper := make([]notifiermodel.NotifierOperation, 0, 2)
+
+		if reported {
+			oper = append(oper, notifiermodel.NotifierOperation{
+				ID:           persistencemodel.PersistenceID{},
+				MergeLogger:  loggerutils.FindMerge[changelogger.ChangeMergeLogger](reportMergeOpts.Loggers),
+				DesireLogger: *loggerutils.FindMerge[loggers.DynamoDbDesireLogger](desiredMergeOpts.Loggers).DesireLogger,
+				Operation:    notifiermodel.OperationTypeReport,
+				Reported:     newImage.Reported,
+				Desired:      newImage.Desired,
+			})
+		}
+
+		if desired {
+			oper = append(oper, notifiermodel.NotifierOperation{
+				ID:          persistencemodel.PersistenceID{},
+				MergeLogger: loggerutils.FindMerge[changelogger.ChangeMergeLogger](desiredMergeOpts.Loggers),
+				Operation:   notifiermodel.OperationTypeDesired,
+				Reported:    newImage.Reported,
+				Desired:     newImage.Desired,
+			})
+		}
+
+		if p.cbNotifyProcess != nil {
+			p.cbNotifyProcess(ctx, nil /*tx*/, oper...)
+		}
+
+		if p.notificationManager != nil {
+			res := p.notificationManager.Process(ctx, nil /*tx*/, oper...)
+			_ = res // TODO: If we get an error, we need to handle it (and return an error)
+		}
 	}
 
 	return nil
+}
+
+// createInstance creates a copy of the instance `v`.
+func createInstance(v any) any {
+	if v == nil {
+		return nil
+	}
+
+	return reflect.New(reflect.TypeOf(v)).Interface()
 }

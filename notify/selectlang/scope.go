@@ -34,7 +34,7 @@ func (scope Scope) Children() []*Scope {
 	return res
 }
 
-func (scope Scope) ToMatchFunc() notifiermodel.ProcessFunc {
+func (scope Scope) ToMatchFunc() notifiermodel.ProcessNotificationFunc {
 	if scope.Primary != nil {
 		return scope.Primary.ToMatchFunc()
 	}
