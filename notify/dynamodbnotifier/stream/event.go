@@ -1,4 +1,4 @@
-package dynamodbnotifier
+package stream
 
 import (
 	"context"
@@ -14,11 +14,11 @@ import (
 // If the function returns an error, the first return parameter will be empty. If any error did occur
 // during record decoding, it will be placed at the corresponding index in the Error slice. All other
 // entries that error is `nil` will be valid events.DynamoDBEventRecord.
-func (s *DynamoDBStream) PollAsDynamoDBEvent(ctx context.Context) (events.DynamoDBEvent, error) {
-	records, err := s.Poll(ctx)
+func (s *DynamoDBStream) PollAsDynamoDBEvent(ctx context.Context) (string, events.DynamoDBEvent, error) {
+	streamID, records, err := s.Poll(ctx)
 
 	if err != nil {
-		return events.DynamoDBEvent{}, err
+		return "", events.DynamoDBEvent{}, err
 	}
 
 	res := events.DynamoDBEvent{
@@ -34,7 +34,7 @@ func (s *DynamoDBStream) PollAsDynamoDBEvent(ctx context.Context) (events.Dynamo
 		res.Records[i] = convertDDBRecord(r)
 	}
 
-	return res, nil
+	return streamID, res, nil
 }
 
 // convertAttributeValue converts a DynamoDB attribute value (from AWS SDK v2)

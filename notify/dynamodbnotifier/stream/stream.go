@@ -1,4 +1,4 @@
-package dynamodbnotifier
+package stream
 
 import (
 	"context"
@@ -14,6 +14,12 @@ import (
 
 	streamTypes "github.com/aws/aws-sdk-go-v2/service/dynamodbstreams/types"
 )
+
+// StreamPollerCallback is used in the `Start` function to handle DynamoDB stream events.
+type StreamPollerCallback func(ctx context.Context, event events.DynamoDBEvent) error
+
+// StreamPollerDoneCallback is called when the poll loop in `Start` is done.
+type StreamPollerDoneCallback func(ctx context.Context, err error)
 
 type DynamoDBStream struct {
 	// client is the DynamoDB client to use.
@@ -33,6 +39,12 @@ type DynamoDBStream struct {
 	shardIterator string
 	// iteratorType is the iterator type to start polling for records.
 	iteratorType streamTypes.ShardIteratorType
+	// callback is the callback function to handle DynamoDB stream events when calling `Start`.
+	callback StreamPollerCallback
+	// startDone is called when the `Start` function has finished processing.
+	startDone StreamPollerDoneCallback
+	// shards keeps track on shards.
+	shards *Shards
 }
 
 type DynamoDBStreamOptions struct {
@@ -48,8 +60,12 @@ type DynamoDBStreamOptions struct {
 	RestoreState bool
 	// MaxWaitTime is the maximum time to wait for the stream to be enabled. Default is 2 minutes.
 	MaxWaitTime time.Duration
-	// IteratorType is which iterator type to start polling for records. Default is `TRIM_HORIZON`.
+	// IteratorType is which iterator type to start polling for records. Default is `LATEST`.
 	IteratorType streamTypes.ShardIteratorType
+	// Callback is the callback function to handle DynamoDB stream events when calling `Start`.
+	Callback StreamPollerCallback
+	// StartDone is called when the `Start` function has finished processing.
+	StartDone StreamPollerDoneCallback
 }
 
 func NewDynamoDBStream(table string, opts ...DynamoDBStreamOptions) (*DynamoDBStream, error) {
@@ -68,7 +84,7 @@ func NewDynamoDBStream(table string, opts ...DynamoDBStreamOptions) (*DynamoDBSt
 	}
 
 	if opt.IteratorType == "" {
-		opt.IteratorType = streamTypes.ShardIteratorTypeTrimHorizon
+		opt.IteratorType = streamTypes.ShardIteratorTypeLatest
 	}
 
 	var (
@@ -96,14 +112,31 @@ func NewDynamoDBStream(table string, opts ...DynamoDBStreamOptions) (*DynamoDBSt
 		opt.StreamsClient = dynamodbstreams.NewFromConfig(cfg)
 	}
 
-	return &DynamoDBStream{
+	ds := &DynamoDBStream{
 		client:        opt.Client,
 		streamsClient: opt.StreamsClient,
 		table:         table,
 		iteratorType:  opt.IteratorType,
 		restoreState:  opt.RestoreState,
 		maxWaitTime:   opt.MaxWaitTime,
-	}, nil
+		callback:      opt.Callback,
+		startDone:     opt.StartDone,
+	}
+
+	ctx := context.Background()
+
+	arn, err := ds.getStreamArn(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	ds.shards, err = NewDynamoDbShards(ctx, opt.StreamsClient, arn, opt.IteratorType)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return ds, nil
 }
 
 // Close will release the stream if _restoreState_ is set to `true` and the stream was enabled by this instance.
@@ -127,40 +160,79 @@ func (s *DynamoDBStream) Close(ctx context.Context) error {
 //
 // This function will block until the context is cancelled or an error occurs. It is automatically closed upon
 // cancellation or error.
-func (s *DynamoDBStream) Start(ctx context.Context, cb func(ctx context.Context, event events.DynamoDBEvent) error) error {
+//
+// When _async_ is set to `true`, it will ensure the table is enabled and then fork out the polling in a go routine.
+// If not, it will block until the context is cancelled or an error occurs.
+//
+// Even if _async_ is `true`, it will invoke `Close` when the context is cancelled or an error occurs.
+func (s *DynamoDBStream) Start(ctx context.Context, async bool) error {
+	cb := s.callback
+
+	if cb == nil {
+		return fmt.Errorf("no callback function set")
+	}
+
 	enabled, err := s.EnableStream(ctx)
+
 	if err != nil {
 		return fmt.Errorf("failed to enable stream: %w", err)
 	}
-	// Ensure the stream state is restored upon exit.
-	defer s.Close(ctx)
 
 	if !enabled {
 		return fmt.Errorf("stream is not enabled")
 	}
 
-	for {
-		select {
-		case <-ctx.Done():
-			// When the context is cancelled, exit gracefully.
-			return ctx.Err()
-		default:
-			// Poll the stream for new records.
-			evt, err := s.PollAsDynamoDBEvent(ctx)
+	poll := func() error {
+		var (
+			streamID string
+			err      error
+			evt      events.DynamoDBEvent
+		)
 
-			if err != nil {
-				return fmt.Errorf("error polling stream: %w", err)
+		defer func() {
+			s.Close(ctx)
+
+			if s.startDone != nil {
+				s.startDone(ctx, err)
 			}
+		}()
 
-			if len(evt.Records) > 0 {
-				if err := cb(ctx, evt); err != nil {
-					_ = fmt.Errorf("error handling event: %w", err)
+		for {
+			select {
+			case <-ctx.Done():
+				// When the context is cancelled, exit gracefully.
+				err = ctx.Err()
+				return err
+			default:
+				// Poll the stream for new records.
+				streamID, evt, err = s.PollAsDynamoDBEvent(ctx)
+
+				if err != nil {
+					err = fmt.Errorf("error polling stream: %w", err)
+				} else if len(evt.Records) > 0 {
+					if err = cb(ctx, evt); err != nil {
+						_ = fmt.Errorf("error handling event on shard %s: %w", streamID, err)
+					} else {
+						s.Commit(streamID)
+					}
 				}
-			}
 
-			time.Sleep(5 * time.Second)
+				if err != nil {
+					return err
+				}
+
+				time.Sleep(5 * time.Second)
+			}
 		}
 	}
+
+	if async {
+		go poll()
+	} else {
+		return poll()
+	}
+
+	return nil
 }
 
 // IsStreamEnabled checks if the stream is enabled on the table. If it is enabled,
@@ -181,7 +253,7 @@ func (s *DynamoDBStream) IsStreamEnabled(ctx context.Context) (bool, error) {
 // state it was before. This state can be used to restore the stream state when done when
 // calling`Close`.
 //
-// It will return `true` if the stream was enabled and the stream is published by this invocation.
+// It will return `true` if the stream is enabled and the stream is published by this invocation.
 func (s *DynamoDBStream) EnableStream(ctx context.Context) (bool, error) {
 	//
 	enabled, err := s.IsStreamEnabled(ctx)
@@ -193,7 +265,7 @@ func (s *DynamoDBStream) EnableStream(ctx context.Context) (bool, error) {
 	if enabled {
 		s.wasStreamEnabled = true
 
-		return false, nil
+		return true, nil // already enabled
 	}
 
 	_, err = s.client.UpdateTable(ctx, &dynamodb.UpdateTableInput{
@@ -277,63 +349,17 @@ func (s *DynamoDBStream) ReleaseDbStream(ctx context.Context, wait bool) error {
 // It returns a slice of records and updates the shard iterator for subsequent polls.
 //
 // Even if this function do not return an `error`, the records may be empty.
-func (s *DynamoDBStream) Poll(ctx context.Context) ([]streamTypes.Record, error) {
-	//
-	if s.shardIterator == "" {
-		if err := s.initializeShardIterator(ctx); err != nil {
-			return nil, fmt.Errorf("failed to initialize shard iterator: %w", err)
-		}
-	}
-
-	// Use the current shard iterator to retrieve records.
-	out, err := s.streamsClient.GetRecords(ctx, &dynamodbstreams.GetRecordsInput{
-		ShardIterator: &s.shardIterator,
-	})
-
-	if err != nil {
-		return nil, fmt.Errorf("failed to get records: %w", err)
-	}
-
-	// Update the shard iterator for the next poll.
-	s.shardIterator = aws.ToString(out.NextShardIterator)
-	return out.Records, nil
+// Poll delegates polling to the DynamoDbShards instance.
+//
+// The first parameter is the shardID that shall be used in the `Commit` function when
+// all records where successfully processed.
+func (s *DynamoDBStream) Poll(ctx context.Context) (string, []streamTypes.Record, error) {
+	return s.shards.Poll(ctx, s.streamsClient)
 }
 
-// initializeShardIterator sets up the shard iterator by retrieving the stream ARN,
-// describing the stream to find a shard, and then getting a shard iterator for that shard.
-func (s *DynamoDBStream) initializeShardIterator(ctx context.Context) error {
-	// Get the stream ARN from the table description.
-	streamArn, err := s.getStreamArn(ctx)
-	if err != nil {
-		return fmt.Errorf("failed to get stream ARN: %w", err)
-	}
-
-	// Describe the stream to get shard information.
-	descStreamOut, err := s.streamsClient.DescribeStream(ctx, &dynamodbstreams.DescribeStreamInput{
-		StreamArn: &streamArn,
-	})
-	if err != nil {
-		return fmt.Errorf("failed to describe stream: %w", err)
-	}
-
-	if descStreamOut.StreamDescription == nil || len(descStreamOut.StreamDescription.Shards) == 0 {
-		return fmt.Errorf("no shards found in stream")
-	}
-
-	// For simplicity, pick the first shard.
-	shardID := aws.ToString(descStreamOut.StreamDescription.Shards[0].ShardId)
-
-	iterOut, err := s.streamsClient.GetShardIterator(ctx, &dynamodbstreams.GetShardIteratorInput{
-		StreamArn: &streamArn, ShardId: &shardID, ShardIteratorType: s.iteratorType,
-	})
-
-	if err != nil {
-		return fmt.Errorf("failed to get shard iterator: %w", err)
-	}
-
-	s.shardIterator = aws.ToString(iterOut.ShardIterator)
-
-	return nil
+// Commit delegates the commit operation to DynamoDbShards for a specific shard.
+func (s *DynamoDBStream) Commit(shardID string) {
+	s.shards.Commit(shardID)
 }
 
 // getStreamArn retrieves the LatestStreamArn from the table description.
