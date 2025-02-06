@@ -30,8 +30,8 @@ type Shards struct {
 	shardManager *ShardManager
 }
 
-// NewDynamoDbShards initializes a DynamoDbShards instance and discovers initial shards.
-func NewDynamoDbShards(
+// NewShards initializes a Shards instance and discovers initial shards.
+func NewShards(
 	ctx context.Context,
 	streamsClient *dynamodbstreams.Client,
 	streamArn string,
@@ -75,6 +75,11 @@ func (d *Shards) Poll(
 			return "", nil, fmt.Errorf("failed to get next shard: %w", err)
 		}
 
+		if shard == nil {
+			// No more shards to poll.
+			return "", nil, nil
+		}
+
 		if lastShardID != "" && lastShardID == shard.ShardID {
 			// All shards have been polled.
 			return "", nil, nil
@@ -95,7 +100,8 @@ func (d *Shards) Poll(
 		if out.NextShardIterator == nil {
 			records := out.Records
 
-			d.shardManager.CloseShard(shard.ShardID)
+			// Will be delete when client `Commit` the shard.
+			d.shardManager.MarkedForDelete(shard.ShardID)
 
 			if len(records) > 0 {
 				return shard.ShardID, records, nil
@@ -106,7 +112,12 @@ func (d *Shards) Poll(
 
 		d.shardManager.UpdateWorkingIterator(shard.ShardID, aws.ToString(out.NextShardIterator))
 
-		return shard.ShardID, out.Records, nil
+		if len(out.Records) > 0 {
+			return shard.ShardID, out.Records, nil
+		}
+
+		// No records -> make sure to use next shard iterator.
+		d.shardManager.Commit(shard.ShardID)
 	}
 }
 

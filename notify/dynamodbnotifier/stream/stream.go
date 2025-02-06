@@ -130,7 +130,7 @@ func NewDynamoDBStream(table string, opts ...DynamoDBStreamOptions) (*DynamoDBSt
 		return nil, err
 	}
 
-	ds.shards, err = NewDynamoDbShards(ctx, opt.StreamsClient, arn, opt.IteratorType)
+	ds.shards, err = NewShards(ctx, opt.StreamsClient, arn, opt.IteratorType)
 
 	if err != nil {
 		return nil, err

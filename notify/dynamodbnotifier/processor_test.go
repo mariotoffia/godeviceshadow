@@ -41,41 +41,30 @@ func (sp *Sensor) GetValue() any {
 	return sp.Value
 }
 
-// PersistenceObject is taken from _dynamodbpersistence_ package
-type PersistenceObject struct {
-	Version     int64  `json:"version"`
-	TimeStamp   int64  `json:"timestamp"`
-	ClientToken string `json:"clientToken,omitempty"`
-	Desired     any    `json:"desired,omitempty"`
-	Reported    any    `json:"reported,omitempty"`
-}
-
 func TestReceiveOneEvent(t *testing.T) {
 	// DynamoDB test utility
 	tr := dynamodbutils.NewTestTableResource(context.Background(), TestTableName)
 	defer tr.Dispose(context.Background(), dynamodbutils.DisposeOpts{DeleteItems: true})
 
-	ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
 	var (
-		oldImage, newImage any
+		oldImage, newImage *PersistenceObject
 		pcError            error
 		wg                 sync.WaitGroup
 	)
 
 	processor, err := NewProcessorBuilder().
-		WithTypeRegistry(
-			types.NewRegistry().
-				RegisterResolver(
-					model.NewResolveFunc(
-						func(id, name string) (model.TypeEntry, bool) {
-							return model.TypeEntry{
-								Model: reflect.TypeOf(&TestModel{}), Name: "homeHub"}, false
-						},
-					),
+		WithTypeRegistry(types.NewRegistry().
+			RegisterResolver(
+				model.NewResolveFunc(
+					func(id, name string) (model.TypeEntry, bool) {
+						return model.TypeEntry{
+							Model: reflect.TypeOf(&TestModel{}), Name: "homeHub"}, true
+					},
 				),
-		).
+			)).
 		WithStartDoneFunc(func(ctx context.Context, err error) {
 			wg.Done() // signal that the processor is done
 		}).
@@ -84,12 +73,18 @@ func TestReceiveOneEvent(t *testing.T) {
 			stream.NewStreamBuilder().
 				WithTable(TestTableName).
 				UseClient(tr.Client).
-				WithShardIteratorType(streamTypes.ShardIteratorTypeTrimHorizon),
+				WithShardIteratorType(streamTypes.ShardIteratorTypeLatest),
 		).
 		WithCallbackProcessorCallback().
 		WithProcessImageCallback(func(ctx context.Context, oldImg, newImg any, err error) error {
-			oldImage = oldImg
-			newImage = newImg
+			if po, ok := oldImg.(*PersistenceObject); ok {
+				oldImage = po
+			}
+
+			if po, ok := newImg.(*PersistenceObject); ok {
+				newImage = po
+			}
+
 			pcError = err
 
 			ctx.Done() // cancel the context to stop the processor
@@ -137,6 +132,6 @@ func TestReceiveOneEvent(t *testing.T) {
 	wg.Wait() // wait for the processor to finish
 
 	require.NoError(t, pcError)
-	require.NotNil(t, oldImage)
+	require.Nil(t, oldImage)
 	require.NotNil(t, newImage)
 }

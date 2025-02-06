@@ -84,13 +84,6 @@ func (sm *ShardManager) discoverShards(ctx context.Context, client *dynamodbstre
 	for _, shard := range discoveredShards {
 		shardID := aws.ToString(shard.ShardId)
 
-		// shard closed? -> remove it from state (if found).
-		if shard.SequenceNumberRange.EndingSequenceNumber != nil {
-			sm.activeShards.Delete(shardID)
-
-			continue
-		}
-
 		// already tracked?
 		if existing := sm.activeShards.Get(shardID); existing != nil {
 			// Update parent shard info if shard split.
@@ -167,7 +160,7 @@ func (sm *ShardManager) NextShard(ctx context.Context, client *dynamodbstreams.C
 	for i := 0; i < size; i++ {
 		idx := (sm.lastShardIndex + i) % size
 
-		if shard := sm.activeShards.GetByIndex(idx); shard == nil {
+		if shard = sm.activeShards.GetByIndex(idx); shard == nil {
 			return nil, nil
 		}
 
@@ -185,11 +178,29 @@ func (sm *ShardManager) CloseShard(shardID string) {
 	sm.activeShards.Delete(shardID)
 }
 
+// MarkedForDelete will mark a shard for deletion.
+//
+// The delete is done when doing `Commit`. This allows the poller
+// return records and when the client is done processing, it will
+// commit and thus will delete the shard.
+//
+// This is not to miss any records that are in the shard but it is
+// finished otherwise.
+func (sm *ShardManager) MarkedForDelete(shardID string) {
+	if state := sm.activeShards.Get(shardID); state != nil {
+		state.MarkedForDelete = true
+	}
+}
+
 // Commit advances the committed iterator for the shard with shardID
 // to the current working iterator. This should be called after successful processing.
 func (sm *ShardManager) Commit(shardID string) {
 	if state := sm.activeShards.Get(shardID); state != nil {
-		state.CommittedIterator = state.WorkingIterator
+		if state.MarkedForDelete {
+			sm.CloseShard(shardID)
+		} else {
+			state.CommittedIterator = state.WorkingIterator
+		}
 	}
 }
 

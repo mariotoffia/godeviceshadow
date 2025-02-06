@@ -37,27 +37,68 @@ func processRecord(record events.DynamoDBEventRecord, tr model.TypeRegistry) (an
 }
 
 // processImage converts a DynamoDB image to serialized JSON
-func processImage(image map[string]types.AttributeValue, tr model.TypeRegistry) (any, error) {
+func processImage(image map[string]types.AttributeValue, tr model.TypeRegistry) (*PersistenceObject, error) {
 	// Extract PK and SK from the image
 	pk, sk, err := extractKeys(image)
 	if err != nil {
 		return nil, err
 	}
 
+	desired := image["Desired"]
+	reported := image["Reported"]
+
+	if _, ok := desired.(*types.AttributeValueMemberNULL); ok {
+		desired = nil
+	}
+
+	if _, ok := reported.(*types.AttributeValueMemberNULL); ok {
+		reported = nil
+	}
+
+	// Unlink since we're doing this manually
+	image["Desired"] = nil
+	image["Reported"] = nil
+
+	var po PersistenceObject
+
+	// Unmarshal DynamoDB image into the model
+	if err := attributevalue.UnmarshalMap(image, &po); err != nil {
+		return nil, fmt.Errorf("unmarshal error: %v", err)
+	}
+
 	typeEntry, ok := ResolveType(tr, pk, sk)
+
+	var dm, rm any
+
+	if typeEntry.Model.Kind() == reflect.Ptr {
+		dm = reflect.New(typeEntry.Model.Elem()).Interface()
+		rm = reflect.New(typeEntry.Model.Elem()).Interface()
+	} else {
+		dm = reflect.New(typeEntry.Model).Interface()
+		rm = reflect.New(typeEntry.Model).Interface()
+	}
+
+	if desired != nil {
+		if err := attributevalue.UnmarshalMap(desired.(*types.AttributeValueMemberM).Value, dm); err != nil {
+			return nil, fmt.Errorf("unmarshal desired error: %v", err)
+		}
+
+		po.Desired = dm
+	}
+
+	if reported != nil {
+		if err := attributevalue.UnmarshalMap(reported.(*types.AttributeValueMemberM).Value, rm); err != nil {
+			return nil, fmt.Errorf("unmarshal reported error: %v", err)
+		}
+
+		po.Reported = rm
+	}
 
 	if !ok {
 		return nil, fmt.Errorf("no model resolved for PK=%s, SK=%s", pk, sk)
 	}
 
-	model := reflect.New(typeEntry.Model).Interface()
-
-	// Unmarshal DynamoDB image into the model
-	if err := attributevalue.UnmarshalMap(image, model); err != nil {
-		return nil, fmt.Errorf("unmarshal error: %v", err)
-	}
-
-	return model, nil
+	return &po, nil
 }
 
 // extractKeys retrieves PK and SK from a DynamoDB image
@@ -76,9 +117,11 @@ func extractKeys(image map[string]types.AttributeValue) (pk, sk string, err erro
 // to the equivalent map of string -> types.AttributeValue.
 func convertAttributes(m map[string]events.DynamoDBAttributeValue) map[string]types.AttributeValue {
 	result := make(map[string]types.AttributeValue, len(m))
+
 	for k, v := range m {
 		result[k] = eventsAttrToSDKAttr(v)
 	}
+
 	return result
 }
 
@@ -123,7 +166,7 @@ func eventsAttrToSDKAttr(eav events.DynamoDBAttributeValue) types.AttributeValue
 }
 
 func ResolveType(tr model.TypeRegistry, pk, sk string) (model.TypeEntry, bool) {
-	pk = strings.TrimPrefix("DS#", pk)
+	pk = strings.TrimPrefix(pk, "DS#")
 
 	if len(sk) > 4 && sk[3] == '#' {
 		sk = sk[4:]

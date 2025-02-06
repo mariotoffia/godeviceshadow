@@ -6,6 +6,7 @@ type ShardState struct {
 	ParentShardID     string // Parent shard identifier (if split).
 	CommittedIterator string // Last committed iterator.
 	WorkingIterator   string // Iterator returned from the latest GetRecords call.
+	MarkedForDelete   bool   // Flag to indicate the shard is closed and should be removed
 }
 
 // ShardCollection manages shard states using a map for quick lookup
