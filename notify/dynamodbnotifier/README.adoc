@@ -30,120 +30,120 @@ This sample can be run on a local machine that expects a empty table and then th
 [source,go]
 ----
 func TestReceiveOneEvent(t *testing.T) {
-	// DynamoDB test utility
-	tr := dynamodbutils.NewTestTableResource(context.Background(), TestTableName)
-	defer tr.Dispose(context.Background(), dynamodbutils.DisposeOpts{DeleteItems: true})
+  // DynamoDB test utility
+  tr := dynamodbutils.NewTestTableResource(context.Background(), TestTableName)
+  defer tr.Dispose(context.Background(), dynamodbutils.DisposeOpts{DeleteItems: true})
 
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-	defer cancel()
+  ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+  defer cancel()
 
-	var (
-		oldImage, newImage *PersistenceObject
-		pcError            error
-		wg                 sync.WaitGroup
-		res                []notifiermodel.NotificationTargetResult
-	)
+  var (
+    oldImage, newImage *PersistenceObject
+    pcError            error
+    wg                 sync.WaitGroup
+    res                []notifiermodel.NotificationTargetResult
+  )
 
-	processor, err := NewProcessorBuilder().
-		WithTypeRegistry(types.NewRegistry().
-			RegisterResolver(
-				model.NewResolveFunc(
-					func(id, name string) (model.TypeEntry, bool) {
-						return model.TypeEntry{
-							Model: reflect.TypeOf(&TestModel{}), Name: "homeHub"}, true
-					},
-				),
-			)).
-		WithStartDoneFunc(func(ctx context.Context, err error) {
-			wg.Done() // signal that the processor is done
-		}).
-		WithEventModel(ProcessorEventModelManualAttach).
-		WithStreamBuilder(
-			stream.NewStreamBuilder().
-				WithTable(TestTableName).
-				UseClient(tr.Client).
-				WithShardIteratorType(streamTypes.ShardIteratorTypeLatest),
-		).
-		WithCallbackProcessorCallback().
-		WithProcessImageCallback(func(ctx context.Context, oldImg, newImg *PersistenceObject, err error) error {
-			oldImage = oldImg
-			newImage = newImg
-			pcError = err
+  processor, err := NewProcessorBuilder().
+    WithTypeRegistry(types.NewRegistry().
+      RegisterResolver(
+        model.NewResolveFunc(
+          func(id, name string) (model.TypeEntry, bool) {
+            return model.TypeEntry{
+              Model: reflect.TypeOf(&TestModel{}), Name: "homeHub"}, true
+          },
+        ),
+      )).
+    WithStartDoneFunc(func(ctx context.Context, err error) {
+      wg.Done() // signal that the processor is done
+    }).
+    WithEventModel(ProcessorEventModelManualAttach).
+    WithStreamBuilder(
+      stream.NewStreamBuilder().
+        WithTable(TestTableName).
+        UseClient(tr.Client).
+        WithShardIteratorType(streamTypes.ShardIteratorTypeLatest),
+    ).
+    WithCallbackProcessorCallback().
+    WithProcessImageCallback(func(ctx context.Context, oldImg, newImg *PersistenceObject, err error) error {
+      oldImage = oldImg
+      newImage = newImg
+      pcError = err
 
-			return nil
-		}).
-		WithNotificationManager(notify.NewBuilder().
-			TargetBuilder(
-				notifiermodel.FuncTarget(
-					func(
-						ctx context.Context, target notifiermodel.NotificationTarget,
-						tx *persistencemodel.TransactionImpl, operation ...notifiermodel.NotifierOperation,
-					) []notifiermodel.NotificationTargetResult {
-						// Target could e.g. be SQS, SNS, Email, SMS, etc.
-						for _, op := range operation {
-							res = append(res, notifiermodel.NotificationTargetResult{
-								Operation: op,
-								Target:    target,
-								Custom:    map[string]any{"pass": true},
-							})
-						}
+      return nil
+    }).
+    WithNotificationManager(notify.NewBuilder().
+      TargetBuilder(
+        notifiermodel.FuncTarget(
+          func(
+            ctx context.Context, target notifiermodel.NotificationTarget,
+            tx *persistencemodel.TransactionImpl, operation ...notifiermodel.NotifierOperation,
+          ) []notifiermodel.NotificationTargetResult {
+            // Target could e.g. be SQS, SNS, Email, SMS, etc.
+            for _, op := range operation {
+              res = append(res, notifiermodel.NotificationTargetResult{
+                Operation: op,
+                Target:    target,
+                Custom:    map[string]any{"pass": true},
+              })
+            }
 
-						return res
-					})).
-			WithSelectionBuilder(
-				notifiermodel.NewSelectionBuilder(
-					notifiermodel.FuncSelection(
-						func(op notifiermodel.NotifierOperation, value bool) (bool, []notifiermodel.SelectedValue) {
-							return true, nil // always include
-						})),
-			).
-			Build().
-			Build()).
-		Build()
+            return res
+          })).
+      WithSelectionBuilder(
+        notifiermodel.NewSelectionBuilder(
+          notifiermodel.FuncSelection(
+            func(op notifiermodel.NotifierOperation, value bool) (bool, []notifiermodel.SelectedValue) {
+              return true, nil // always include
+            })),
+      ).
+      Build().
+      Build()).
+    Build()
 
-	require.NoError(t, err)
+  require.NoError(t, err)
 
-	err = processor.Start(ctx, true /*async*/)
-	require.NoError(t, err)
+  err = processor.Start(ctx, true /*async*/)
+  require.NoError(t, err)
 
-	time.Sleep(5 * time.Second) // wait for the processor to start
+  time.Sleep(5 * time.Second) // wait for the processor to start
 
-	// Write a PK: DS#{id}, SK: DSR#{name} item using the persistence object
-	// to simulate a new reported state for a manager (would be done in
-	// dynamodbpersistence package in real life)
-	reported := PersistenceObject{
-		Version:     1,
-		TimeStamp:   time.Now().Unix(),
-		ClientToken: "clientToken",
-		Reported: &TestModel{
-			TimeZone: tz,
-			Sensors: map[string]Sensor{
-				"temperature": {Value: 23.4, TimeStamp: time.Now()},
-			},
-		},
-	}
+  // Write a PK: DS#{id}, SK: DSR#{name} item using the persistence object
+  // to simulate a new reported state for a manager (would be done in
+  // dynamodbpersistence package in real life)
+  reported := PersistenceObject{
+    Version:     1,
+    TimeStamp:   time.Now().Unix(),
+    ClientToken: "clientToken",
+    Reported: &TestModel{
+      TimeZone: tz,
+      Sensors: map[string]Sensor{
+        "temperature": {Value: 23.4, TimeStamp: time.Now()},
+      },
+    },
+  }
 
-	item, err := attributevalue.MarshalMap(reported)
-	require.NoError(t, err)
+  item, err := attributevalue.MarshalMap(reported)
+  require.NoError(t, err)
 
-	item["PK"] = &ddbtypes.AttributeValueMemberS{Value: "DS#myDevice-123"}
-	item["SK"] = &ddbtypes.AttributeValueMemberS{Value: "DSR#homeHub"}
+  item["PK"] = &ddbtypes.AttributeValueMemberS{Value: "DS#myDevice-123"}
+  item["SK"] = &ddbtypes.AttributeValueMemberS{Value: "DSR#homeHub"}
 
-	wg.Add(1)
+  wg.Add(1)
 
-	_, err = tr.Client.PutItem(ctx, &dynamodb.PutItemInput{
-		TableName: aws.String(TestTableName),
-		Item:      item,
-	})
-	require.NoError(t, err)
+  _, err = tr.Client.PutItem(ctx, &dynamodb.PutItemInput{
+    TableName: aws.String(TestTableName),
+    Item:      item,
+  })
+  require.NoError(t, err)
 
-	wg.Wait() // wait for the processor to finish
+  wg.Wait() // wait for the processor to finish
 
-	require.NoError(t, pcError)
-	require.Nil(t, oldImage)
-	require.NotNil(t, newImage)
-	assert.Equal(t, DynamoDbEventTypeInsert, newImage.EventType())
-	assert.Len(t, res, 1)
+  require.NoError(t, pcError)
+  require.Nil(t, oldImage)
+  require.NotNil(t, newImage)
+  assert.Equal(t, DynamoDbEventTypeInsert, newImage.EventType())
+  assert.Len(t, res, 1)
 }
 ----
 
