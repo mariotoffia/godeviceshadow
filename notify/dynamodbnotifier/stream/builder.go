@@ -76,6 +76,19 @@ func (b *StreamBuilder) WithStartDone(cb StreamPollerDoneCallback) *StreamBuilde
 	return b
 }
 
+// WithPollErrorCallback will be called every time an error did occur during polling in the `Start` function.
+//
+// When the function returns an error, the `Start` function will stop and return that error.
+func (b *StreamBuilder) WithPollErrorCallback(cb PollErrorCallback) *StreamBuilder {
+	b.opts.PollErrorCallback = cb
+	return b
+}
+
+func (b *StreamBuilder) LogPollErrors() *StreamBuilder {
+	b.opts.LogPollErrors = true
+	return b
+}
+
 func (b *StreamBuilder) Build() (*DynamoDBStream, error) {
 	return NewDynamoDBStream(b.table, b.opts)
 }

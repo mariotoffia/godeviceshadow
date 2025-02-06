@@ -21,6 +21,10 @@ type StreamPollerCallback func(ctx context.Context, event events.DynamoDBEvent) 
 // StreamPollerDoneCallback is called when the poll loop in `Start` is done.
 type StreamPollerDoneCallback func(ctx context.Context, err error)
 
+// PollErrorCallback is invoked when an error did occur during polling. If the callback
+// returns an error, it will exit the poll loop with that error.
+type PollErrorCallback func(ctx context.Context, err error) error
+
 type DynamoDBStream struct {
 	// client is the DynamoDB client to use.
 	client *dynamodb.Client
@@ -45,6 +49,10 @@ type DynamoDBStream struct {
 	startDone StreamPollerDoneCallback
 	// shards keeps track on shards.
 	shards *Shards
+	// logPollErrors will log poll errors if set to `true`.
+	logPollErrors bool
+	// pollErrorCallback is invoked when an error did occur during polling.
+	pollErrorCallback PollErrorCallback
 }
 
 type DynamoDBStreamOptions struct {
@@ -66,6 +74,10 @@ type DynamoDBStreamOptions struct {
 	Callback StreamPollerCallback
 	// StartDone is called when the `Start` function has finished processing.
 	StartDone StreamPollerDoneCallback
+	// PollErrorCallback is invoked when an error did occur during polling.
+	PollErrorCallback PollErrorCallback
+	// LogPollErrors will log poll errors if set to `true`. Default is `false`.
+	LogPollErrors bool
 }
 
 func NewDynamoDBStream(table string, opts ...DynamoDBStreamOptions) (*DynamoDBStream, error) {
@@ -113,14 +125,16 @@ func NewDynamoDBStream(table string, opts ...DynamoDBStreamOptions) (*DynamoDBSt
 	}
 
 	ds := &DynamoDBStream{
-		client:        opt.Client,
-		streamsClient: opt.StreamsClient,
-		table:         table,
-		iteratorType:  opt.IteratorType,
-		restoreState:  opt.RestoreState,
-		maxWaitTime:   opt.MaxWaitTime,
-		callback:      opt.Callback,
-		startDone:     opt.StartDone,
+		client:            opt.Client,
+		streamsClient:     opt.StreamsClient,
+		table:             table,
+		iteratorType:      opt.IteratorType,
+		restoreState:      opt.RestoreState,
+		maxWaitTime:       opt.MaxWaitTime,
+		callback:          opt.Callback,
+		startDone:         opt.StartDone,
+		pollErrorCallback: opt.PollErrorCallback,
+		logPollErrors:     opt.LogPollErrors,
 	}
 
 	ctx := context.Background()
@@ -211,14 +225,22 @@ func (s *DynamoDBStream) Start(ctx context.Context, async bool) error {
 					err = fmt.Errorf("error polling stream: %w", err)
 				} else if len(evt.Records) > 0 {
 					if err = cb(ctx, evt); err != nil {
-						_ = fmt.Errorf("error handling event on shard %s: %w", streamID, err)
+						err = fmt.Errorf("error handling event on shard %s: %w", streamID, err)
 					} else {
 						s.Commit(streamID)
 					}
 				}
 
 				if err != nil {
-					return err
+					if s.logPollErrors {
+						fmt.Println(err)
+					}
+
+					if s.pollErrorCallback != nil {
+						if err = s.pollErrorCallback(ctx, err); err != nil {
+							return err
+						}
+					}
 				}
 
 				time.Sleep(5 * time.Second)
