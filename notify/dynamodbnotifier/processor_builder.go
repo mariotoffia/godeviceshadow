@@ -87,7 +87,7 @@ func (b *ProcessorBuilder) WithDesireMergeLogger(logger ...model.CreatableMergeL
 	return b
 }
 
-func (b *ProcessorBuilder) Build() (*Processor, error) {
+func (b *ProcessorBuilder) Build(ctx context.Context) (*Processor, error) {
 	// Add default loggers if not already added.
 	if loggerutils.FindCreatableMerge[*changelogger.ChangeMergeLogger](b.reportedLoggers) == nil {
 		b.reportedLoggers = append(b.reportedLoggers, changelogger.New())
@@ -121,7 +121,7 @@ func (b *ProcessorBuilder) Build() (*Processor, error) {
 			b.sb.WithCallback(p.HandleRequest)
 		}
 
-		if stream, err := b.sb.Build(); err != nil {
+		if stream, err := b.sb.Build(ctx); err != nil {
 			return nil, err
 		} else {
 			p.stream = stream

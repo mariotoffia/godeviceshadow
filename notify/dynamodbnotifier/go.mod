@@ -20,9 +20,6 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.39.5
 )
 
-// Test dependencies use 'go test -tags=integration ./...' to run integration tests
-require github.com/testcontainers/testcontainers-go v0.35.0
-
 
 require (
 	github.com/aws/aws-sdk-go-v2/credentials v1.17.59 // indirect

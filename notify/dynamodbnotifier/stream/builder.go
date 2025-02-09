@@ -85,6 +85,6 @@ func (b *StreamBuilder) LogPollErrors() *StreamBuilder {
 	return b
 }
 
-func (b *StreamBuilder) Build() (*DynamoDBStream, error) {
-	return NewDynamoDBStream(b.table, b.opts)
+func (b *StreamBuilder) Build(ctx context.Context) (*DynamoDBStream, error) {
+	return NewDynamoDBStream(ctx, b.table, b.opts)
 }

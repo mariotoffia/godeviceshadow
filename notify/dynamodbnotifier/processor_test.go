@@ -47,10 +47,12 @@ func (sp *Sensor) GetValue() any {
 
 func TestReceiveOneEvent(t *testing.T) {
 	// DynamoDB test utility
-	tr := dynamodbutils.NewTestTableResource(context.Background(), TestTableName)
-	defer tr.Dispose(context.Background(), dynamodbutils.DisposeOpts{DeleteItems: true})
+	l, err := dynamodbutils.StartLocalDynamoDB(context.Background(), TestTableName)
+	require.NoError(t, err)
 
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer l.Close()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	defer cancel()
 
 	var (
@@ -77,7 +79,9 @@ func TestReceiveOneEvent(t *testing.T) {
 		WithStreamBuilder(
 			stream.NewStreamBuilder().
 				WithTable(TestTableName).
-				UseClient(tr.Client).
+				// IMPORTANT: use the local dynamodb client
+				UseClient(l.Client).
+				UseStreamClient(l.StreamClient).
 				WithShardIteratorType(streamTypes.ShardIteratorTypeLatest),
 		).
 		WithCallbackProcessorCallback().
@@ -115,7 +119,7 @@ func TestReceiveOneEvent(t *testing.T) {
 			).
 			Build().
 			Build()).
-		Build()
+		Build(context.Background())
 
 	require.NoError(t, err)
 
@@ -147,10 +151,11 @@ func TestReceiveOneEvent(t *testing.T) {
 
 	wg.Add(1)
 
-	_, err = tr.Client.PutItem(ctx, &dynamodb.PutItemInput{
+	_, err = l.Client.PutItem(ctx, &dynamodb.PutItemInput{
 		TableName: aws.String(TestTableName),
 		Item:      item,
 	})
+
 	require.NoError(t, err)
 
 	wg.Wait() // wait for the processor to finish

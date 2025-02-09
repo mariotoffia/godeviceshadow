@@ -28,17 +28,25 @@ func NewTestTableResource(ctx context.Context, table string) *TestTableResource 
 		panic(fmt.Sprintf("failed to load AWS config: %v", err))
 	}
 
+	if tr, err := NewTestTableResourceWithClient(ctx, table, dynamodb.NewFromConfig(cfg)); err != nil {
+		panic(err)
+	} else {
+		return tr
+	}
+}
+
+func NewTestTableResourceWithClient(ctx context.Context, table string, client *dynamodb.Client) (*TestTableResource, error) {
 	r := &TestTableResource{
 		Table:  table,
-		Client: dynamodb.NewFromConfig(cfg),
+		Client: client,
 	}
 
 	// Create table if it doesn't exist, then wait for ACTIVE.
 	if err := r.createTableIfNotExists(ctx); err != nil {
-		panic(fmt.Sprintf("failed to create or verify table %q: %v", table, err))
+		return nil, fmt.Errorf("failed to create or verify table %q: %v", table, err)
 	}
 
-	return r
+	return r, nil
 }
 
 // createTableIfNotExists checks if the table exists, creates it if needed,

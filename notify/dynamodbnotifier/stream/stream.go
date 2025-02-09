@@ -72,7 +72,7 @@ type DynamoDBStreamOptions struct {
 	LogPollErrors bool
 }
 
-func NewDynamoDBStream(table string, opts ...DynamoDBStreamOptions) (*DynamoDBStream, error) {
+func NewDynamoDBStream(ctx context.Context, table string, opts ...DynamoDBStreamOptions) (*DynamoDBStream, error) {
 	if table == "" {
 		return nil, fmt.Errorf("table name cannot be empty")
 	}
@@ -128,7 +128,15 @@ func NewDynamoDBStream(table string, opts ...DynamoDBStreamOptions) (*DynamoDBSt
 		logPollErrors:     opt.LogPollErrors,
 	}
 
-	ctx := context.Background()
+	enabled, err := ds.EnableStream(ctx)
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to enable stream: %w", err)
+	}
+
+	if !enabled {
+		return nil, fmt.Errorf("stream is not enabled")
+	}
 
 	arn, err := ds.getStreamArn(ctx)
 	if err != nil {
@@ -172,16 +180,6 @@ func (s *DynamoDBStream) Start(ctx context.Context, async bool) error {
 
 	if cb == nil {
 		return fmt.Errorf("no callback function set")
-	}
-
-	enabled, err := s.EnableStream(ctx)
-
-	if err != nil {
-		return fmt.Errorf("failed to enable stream: %w", err)
-	}
-
-	if !enabled {
-		return fmt.Errorf("stream is not enabled")
 	}
 
 	poll := func() error {
