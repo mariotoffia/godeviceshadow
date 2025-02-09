@@ -6,6 +6,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodbstreams"
+
 	streamTypes "github.com/aws/aws-sdk-go-v2/service/dynamodbstreams/types"
 )
 
@@ -45,11 +46,6 @@ func (b *StreamBuilder) WithRegion(region string) *StreamBuilder {
 
 func (b *StreamBuilder) WithShardIteratorType(t streamTypes.ShardIteratorType) *StreamBuilder {
 	b.opts.IteratorType = t
-	return b
-}
-
-func (b *StreamBuilder) RestoreStateWhenClose() *StreamBuilder {
-	b.opts.RestoreState = true
 	return b
 }
 

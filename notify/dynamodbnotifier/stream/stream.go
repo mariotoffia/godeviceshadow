@@ -32,11 +32,6 @@ type DynamoDBStream struct {
 	streamsClient *dynamodbstreams.Client
 	// table is the DynamoDB table name.
 	table string
-	// wasStreamEnabled is true if the stream was enabled by this instance.
-	wasStreamEnabled bool
-	// restoreState will make sure to restore the stream state when done. If
-	// set to false, it will not.
-	restoreState bool
 	// maxWaitTime is the maximum time to wait for the stream to be enabled.
 	maxWaitTime time.Duration
 	// shardIterator is stored between polls.
@@ -63,9 +58,6 @@ type DynamoDBStreamOptions struct {
 	// If _Client_ is nil, the AWS region to use for the DynamoDB client. If not set,
 	// it will use the profile default.
 	Region string
-	// RestoreState will make sure to restore the stream state when done. If set to false,
-	// it will not. Default is `false`.
-	RestoreState bool
 	// MaxWaitTime is the maximum time to wait for the stream to be enabled. Default is 2 minutes.
 	MaxWaitTime time.Duration
 	// IteratorType is which iterator type to start polling for records. Default is `LATEST`.
@@ -129,7 +121,6 @@ func NewDynamoDBStream(table string, opts ...DynamoDBStreamOptions) (*DynamoDBSt
 		streamsClient:     opt.StreamsClient,
 		table:             table,
 		iteratorType:      opt.IteratorType,
-		restoreState:      opt.RestoreState,
 		maxWaitTime:       opt.MaxWaitTime,
 		callback:          opt.Callback,
 		startDone:         opt.StartDone,
@@ -153,18 +144,15 @@ func NewDynamoDBStream(table string, opts ...DynamoDBStreamOptions) (*DynamoDBSt
 	return ds, nil
 }
 
-// Close will release the stream if _restoreState_ is set to `true` and the stream was enabled by this instance.
-//
+// Close will _release_ the stream if set to `true`. That is set the stream to disabled.
 // This instance shall *not* be used after this has been executed.
-func (s *DynamoDBStream) Close(ctx context.Context) error {
+func (s *DynamoDBStream) Close(ctx context.Context, release bool) error {
 	s.shardIterator = ""
 
-	if s.restoreState && s.wasStreamEnabled {
+	if release {
 		if err := s.ReleaseDbStream(ctx, true); err != nil {
 			return err
 		}
-
-		s.restoreState = false
 	}
 
 	return nil
@@ -204,7 +192,7 @@ func (s *DynamoDBStream) Start(ctx context.Context, async bool) error {
 		)
 
 		defer func() {
-			s.Close(ctx)
+			s.Close(ctx, false /*release*/)
 
 			if s.startDone != nil {
 				s.startDone(ctx, err)
@@ -285,8 +273,6 @@ func (s *DynamoDBStream) EnableStream(ctx context.Context) (bool, error) {
 	}
 
 	if enabled {
-		s.wasStreamEnabled = true
-
 		return true, nil // already enabled
 	}
 
