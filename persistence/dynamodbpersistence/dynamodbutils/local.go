@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"log"
 	"os/exec"
 	"strings"
 	"time"
@@ -87,6 +88,22 @@ func DynamoDbStreamClient(cfg aws.Config, endpoint string) *dynamodbstreams.Clie
 
 // StartDynamoDBLocal starts the DynamoDB local container and returns its container ID and endpoint.
 func StartDynamoDBLocal() (string, string, error) {
+	// Check for existing instances
+	existingContainers, err := listDynamoDBContainers()
+	if err != nil {
+		return "", "", fmt.Errorf("failed to list existing DynamoDB containers: %w", err)
+	}
+
+	// If more than one instance exists, stop all but one
+	if len(existingContainers) > 1 {
+		log.Printf("Multiple DynamoDB instances detected. Stopping extras...")
+		for i, id := range existingContainers {
+			if i > 0 { // Keep the first one, remove others
+				stopAndCleanupDynamoDBContainer(id)
+			}
+		}
+	}
+
 	// Run Docker command to start container
 	cmd := exec.Command("docker", "run", "-d", "-p", "8000:8000", "amazon/dynamodb-local")
 
@@ -94,7 +111,7 @@ func StartDynamoDBLocal() (string, string, error) {
 
 	cmd.Stdout = &out
 
-	err := cmd.Run()
+	err = cmd.Run()
 
 	if err != nil {
 		return "", "", fmt.Errorf("failed to start DynamoDB Local: %w", err)
@@ -119,5 +136,30 @@ func StopDynamoDBLocal(containerID string) error {
 		return fmt.Errorf("failed to stop DynamoDB Local: %w", err)
 	}
 
+	return nil
+}
+
+// listDynamoDBContainers returns the IDs of all running DynamoDB Local containers.
+func listDynamoDBContainers() ([]string, error) {
+	cmd := exec.Command("docker", "ps", "-q", "--filter", "ancestor=amazon/dynamodb-local")
+	var out bytes.Buffer
+	cmd.Stdout = &out
+	err := cmd.Run()
+	if err != nil {
+		return nil, fmt.Errorf("failed to list DynamoDB Local containers: %w", err)
+	}
+
+	ids := strings.Fields(out.String()) // Split by whitespace to get container IDs
+	return ids, nil
+}
+
+// stopAndCleanupDynamoDBContainer stops and removes a specific DynamoDB container and its volumes.
+func stopAndCleanupDynamoDBContainer(containerID string) error {
+	cmd := exec.Command("docker", "rm", "-f", "-v", containerID) // -v removes volumes
+	err := cmd.Run()
+	if err != nil {
+		return fmt.Errorf("failed to stop and remove DynamoDB Local: %w", err)
+	}
+	log.Printf("Stopped and removed DynamoDB container: %s", containerID)
 	return nil
 }
