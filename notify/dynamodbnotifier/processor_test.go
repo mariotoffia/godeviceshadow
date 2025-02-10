@@ -47,7 +47,9 @@ func (sp *Sensor) GetValue() any {
 
 func TestReceiveOneEvent(t *testing.T) {
 	// DynamoDB test utility
-	l, err := dynamodbutils.StartLocalDynamoDB(context.Background(), TestTableName)
+	l, err := dynamodbutils.StartLocalDynamoDB(context.Background(), TestTableName, dynamodbutils.StartLocalDynamoDbOptions{
+		Reuse: false,
+	})
 	require.NoError(t, err)
 
 	defer l.Close()
