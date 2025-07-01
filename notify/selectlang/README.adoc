@@ -2,85 +2,76 @@
 
 == Overview
 
-The selection is done in the following manner:
-* All below can be combined using: AND, OR, NOT, (, )
-* ID: id, name <- regexp match
-* Operation: report, desired, delete | all
-* Logger[n]:
-** merge/desire op: add,remove,update,no-change,acknowledge | all
-** merge/desire path <- regexp match
-** merge/desire [name], value <- operators: ==, !=, >, <, >=, <=, regexp match, before, after, HAS.
-** Supported value types: (float,int,uint, string, bool, time.Time)
+The selection language uses a SQL-like syntax for specifying selection criteria. The basic format is:
 
-The logger value name is optional and can only be applied to `model.ValueAndTimestamp.GetValue()` that returns a `map[string]any`.
-If no value name it is assumed that the value is a scalar value.
+```
+SELECT * FROM Notification WHERE <conditions>
+```
+
+Where conditions can include:
+* All conditions can be combined using: AND, OR, and parentheses for grouping
+* Object conditions: 
+  * obj.ID and obj.Name - can use equality (==) or regex matching (~=)
+  * obj.Operation - can match operation types using IN operator
+* Log conditions:
+  * log.Operation - can match log operation types using IN or == operators
+  * log.Path - can use regex matching (~=) 
+  * log.Value - can use various operators: ==, !=, >, <, >=, <=, ~= (regex), HAS
 
 The `HAS` operator can be used to check if a map value contains a specific key. For example, to check if a map value has a 'temp' key:
 `log.Value HAS 'temp'`
 
-Since there may be many logger entries in the expression it is possible to combine them with AND, OR and NOT. It is also possible
-use parenthesis to group expressions. Logger expressions always need a grouping since it is always a qualifier to operation + optional path
-and then the value expression. That means that all before the first _AND_ is a logger entry selection expression.
+Since there may be many logger entries in the expression it is possible to combine them with AND, OR. It is also possible
+to use parentheses to group expressions.
 
-Operator: regexp '/{regex expression}/' can only be applied to string value. The _before_, _after_ can only be used with `time.Time` values and expects
-a `time.RFC3339` formatted string.
-
-Example ID expressions:
+Example object conditions:
 ```
-(id: /myDevice-\d+/ AND name: 'myShadow')
+obj.ID ~= 'myDevice-\\d+' AND obj.Name == 'myShadow'
 ```
 
-The above example checks if the id and name matches the regexp _/myDevice-\d+/_ and the name is equal to _myShadow_.
+The above example checks if the obj.ID matches the regex pattern 'myDevice-\\d+' and the obj.Name equals 'myShadow'.
 
-
-Example ID and Operation expressions:
+Example object and operation conditions:
 ```
-(id: /myDevice-\d+/ AND operation: report,delete)
-```
-
-The above example checks if the id matches the regexp `/myDevice-\d+/` and the operation is either `report` or `delete`.
-
-Example Logger expressions:
-
-```
-(add,update:/^Sensors-.*-indoor$/ == 'temp' WHERE (value > 20 OR value < 10))
-```
-The above example checks the add, update operations if any path matches the regexp `^Sensors-.*-indoor$` and the value is a map that has
-"temp" as key and the value is either greater than 20 or less than 10.
-
-```
-(add,update:/^Sensors-.*-indoor$/ WHERE (value > 20 OR value < 10))
-```
-All add, update operations that has a path matching the regexp `^Sensors-.*-indoor$` and the value is either greater than 20 or less than 10.
-This requires the value to be a scalar value.
-
-```
-(add,update WHERE (value > 20 OR value < 10))
-```
-This captures all add, update operation and checks all scalars if they are greater than 20 or less than 10.
-
-```
-(add,update,acknowledge)
-```
-This captures all add, update, acknowledge operations.
-
-Combine all Examples:
-```
-(id: /myDevice-\d+/ AND operation: report,delete) AND (add,update:/^Sensors-.*-indoor$/ WHERE (value > 20 OR value < 10))
+obj.ID ~= 'myDevice-\\d+' AND obj.Operation IN 'report','delete'
 ```
 
+The above example checks if the obj.ID matches the regex pattern 'myDevice-\\d+' and the operation is either 'report' or 'delete'.
+
+Example log conditions:
 ```
-(id: /myDevice-\d+/ AND name: 'myShadow') AND (add,update:/^Sensors-.*-indoor$/ == 'temp' WHERE (value > 20 OR value < 10)) OR (add,update)
+log.Operation IN 'add','update' AND log.Path ~= '^Sensors-.*-indoor$' AND log.Value HAS 'temp' AND log.Value > 20
+```
+
+The above example checks for add or update operations on paths matching the regex '^Sensors-.*-indoor$', where the value has a 'temp' key and that value is greater than 20.
+
+Combined example:
+```
+SELECT * FROM Notification WHERE
+(obj.ID ~= 'myDevice-\\d+' AND obj.Operation IN 'report','delete')
+AND
+(log.Operation IN 'add','update' AND log.Path ~= '^Sensors-.*-indoor$' AND log.Value > 20)
+```
+
+More complex example:
+```
+SELECT * FROM Notification WHERE
+(obj.ID ~= 'myDevice-\\d+' AND obj.Name == 'myShadow')
+AND
+(
+    (log.Operation IN 'add','update' AND log.Path ~= '^Sensors-.*-indoor$' AND log.Value HAS 'temp' AND log.Value > 20)
+    OR
+    (log.Operation == 'acknowledge')
+)
 ```
 
 === Constraints & Bugs
 
-This is a *toy* _DSL_ and therefore improvement _PR_ are accepted gratefully.
+This is a newer version of the selection language that replaces the previous toy DSL.
 
 .Constraints Table
 [cols="3,5"]
 |===
 | Constraint                      | Description
-| No direct nested parenthesis    
-| It does not support e.g. `A OR \((B AND C) OR (Q AND R))` it has to have a _LHS_ value e.g. `A OR (B AND C) OR (Q AND R)`
+| Complex nested expressions      | While nested expressions are supported, extremely complex nested expressions might cause parsing issues
 |===
