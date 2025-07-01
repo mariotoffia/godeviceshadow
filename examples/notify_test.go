@@ -23,19 +23,24 @@ import (
 
 func TestNotificationWithDSL(t *testing.T) {
 	stmt := `
-		(
-			id: /myDevice-\d+/ AND 
-			name: 'homeHub' AND 
-			operation: report,desired
-		)
-		AND
-		(add,update:/^Sensors.indoor-\d+$/ == 'temp'  
-		WHERE (
-			value > 20 OR (value == /^re-\d+/ AND value != 'apa' OR (value > 99 AND value != /^bubben-\d+$/)))
-		)
-		OR 
-		(acknowledge)
-	`
+        SELECT * FROM Notification WHERE
+        (
+            obj.ID ~= 'myDevice-\d+' AND
+            obj.Name == 'homeHub' AND
+            obj.Operation IN ('report','desired')
+        )
+        AND
+        (
+            log.Operation IN ('add','update') AND
+            log.Path ~= '^Sensors.indoor-\d+$' AND
+            log.Value == 'temp' AND
+            (
+                log.Value > 20 OR (log.Value ~= '^re-\\d+' AND log.Value != 'apa' OR (log.Value > 99 AND log.Value != '^bubben-\\d+$'))
+            )
+        )
+        OR
+        (log.Operation == 'acknowledge')
+    `
 
 	sel, err := selectlang.ToSelection(stmt)
 	require.NoError(t, err)

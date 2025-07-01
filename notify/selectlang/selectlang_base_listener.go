@@ -20,128 +20,170 @@ func (s *BaseselectlangListener) EnterEveryRule(ctx antlr.ParserRuleContext) {}
 // ExitEveryRule is called when any rule is exited.
 func (s *BaseselectlangListener) ExitEveryRule(ctx antlr.ParserRuleContext) {}
 
-// EnterFilter is called when production filter is entered.
-func (s *BaseselectlangListener) EnterFilter(ctx *FilterContext) {}
+// EnterSelectStatement is called when production SelectStatement is entered.
+func (s *BaseselectlangListener) EnterSelectStatement(ctx *SelectStatementContext) {}
 
-// ExitFilter is called when production filter is exited.
-func (s *BaseselectlangListener) ExitFilter(ctx *FilterContext) {}
+// ExitSelectStatement is called when production SelectStatement is exited.
+func (s *BaseselectlangListener) ExitSelectStatement(ctx *SelectStatementContext) {}
 
-// EnterExpression is called when production expression is entered.
-func (s *BaseselectlangListener) EnterExpression(ctx *ExpressionContext) {}
+// EnterAllColumns is called when production AllColumns is entered.
+func (s *BaseselectlangListener) EnterAllColumns(ctx *AllColumnsContext) {}
 
-// ExitExpression is called when production expression is exited.
-func (s *BaseselectlangListener) ExitExpression(ctx *ExpressionContext) {}
+// ExitAllColumns is called when production AllColumns is exited.
+func (s *BaseselectlangListener) ExitAllColumns(ctx *AllColumnsContext) {}
 
-// EnterPrimaryExpr is called when production primaryExpr is entered.
-func (s *BaseselectlangListener) EnterPrimaryExpr(ctx *PrimaryExprContext) {}
+// EnterStreamName is called when production StreamName is entered.
+func (s *BaseselectlangListener) EnterStreamName(ctx *StreamNameContext) {}
 
-// ExitPrimaryExpr is called when production primaryExpr is exited.
-func (s *BaseselectlangListener) ExitPrimaryExpr(ctx *PrimaryExprContext) {}
+// ExitStreamName is called when production StreamName is exited.
+func (s *BaseselectlangListener) ExitStreamName(ctx *StreamNameContext) {}
 
-// EnterIdExpr is called when production idExpr is entered.
-func (s *BaseselectlangListener) EnterIdExpr(ctx *IdExprContext) {}
+// EnterWhereClause is called when production WhereClause is entered.
+func (s *BaseselectlangListener) EnterWhereClause(ctx *WhereClauseContext) {}
 
-// ExitIdExpr is called when production idExpr is exited.
-func (s *BaseselectlangListener) ExitIdExpr(ctx *IdExprContext) {}
+// ExitWhereClause is called when production WhereClause is exited.
+func (s *BaseselectlangListener) ExitWhereClause(ctx *WhereClauseContext) {}
 
-// EnterNameExpr is called when production nameExpr is entered.
-func (s *BaseselectlangListener) EnterNameExpr(ctx *NameExprContext) {}
+// EnterAndToExpression is called when production AndToExpression is entered.
+func (s *BaseselectlangListener) EnterAndToExpression(ctx *AndToExpressionContext) {}
 
-// ExitNameExpr is called when production nameExpr is exited.
-func (s *BaseselectlangListener) ExitNameExpr(ctx *NameExprContext) {}
+// ExitAndToExpression is called when production AndToExpression is exited.
+func (s *BaseselectlangListener) ExitAndToExpression(ctx *AndToExpressionContext) {}
 
-// EnterOperationExpr is called when production operationExpr is entered.
-func (s *BaseselectlangListener) EnterOperationExpr(ctx *OperationExprContext) {}
+// EnterOrExpression is called when production OrExpression is entered.
+func (s *BaseselectlangListener) EnterOrExpression(ctx *OrExpressionContext) {}
 
-// ExitOperationExpr is called when production operationExpr is exited.
-func (s *BaseselectlangListener) ExitOperationExpr(ctx *OperationExprContext) {}
+// ExitOrExpression is called when production OrExpression is exited.
+func (s *BaseselectlangListener) ExitOrExpression(ctx *OrExpressionContext) {}
 
-// EnterOperations is called when production operations is entered.
-func (s *BaseselectlangListener) EnterOperations(ctx *OperationsContext) {}
+// EnterAndExpression is called when production AndExpression is entered.
+func (s *BaseselectlangListener) EnterAndExpression(ctx *AndExpressionContext) {}
 
-// ExitOperations is called when production operations is exited.
-func (s *BaseselectlangListener) ExitOperations(ctx *OperationsContext) {}
+// ExitAndExpression is called when production AndExpression is exited.
+func (s *BaseselectlangListener) ExitAndExpression(ctx *AndExpressionContext) {}
 
-// EnterLoggerExpr is called when production loggerExpr is entered.
-func (s *BaseselectlangListener) EnterLoggerExpr(ctx *LoggerExprContext) {}
+// EnterPrimaryExpression is called when production PrimaryExpression is entered.
+func (s *BaseselectlangListener) EnterPrimaryExpression(ctx *PrimaryExpressionContext) {}
 
-// ExitLoggerExpr is called when production loggerExpr is exited.
-func (s *BaseselectlangListener) ExitLoggerExpr(ctx *LoggerExprContext) {}
+// ExitPrimaryExpression is called when production PrimaryExpression is exited.
+func (s *BaseselectlangListener) ExitPrimaryExpression(ctx *PrimaryExpressionContext) {}
 
-// EnterMapVarExpr is called when production mapVarExpr is entered.
-func (s *BaseselectlangListener) EnterMapVarExpr(ctx *MapVarExprContext) {}
+// EnterParenExpression is called when production ParenExpression is entered.
+func (s *BaseselectlangListener) EnterParenExpression(ctx *ParenExpressionContext) {}
 
-// ExitMapVarExpr is called when production mapVarExpr is exited.
-func (s *BaseselectlangListener) ExitMapVarExpr(ctx *MapVarExprContext) {}
+// ExitParenExpression is called when production ParenExpression is exited.
+func (s *BaseselectlangListener) ExitParenExpression(ctx *ParenExpressionContext) {}
 
-// EnterLoggerOp is called when production loggerOp is entered.
-func (s *BaseselectlangListener) EnterLoggerOp(ctx *LoggerOpContext) {}
+// EnterPredicateExpression is called when production PredicateExpression is entered.
+func (s *BaseselectlangListener) EnterPredicateExpression(ctx *PredicateExpressionContext) {}
 
-// ExitLoggerOp is called when production loggerOp is exited.
-func (s *BaseselectlangListener) ExitLoggerOp(ctx *LoggerOpContext) {}
+// ExitPredicateExpression is called when production PredicateExpression is exited.
+func (s *BaseselectlangListener) ExitPredicateExpression(ctx *PredicateExpressionContext) {}
 
-// EnterLoggerConstraints is called when production loggerConstraints is entered.
-func (s *BaseselectlangListener) EnterLoggerConstraints(ctx *LoggerConstraintsContext) {}
+// EnterComparisonPredicate is called when production ComparisonPredicate is entered.
+func (s *BaseselectlangListener) EnterComparisonPredicate(ctx *ComparisonPredicateContext) {}
 
-// ExitLoggerConstraints is called when production loggerConstraints is exited.
-func (s *BaseselectlangListener) ExitLoggerConstraints(ctx *LoggerConstraintsContext) {}
+// ExitComparisonPredicate is called when production ComparisonPredicate is exited.
+func (s *BaseselectlangListener) ExitComparisonPredicate(ctx *ComparisonPredicateContext) {}
 
-// EnterValueComparison is called when production valueComparison is entered.
-func (s *BaseselectlangListener) EnterValueComparison(ctx *ValueComparisonContext) {}
+// EnterRegexPredicate is called when production RegexPredicate is entered.
+func (s *BaseselectlangListener) EnterRegexPredicate(ctx *RegexPredicateContext) {}
 
-// ExitValueComparison is called when production valueComparison is exited.
-func (s *BaseselectlangListener) ExitValueComparison(ctx *ValueComparisonContext) {}
+// ExitRegexPredicate is called when production RegexPredicate is exited.
+func (s *BaseselectlangListener) ExitRegexPredicate(ctx *RegexPredicateContext) {}
 
-// EnterValueCondition is called when production valueCondition is entered.
-func (s *BaseselectlangListener) EnterValueCondition(ctx *ValueConditionContext) {}
+// EnterInPredicate is called when production InPredicate is entered.
+func (s *BaseselectlangListener) EnterInPredicate(ctx *InPredicateContext) {}
 
-// ExitValueCondition is called when production valueCondition is exited.
-func (s *BaseselectlangListener) ExitValueCondition(ctx *ValueConditionContext) {}
+// ExitInPredicate is called when production InPredicate is exited.
+func (s *BaseselectlangListener) ExitInPredicate(ctx *InPredicateContext) {}
 
-// EnterValueFactor is called when production valueFactor is entered.
-func (s *BaseselectlangListener) EnterValueFactor(ctx *ValueFactorContext) {}
+// EnterValueList is called when production ValueList is entered.
+func (s *BaseselectlangListener) EnterValueList(ctx *ValueListContext) {}
 
-// ExitValueFactor is called when production valueFactor is exited.
-func (s *BaseselectlangListener) ExitValueFactor(ctx *ValueFactorContext) {}
+// ExitValueList is called when production ValueList is exited.
+func (s *BaseselectlangListener) ExitValueList(ctx *ValueListContext) {}
 
-// EnterCompareOp is called when production compareOp is entered.
-func (s *BaseselectlangListener) EnterCompareOp(ctx *CompareOpContext) {}
+// EnterObjField is called when production ObjField is entered.
+func (s *BaseselectlangListener) EnterObjField(ctx *ObjFieldContext) {}
 
-// ExitCompareOp is called when production compareOp is exited.
-func (s *BaseselectlangListener) ExitCompareOp(ctx *CompareOpContext) {}
+// ExitObjField is called when production ObjField is exited.
+func (s *BaseselectlangListener) ExitObjField(ctx *ObjFieldContext) {}
 
-// EnterNumericLiteral is called when production NumericLiteral is entered.
-func (s *BaseselectlangListener) EnterNumericLiteral(ctx *NumericLiteralContext) {}
+// EnterLogField is called when production LogField is entered.
+func (s *BaseselectlangListener) EnterLogField(ctx *LogFieldContext) {}
 
-// ExitNumericLiteral is called when production NumericLiteral is exited.
-func (s *BaseselectlangListener) ExitNumericLiteral(ctx *NumericLiteralContext) {}
+// ExitLogField is called when production LogField is exited.
+func (s *BaseselectlangListener) ExitLogField(ctx *LogFieldContext) {}
 
-// EnterStringLiteral is called when production StringLiteral is entered.
-func (s *BaseselectlangListener) EnterStringLiteral(ctx *StringLiteralContext) {}
+// EnterObjFieldAccess is called when production ObjFieldAccess is entered.
+func (s *BaseselectlangListener) EnterObjFieldAccess(ctx *ObjFieldAccessContext) {}
 
-// ExitStringLiteral is called when production StringLiteral is exited.
-func (s *BaseselectlangListener) ExitStringLiteral(ctx *StringLiteralContext) {}
+// ExitObjFieldAccess is called when production ObjFieldAccess is exited.
+func (s *BaseselectlangListener) ExitObjFieldAccess(ctx *ObjFieldAccessContext) {}
 
-// EnterTimeLiteral is called when production TimeLiteral is entered.
-func (s *BaseselectlangListener) EnterTimeLiteral(ctx *TimeLiteralContext) {}
+// EnterLogFieldAccess is called when production LogFieldAccess is entered.
+func (s *BaseselectlangListener) EnterLogFieldAccess(ctx *LogFieldAccessContext) {}
 
-// ExitTimeLiteral is called when production TimeLiteral is exited.
-func (s *BaseselectlangListener) ExitTimeLiteral(ctx *TimeLiteralContext) {}
+// ExitLogFieldAccess is called when production LogFieldAccess is exited.
+func (s *BaseselectlangListener) ExitLogFieldAccess(ctx *LogFieldAccessContext) {}
 
-// EnterRegexLiteral is called when production RegexLiteral is entered.
-func (s *BaseselectlangListener) EnterRegexLiteral(ctx *RegexLiteralContext) {}
+// EnterNumberValue is called when production NumberValue is entered.
+func (s *BaseselectlangListener) EnterNumberValue(ctx *NumberValueContext) {}
 
-// ExitRegexLiteral is called when production RegexLiteral is exited.
-func (s *BaseselectlangListener) ExitRegexLiteral(ctx *RegexLiteralContext) {}
+// ExitNumberValue is called when production NumberValue is exited.
+func (s *BaseselectlangListener) ExitNumberValue(ctx *NumberValueContext) {}
 
-// EnterRegexOrString is called when production regexOrString is entered.
-func (s *BaseselectlangListener) EnterRegexOrString(ctx *RegexOrStringContext) {}
+// EnterStringValue is called when production StringValue is entered.
+func (s *BaseselectlangListener) EnterStringValue(ctx *StringValueContext) {}
 
-// ExitRegexOrString is called when production regexOrString is exited.
-func (s *BaseselectlangListener) ExitRegexOrString(ctx *RegexOrStringContext) {}
+// ExitStringValue is called when production StringValue is exited.
+func (s *BaseselectlangListener) ExitStringValue(ctx *StringValueContext) {}
 
-// EnterRegex is called when production regex is entered.
-func (s *BaseselectlangListener) EnterRegex(ctx *RegexContext) {}
+// EnterEqualsOp is called when production EqualsOp is entered.
+func (s *BaseselectlangListener) EnterEqualsOp(ctx *EqualsOpContext) {}
 
-// ExitRegex is called when production regex is exited.
-func (s *BaseselectlangListener) ExitRegex(ctx *RegexContext) {}
+// ExitEqualsOp is called when production EqualsOp is exited.
+func (s *BaseselectlangListener) ExitEqualsOp(ctx *EqualsOpContext) {}
+
+// EnterNotEqualsOp is called when production NotEqualsOp is entered.
+func (s *BaseselectlangListener) EnterNotEqualsOp(ctx *NotEqualsOpContext) {}
+
+// ExitNotEqualsOp is called when production NotEqualsOp is exited.
+func (s *BaseselectlangListener) ExitNotEqualsOp(ctx *NotEqualsOpContext) {}
+
+// EnterGreaterThanOp is called when production GreaterThanOp is entered.
+func (s *BaseselectlangListener) EnterGreaterThanOp(ctx *GreaterThanOpContext) {}
+
+// ExitGreaterThanOp is called when production GreaterThanOp is exited.
+func (s *BaseselectlangListener) ExitGreaterThanOp(ctx *GreaterThanOpContext) {}
+
+// EnterLessThanOp is called when production LessThanOp is entered.
+func (s *BaseselectlangListener) EnterLessThanOp(ctx *LessThanOpContext) {}
+
+// ExitLessThanOp is called when production LessThanOp is exited.
+func (s *BaseselectlangListener) ExitLessThanOp(ctx *LessThanOpContext) {}
+
+// EnterGreaterOrEqualOp is called when production GreaterOrEqualOp is entered.
+func (s *BaseselectlangListener) EnterGreaterOrEqualOp(ctx *GreaterOrEqualOpContext) {}
+
+// ExitGreaterOrEqualOp is called when production GreaterOrEqualOp is exited.
+func (s *BaseselectlangListener) ExitGreaterOrEqualOp(ctx *GreaterOrEqualOpContext) {}
+
+// EnterLessOrEqualOp is called when production LessOrEqualOp is entered.
+func (s *BaseselectlangListener) EnterLessOrEqualOp(ctx *LessOrEqualOpContext) {}
+
+// ExitLessOrEqualOp is called when production LessOrEqualOp is exited.
+func (s *BaseselectlangListener) ExitLessOrEqualOp(ctx *LessOrEqualOpContext) {}
+
+// EnterRegexOp is called when production RegexOp is entered.
+func (s *BaseselectlangListener) EnterRegexOp(ctx *RegexOpContext) {}
+
+// ExitRegexOp is called when production RegexOp is exited.
+func (s *BaseselectlangListener) ExitRegexOp(ctx *RegexOpContext) {}
+
+// EnterRegexValue is called when production RegexValue is entered.
+func (s *BaseselectlangListener) EnterRegexValue(ctx *RegexValueContext) {}
+
+// ExitRegexValue is called when production RegexValue is exited.
+func (s *BaseselectlangListener) ExitRegexValue(ctx *RegexValueContext) {}

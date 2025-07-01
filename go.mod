@@ -2,8 +2,6 @@ module github.com/mariotoffia/godeviceshadow
 
 go 1.23.5
 
-toolchain go1.23.4
-
 require github.com/stretchr/testify v1.10.0
 
 require (
