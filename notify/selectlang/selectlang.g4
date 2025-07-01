@@ -1,173 +1,152 @@
 grammar selectlang;
 
-filter
-    : expression EOF
+// -------------------------------------------------------------------
+// Parser Rules
+// -------------------------------------------------------------------
+
+// A complete SELECT statement over a stream.
+select_stmt
+    : SELECT columns FROM stream where_clause? EOF   #SelectStatement
     ;
 
+// Currently, only "*" is supported for columns.
+columns
+    : STAR                                            #AllColumns
+    ;
+
+// The stream name (e.g. Notification).
+stream
+    : IDENTIFIER                                      #StreamName
+    ;
+
+// The optional WHERE clause.
+where_clause
+    : WHERE expression                                #WhereClause
+    ;
+
+// Boolean expressions with OR (lowest precedence).
 expression
-    : primaryExpr
-    | loggerExpr
-    | LPAREN expression RPAREN
-    | expression AND expression
-    | expression OR expression
+    : expression OR and_expr                          #OrExpression
+    | and_expr                                        #AndToExpression
     ;
 
-primaryExpr
-    : idExpr
-    | nameExpr
-    | operationExpr    
+// AND expressions (higher precedence).
+and_expr
+    : and_expr AND primary_expr                       #AndExpression
+    | primary_expr                                    #PrimaryExpression
     ;
 
-idExpr
-    : ID regexOrString
+// Primary expressions: either a parenthesized expression or a predicate.
+primary_expr
+    : LPAREN expression RPAREN                        #ParenExpression
+    | predicate                                       #PredicateExpression
     ;
 
-nameExpr
-    : NAME regexOrString
+// A predicate can be a comparison, regex match, or an IN predicate.
+predicate
+    : field comp_operator value                       #ComparisonPredicate
+    | field regex_operator regex_value                #RegexPredicate
+    | field IN value_list                             #InPredicate
     ;
 
-operationExpr
-    : OPERATION operations
+// A comma‐separated list of literal values.
+value_list
+    : value (COMMA value)*                            #ValueList
     ;
 
-operations
-    : ('report' | 'desired' | 'delete' | 'all') (',' ('report' | 'desired' | 'delete'))*
+// The field rule distinguishes between notification object fields and log fields.
+field
+    : obj_field                                       #ObjField
+    | log_field                                       #LogField
     ;
 
-loggerExpr
-    : loggerOp (':' regex)? mapVarExpr? loggerConstraints? 
+// The notification object "obj" (allowed properties: ID, Name, Operation).
+obj_field
+    : OBJ DOT (ID_FIELD | NAME_FIELD | OP_FIELD)      #ObjFieldAccess
     ;
 
-mapVarExpr
-    : EQ STRING
+// The log entry "log" (allowed properties: Operation, Path, Name, Value).
+log_field
+    : LOG DOT (OP_FIELD | PATH_FIELD | NAME_FIELD | VAL_FIELD)  #LogFieldAccess
     ;
 
-loggerOp
-    : ('add' | 'remove' | 'update' | 'acknowledge' | 'no-change' | 'all') 
-      (',' ('add' | 'remove' | 'update' | 'acknowledge' | 'no-change' | 'all'))*
+// A literal value: either a number or a string.
+value
+    : NUMBER                                          #NumberValue
+    | STRING                                          #StringValue
     ;
 
-loggerConstraints
-    : WHERE LPAREN valueComparison RPAREN
+// Comparison operators.
+comp_operator
+    : EQ                                              #EqualsOp
+    | NE                                              #NotEqualsOp
+    | GT                                              #GreaterThanOp
+    | LT                                              #LessThanOp
+    | GE                                              #GreaterOrEqualOp
+    | LE                                              #LessOrEqualOp
     ;
 
-valueComparison
-    : valueCondition ( OR valueCondition )*
+// The regex operator.
+regex_operator
+    : REGEX_OP                                        #RegexOp
     ;
 
-valueCondition
-    : valueFactor ( AND valueFactor )*
+// A regex value is provided as a string literal.
+regex_value
+    : STRING                                          #RegexValue
     ;
 
-valueFactor
-    :'value' compareOp constantOrRegex
-    | LPAREN valueComparison RPAREN
-    ;
+// -------------------------------------------------------------------
+// Lexer Rules
+// -------------------------------------------------------------------
 
-compareOp
-    : EQ | NE | GT | LT | GE | LE | BEFORE | AFTER
-    ;
+SELECT: 'SELECT';
+FROM: 'FROM';
+WHERE: 'WHERE';
+AND: 'AND';
+OR: 'OR';
+IN: 'IN';
+STAR: '*';
+DOT: '.';
 
-constantOrRegex
-    : NUMBER                               # NumericLiteral
-    | STRING                               # StringLiteral
-    | TIME                                 # TimeLiteral
-    | regex                                # RegexLiteral
-    ;
+EQ: '==';
+NE: '!=';
+GT: '>';
+LT: '<';
+GE: '>=';
+LE: '<=';
 
-regexOrString
-    : REGEX
-    | STRING
-    ;
+// The regex operator is represented by '~='.
+REGEX_OP: '~=';
 
-regex
-    : REGEX
-    ;
+// Parentheses and comma.
+LPAREN: '(';
+RPAREN: ')';
+COMMA: ',';
 
-WHERE:
-    'WHERE'
-    ;
+// ---
+// Fixed tokens for object fields. These must be defined before IDENTIFIER.
+// "obj" is the notification object.
+OBJ: 'obj';
+// "log" is a single value change entry.
+LOG: 'log';
 
-LPAREN
-    : '('
-    ;
+// Allowed properties for the notification object.
+ID_FIELD: 'ID';
+NAME_FIELD: 'Name';
+OP_FIELD: 'Operation';
 
-RPAREN
-    : ')'
-    ;
+// Allowed properties for the log entry.
+PATH_FIELD: 'Path';
+VAL_FIELD: 'Value';
 
-EQ
-    : '=='
-    ;
+// An identifier for stream names (e.g. "Notification"). This comes after fixed tokens.
+IDENTIFIER: [a-zA-Z_][a-zA-Z0-9_]*;
 
-NE
-    : '!='
-    ;
+// A number literal.
+NUMBER: [0-9]+ ('.' [0-9]+)?;
 
-GT
-    : '>'
-    ;
+// A string literal enclosed in single quotes (supports escapes).
+STRING: '\'' ( ~['\\] | '\\' . )* '\'';
 
-LT
-    : '<'
-    ;
-
-GE
-    : '>='
-    ;
-
-LE
-    : '<='
-    ;
-
-BEFORE
-    : 'before'
-    ;
-
-AFTER
-    : 'after'
-    ;
-
-ID
-    : 'id:'
-    ;
-
-AND:
-    'AND'
-    ;
-
-OR:
-    'OR'
-    ;
-
-NOT:
-    'NOT'
-    ;
-
-NAME
-    : 'name:'
-    ;
-
-OPERATION
-    : 'operation:'
-    ;
-
-NUMBER
-    : ('-')? [0-9]+ ('.' [0-9]+)?
-    ;
-
-STRING
-    : '\'' .*? '\''
-    ;
-
-TIME
-    : [0-9]{4} '-' [0-9]{2} '-' [0-9]{2} 'T' [0-9]{2} ':' [0-9]{2} ':' [0-9]{2} 'Z'
-    ;
-
-REGEX
-    : '/' .*? '/'
-    ;
-
-WS
-    : [ \t\r\n]+ -> skip
-    ;
+WS: [ \t\r\n]+ -> skip;
