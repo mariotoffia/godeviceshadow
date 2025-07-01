@@ -31,7 +31,6 @@ type predicateNode struct {
 	op     string
 	value  any
 	values []any
-	isKey  bool // Indicates if the value should be treated as a key in a map
 }
 
 func (p predicateNode) Eval(op notifiermodel.NotifierOperation) bool {
@@ -263,11 +262,35 @@ func evalAny(val any, p predicateNode) bool {
 		if str, ok := p.value.(string); ok {
 			return s == str
 		}
+
+		// Handle float comparisons for exact equality
+		if p.value != nil {
+			// Try to convert both to float for numeric comparison
+			valFloat, valOk := toFloat(val)
+			predFloat, predOk := toFloat(p.value)
+
+			if valOk && predOk {
+				// Use direct float comparison for equality
+				return valFloat == predFloat
+			}
+		}
 		return false
 
 	case "!=":
 		if str, ok := p.value.(string); ok {
 			return s != str
+		}
+
+		// Handle float comparisons for inequality
+		if p.value != nil {
+			// Try to convert both to float for numeric comparison
+			valFloat, valOk := toFloat(val)
+			predFloat, predOk := toFloat(p.value)
+
+			if valOk && predOk {
+				// Use direct float comparison for inequality
+				return valFloat != predFloat
+			}
 		}
 		return false
 
@@ -506,6 +529,18 @@ func ParseStatement(stmt string) (node, error) {
 	selectStmt, ok := tree.(*SelectStatementContext)
 	if !ok {
 		return nil, fmt.Errorf("invalid SELECT statement")
+	}
+
+	// Validate the table name is "Notification"
+	if streamCtx := selectStmt.Stream(); streamCtx != nil {
+		if streamNameCtx, ok := streamCtx.(*StreamNameContext); ok {
+			if streamNameCtx.IDENTIFIER() != nil {
+				tableName := streamNameCtx.IDENTIFIER().GetText()
+				if tableName != "Notification" {
+					return nil, fmt.Errorf("invalid table name: %s (expected 'Notification')", tableName)
+				}
+			}
+		}
 	}
 
 	// Check for WHERE clause
