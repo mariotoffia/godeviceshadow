@@ -46,6 +46,9 @@ type selectlangListener interface {
 	// EnterInPredicate is called when entering the InPredicate production.
 	EnterInPredicate(c *InPredicateContext)
 
+	// EnterHasPredicate is called when entering the HasPredicate production.
+	EnterHasPredicate(c *HasPredicateContext)
+
 	// EnterValueList is called when entering the ValueList production.
 	EnterValueList(c *ValueListContext)
 
@@ -129,6 +132,9 @@ type selectlangListener interface {
 
 	// ExitInPredicate is called when exiting the InPredicate production.
 	ExitInPredicate(c *InPredicateContext)
+
+	// ExitHasPredicate is called when exiting the HasPredicate production.
+	ExitHasPredicate(c *HasPredicateContext)
 
 	// ExitValueList is called when exiting the ValueList production.
 	ExitValueList(c *ValueListContext)

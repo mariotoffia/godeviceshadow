@@ -2,6 +2,7 @@ package examples
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 	"testing"
 	"time"
@@ -33,12 +34,12 @@ func TestNotificationWithDSL(t *testing.T) {
         (
             log.Operation IN 'add','update' AND
             log.Path ~= '^Sensors.indoor-\\d+$' AND
-            log.Value == 'temp' AND
+            log.Value HAS 'temp' AND
             (
                 log.Value > 20 OR (log.Value ~= '^re-\\d+' AND log.Value != 'apa' OR (log.Value > 99 AND log.Value != '^bubben-\\d+$'))
             )
         )
-        OR
+				OR
         (log.Operation == 'acknowledge')
     `
 
@@ -114,6 +115,28 @@ func TestNotificationWithDSL(t *testing.T) {
 			Desired:     res[0].DesiredModel,
 		},
 	)
+
+	// Print log information for debugging
+	fmt.Printf("Operation: %s\n", nResult[0].Operation.Operation)
+	fmt.Printf("ID: %s, Name: %s\n", nResult[0].Operation.ID.ID, nResult[0].Operation.ID.Name)
+
+	// Print managed logs
+	fmt.Println("Managed Logs:")
+	for op, logs := range chl.ManagedLog {
+		fmt.Printf("  Operation: %s\n", op)
+		for _, log := range logs {
+			fmt.Printf("    Path: %s, Value: %v\n", log.Path, log.NewValue.GetValue())
+		}
+	}
+
+	// Print plain logs
+	fmt.Println("Plain Logs:")
+	for op, logs := range chl.PlainLog {
+		fmt.Printf("  Operation: %s\n", op)
+		for _, log := range logs {
+			fmt.Printf("    Path: %s, Value: %v\n", log.Path, log.NewValue)
+		}
+	}
 
 	require.Len(t, nResult, 1)
 	assert.NoError(t, nResult[0].Error)

@@ -31,6 +31,7 @@ type predicateNode struct {
 	op     string
 	value  any
 	values []any
+	isKey  bool // Indicates if the value should be treated as a key in a map
 }
 
 func (p predicateNode) Eval(op notifiermodel.NotifierOperation) bool {
@@ -243,6 +244,18 @@ func toFloat(v any) (float64, bool) {
 }
 
 func evalAny(val any, p predicateNode) bool {
+	// Special handling for HAS operator to check for key existence
+	if p.op == "HAS" {
+		// Check if the value is a map and contains the specified key
+		if m, ok := val.(map[string]any); ok {
+			if keyStr, ok := p.value.(string); ok {
+				_, exists := m[keyStr]
+				return exists
+			}
+		}
+		return false
+	}
+
 	s := stringify(val)
 
 	switch p.op {
@@ -360,7 +373,8 @@ func buildNodeFromPrimary(ctx IPrimary_exprContext) node {
 func buildNodeFromPredicate(ctx IPredicateContext) node {
 	switch c := ctx.(type) {
 	case *ComparisonPredicateContext:
-		return predicateNode{field: fieldName(c.Field()), op: c.Comp_operator().GetText(), value: parseValue(c.Value())}
+		op := c.Comp_operator().GetText()
+		return predicateNode{field: fieldName(c.Field()), op: op, value: parseValue(c.Value())}
 	case *RegexPredicateContext:
 		if rv, ok := c.Regex_value().(*RegexValueContext); ok {
 			val := rv.STRING().GetText()
@@ -377,6 +391,8 @@ func buildNodeFromPredicate(ctx IPredicateContext) node {
 			}
 		}
 		return predicateNode{field: fieldName(c.Field()), op: "IN", values: vals}
+	case *HasPredicateContext:
+		return predicateNode{field: fieldName(c.Field()), op: "HAS", value: parseValue(c.Value())}
 	}
 
 	return nil
@@ -539,6 +555,11 @@ func validateFields(n node) error {
 
 		if !validFields[t.field] {
 			return fmt.Errorf("unknown field: %s", t.field)
+		}
+
+		// Special validation for HAS operator
+		if t.op == "HAS" && t.field != "log.Value" {
+			return fmt.Errorf("HAS operator can only be used with log.Value field")
 		}
 	}
 	return nil

@@ -9,11 +9,14 @@ The selection is done in the following manner:
 * Logger[n]:
 ** merge/desire op: add,remove,update,no-change,acknowledge | all
 ** merge/desire path <- regexp match
-** merge/desire [name], value <- operators: ==, !=, >, <, >=, <=, regexp match, before, after.
+** merge/desire [name], value <- operators: ==, !=, >, <, >=, <=, regexp match, before, after, HAS.
 ** Supported value types: (float,int,uint, string, bool, time.Time)
 
 The logger value name is optional and can only be applied to `model.ValueAndTimestamp.GetValue()` that returns a `map[string]any`.
 If no value name it is assumed that the value is a scalar value.
+
+The `HAS` operator can be used to check if a map value contains a specific key. For example, to check if a map value has a 'temp' key:
+`log.Value HAS 'temp'`
 
 Since there may be many logger entries in the expression it is possible to combine them with AND, OR and NOT. It is also possible
 use parenthesis to group expressions. Logger expressions always need a grouping since it is always a qualifier to operation + optional path

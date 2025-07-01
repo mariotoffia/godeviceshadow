@@ -98,6 +98,12 @@ func (s *BaseselectlangListener) EnterInPredicate(ctx *InPredicateContext) {}
 // ExitInPredicate is called when production InPredicate is exited.
 func (s *BaseselectlangListener) ExitInPredicate(ctx *InPredicateContext) {}
 
+// EnterHasPredicate is called when production HasPredicate is entered.
+func (s *BaseselectlangListener) EnterHasPredicate(ctx *HasPredicateContext) {}
+
+// ExitHasPredicate is called when production HasPredicate is exited.
+func (s *BaseselectlangListener) ExitHasPredicate(ctx *HasPredicateContext) {}
+
 // EnterValueList is called when production ValueList is entered.
 func (s *BaseselectlangListener) EnterValueList(ctx *ValueListContext) {}
 
