@@ -144,22 +144,22 @@ TIP: See the link:notify/selectlang/README.adoc[Selection Language Documentation
 ----
 SELECT * FROM Notification WHERE
     (
-        obj.ID ~= 'myDevice-\\d+' AND // <1>
+        obj.ID ~= 'myDevice-\\d+' AND <1>
         obj.Name == 'homeHub' AND 
         obj.Operation IN 'report','desired'
     )
     AND
     (
         log.Operation IN 'add','update' AND
-        log.Path ~= '^Sensors.indoor-\\d+$' AND // <2>
+        log.Path ~= '^Sensors.indoor-\\d+$' AND <2>
         log.Name == 'temp' AND
-        (   // <3>
+        (   <3>
             log.Value > 20 OR (log.Value ~= '^re-\\d+' AND log.Value != 'apa' OR 
             (log.Value > 99 AND log.Value ~!= '^bubben-\\d+$'))
         )
     )
     OR
-    (log.Operation == 'acknowledge') // <4>
+    (log.Operation == 'acknowledge') <4>
 ----
 <1> One or more primary expressions that matches the ID and which operation.
 <2> Zero or more log expressions that interacts with the values being handled
