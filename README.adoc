@@ -154,7 +154,8 @@ SELECT * FROM Notification WHERE
         log.Path ~= '^Sensors.indoor-\\d+$' AND // <2>
         log.Name == 'temp' AND
         (   // <3>
-            log.Value > 20 OR (log.Value ~= '^re-\\d+' AND log.Value != 'apa' OR (log.Value > 99 AND log.Value != '^bubben-\\d+$'))
+            log.Value > 20 OR (log.Value ~= '^re-\\d+' AND log.Value != 'apa' OR 
+            (log.Value > 99 AND log.Value ~!= '^bubben-\\d+$'))
         )
     )
     OR
