@@ -137,6 +137,8 @@ mgr := stdmgr.New(). // <1>
 
 It is then possible to notify using a notification manager. Then it is possible to define selection that will resolve to a target. Thus where to notify may be heavily customized. There is a *experimental* _DSL_ that can render the selectors and hence not needed to code those (even though they are super simple - just one function).
 
+TIP: See the link:notify/selectlang/README.adoc[Selection Language Documentation]
+
 .Example Notification Selection DSL
 [source,go]
 ----

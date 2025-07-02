@@ -8,70 +8,125 @@ The selection language uses a SQL-like syntax for specifying selection criteria.
 SELECT * FROM Notification WHERE <conditions>
 ```
 
-Where conditions can include:
-* All conditions can be combined using: AND, OR, and parentheses for grouping
-* Object conditions: 
-  * obj.ID and obj.Name - can use equality (==) or regex matching (~=)
-  * obj.Operation - can match operation types using IN operator
-* Log conditions:
-  * log.Operation - can match log operation types using IN or == operators
-  * log.Path - can use regex matching (~=) 
-  * log.Value - can use various operators: ==, !=, >, <, >=, <=, ~= (regex), HAS
+The selection language enables filtering notification events based on both object properties and log entries:
 
-The `HAS` operator can be used to check if a map value contains a specific key. For example, to check if a map value has a 'temp' key:
-`log.Value HAS 'temp'`
+* *Object properties* (`obj.*`) - Filter based on shadow device/object metadata
+* *Log properties* (`log.*`) - Filter based on log entry details including operations and paths
 
-Since there may be many logger entries in the expression it is possible to combine them with AND, OR. It is also possible
-to use parentheses to group expressions.
+=== Object and Log Properties
 
-Example object conditions:
+.Available Properties for Filtering
+[cols="2,2,4,4"]
+|===
+| Category | Property | Description | Example Usage
+
+| Object | `obj.ID` 
+| The unique identifier of the shadow device/object 
+| `obj.ID == 'device-123'`
+
+| Object | `obj.Name` 
+| The name of the shadow device/object 
+| `obj.Name == 'homeShadow'`
+
+| Object | `obj.Operation` 
+| The operation type performed on the shadow (report, desired, delete) 
+| `obj.Operation IN 'report', 'desired'`
+
+| Log | `log.Operation` 
+| The operation performed in the log entry (add, update, remove, acknowledge, no-change) 
+| `log.Operation IN 'add', 'update'`
+
+| Log | `log.Path` 
+| The path to the property changed in the log entry 
+| `log.Path ~= 'sensors/.*/indoor'`
+
+| Log | `log.Name` 
+| Alias for log.Path, kept for backward compatibility 
+| `log.Name == 'sensors/temperature/indoor'`
+
+| Log | `log.Value` 
+| The value associated with a log entry. Can be a scalar or a map 
+| `log.Value > 20` or `log.Value HAS 'temp'`
+|===
+
+=== Supported Operators
+
+* *Comparison operators:* `==` (equals), `!=` (not equals), `>` (greater than), `<` (less than), `>=` (greater than or equal), `<=` (less than or equal)
+* *Pattern matching:* `~=` (regex match) and `~!=` (regex not match)
+* *Collection operators:* `IN` (value in list), `HAS` (map key exists)
+* *Time operators:* `before`, `after` (for timestamp comparisons)
+* *Logical operators:* `AND`, `OR`, and parentheses for grouping
+
+=== Examples
+
+==== Object Property Examples
+
+.Filter by Device ID
+```sql
+SELECT * FROM Notification WHERE obj.ID == 'device-123'
 ```
-obj.ID ~= 'myDevice-\\d+' AND obj.Name == 'myShadow'
+
+.Filter by Device ID with Regex
+```sql
+SELECT * FROM Notification WHERE obj.ID ~= 'myDevice-\\d+'
 ```
 
-The above example checks if the obj.ID matches the regex pattern 'myDevice-\\d+' and the obj.Name equals 'myShadow'.
-
-Example object and operation conditions:
-```
-obj.ID ~= 'myDevice-\\d+' AND obj.Operation IN 'report','delete'
+.Filter by Object Name and Operation
+```sql
+SELECT * FROM Notification WHERE obj.Name == 'homeShadow' AND obj.Operation IN 'report', 'desired'
 ```
 
-The above example checks if the obj.ID matches the regex pattern 'myDevice-\\d+' and the operation is either 'report' or 'delete'.
+==== Log Property Examples
 
-Example log conditions:
-```
-log.Operation IN 'add','update' AND log.Path ~= '^Sensors-.*-indoor$' AND log.Value HAS 'temp' AND log.Value > 20
+.Filter by Log Operation
+```sql
+SELECT * FROM Notification WHERE log.Operation IN 'add', 'update'
 ```
 
-The above example checks for add or update operations on paths matching the regex '^Sensors-.*-indoor$', where the value has a 'temp' key and that value is greater than 20.
-
-Combined example:
+.Filter by Path with Regex
+```sql
+SELECT * FROM Notification WHERE log.Path ~= 'sensors/.*/indoor'
 ```
+
+.Filter by Value (Scalar)
+```sql
+SELECT * FROM Notification WHERE log.Path == 'sensors/temperature/indoor' AND log.Value > 20
+```
+
+.Filter by Value (Map)
+```sql
+SELECT * FROM Notification WHERE log.Path == 'sensors/temperature/indoor' AND log.Value HAS 'temp'
+```
+
+==== Combined Examples
+
+.Complex Combined Example
+```sql
 SELECT * FROM Notification WHERE
-(obj.ID ~= 'myDevice-\\d+' AND obj.Operation IN 'report','delete')
-AND
-(log.Operation IN 'add','update' AND log.Path ~= '^Sensors-.*-indoor$' AND log.Value > 20)
-```
-
-More complex example:
-```
-SELECT * FROM Notification WHERE
-(obj.ID ~= 'myDevice-\\d+' AND obj.Name == 'myShadow')
-AND
-(
-    (log.Operation IN 'add','update' AND log.Path ~= '^Sensors-.*-indoor$' AND log.Value HAS 'temp' AND log.Value > 20)
+  (obj.ID ~= 'myDevice-\\d+' AND obj.Name == 'homeShadow')
+  AND
+  (
+    (log.Operation IN 'add', 'update' AND log.Path ~= 'sensors/.*/indoor' AND log.Value > 20)
     OR
     (log.Operation == 'acknowledge')
-)
+  )
 ```
 
-=== Constraints & Bugs
+=== Implementation Details
 
-This is a newer version of the selection language that replaces the previous toy DSL.
+The selection language is implemented using ANTLR4 for parsing expressions. When evaluating a selection, the system:
+
+1. Parses the SQL-like expression into a selection tree
+2. Evaluates the selection against a `NotifierOperation` object
+3. Returns whether the operation matches the selection criteria
+
+=== Constraints & Limitations
+
+This is a pre-alpha _DSL_ - expect problems and limitations!
 
 .Constraints Table
 [cols="3,5"]
 |===
-| Constraint                      | Description
-| Complex nested expressions      | While nested expressions are supported, extremely complex nested expressions might cause parsing issues
+| Constraint | Description
+| Complex nested expressions | While nested expressions are supported, extremely complex nested expressions might cause parsing issues
 |===
