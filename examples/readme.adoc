@@ -16,7 +16,9 @@ This shows how to use and expect from the merge package.
 
 === Plain Merge
 
-This is the `merge.Merge` function that allows for merging two models together and have one or more loggers attached to the merge operation. Two modes
+This is the `merge.Merge` function that allows for merging two models together and have one or more loggers attac            log.Operation IN 'add','update' AND
+            log.Path ~= '^Sensors.indoor-\\d+$' AND
+            log.Name == 'temp' AND to the merge operation. Two modes
 of merge is possible, `merge.ServerIsMaster` and `merge.ClientIsMaster`. The first one is the default and does not allow for deletions, the latter
 allows for deletions.
 
@@ -499,18 +501,23 @@ There's a experimental `selectlang` package where the filter may be expressed in
 [source,go]
 ----
   stmt := `
-    (
-      id: /myDevice-\d+/ AND // <1>
-      name: 'homeHub' AND 
-      operation: report,desired
-    )
-    AND
-    (add,update:/^Sensors.indoor-\d+$/ == 'temp'  // <2>
-    WHERE ( // <3>
-      value > 20 OR (value == /^re-\d+/ AND value != 'apa' OR (value > 99 AND value != /^bubben-\d+$/)))
-    )
-    OR 
-    (acknowledge)
+        SELECT * FROM Notification WHERE
+        (
+            obj.ID ~= 'myDevice-\\d+' AND // <1>
+            obj.Name == 'homeHub' AND 
+            obj.Operation IN 'report','desired'
+        )
+        AND
+        (
+            log.Operation IN 'add','update' AND
+            log.Path ~= '^Sensors.indoor-\\d+$' AND // <2>
+            log.Name == 'temp' AND
+            (   // <3>
+                log.Value > 20 OR (log.Value ~= '^re-\\d+' AND log.Value != 'apa' OR (log.Value > 99 AND log.Value != '^bubben-\\d+$'))
+            )
+        )
+        OR
+        (log.Operation == 'acknowledge')
   `
 
   sel, err := selectlang.ToSelection(stmt) // <4>

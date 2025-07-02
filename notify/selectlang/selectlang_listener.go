@@ -7,129 +7,183 @@ import "github.com/antlr4-go/antlr/v4"
 type selectlangListener interface {
 	antlr.ParseTreeListener
 
-	// EnterFilter is called when entering the filter production.
-	EnterFilter(c *FilterContext)
+	// EnterSelectStatement is called when entering the SelectStatement production.
+	EnterSelectStatement(c *SelectStatementContext)
 
-	// EnterExpression is called when entering the expression production.
-	EnterExpression(c *ExpressionContext)
+	// EnterAllColumns is called when entering the AllColumns production.
+	EnterAllColumns(c *AllColumnsContext)
 
-	// EnterPrimaryExpr is called when entering the primaryExpr production.
-	EnterPrimaryExpr(c *PrimaryExprContext)
+	// EnterStreamName is called when entering the StreamName production.
+	EnterStreamName(c *StreamNameContext)
 
-	// EnterIdExpr is called when entering the idExpr production.
-	EnterIdExpr(c *IdExprContext)
+	// EnterWhereClause is called when entering the WhereClause production.
+	EnterWhereClause(c *WhereClauseContext)
 
-	// EnterNameExpr is called when entering the nameExpr production.
-	EnterNameExpr(c *NameExprContext)
+	// EnterAndToExpression is called when entering the AndToExpression production.
+	EnterAndToExpression(c *AndToExpressionContext)
 
-	// EnterOperationExpr is called when entering the operationExpr production.
-	EnterOperationExpr(c *OperationExprContext)
+	// EnterOrExpression is called when entering the OrExpression production.
+	EnterOrExpression(c *OrExpressionContext)
 
-	// EnterOperations is called when entering the operations production.
-	EnterOperations(c *OperationsContext)
+	// EnterAndExpression is called when entering the AndExpression production.
+	EnterAndExpression(c *AndExpressionContext)
 
-	// EnterLoggerExpr is called when entering the loggerExpr production.
-	EnterLoggerExpr(c *LoggerExprContext)
+	// EnterPrimaryExpression is called when entering the PrimaryExpression production.
+	EnterPrimaryExpression(c *PrimaryExpressionContext)
 
-	// EnterMapVarExpr is called when entering the mapVarExpr production.
-	EnterMapVarExpr(c *MapVarExprContext)
+	// EnterParenExpression is called when entering the ParenExpression production.
+	EnterParenExpression(c *ParenExpressionContext)
 
-	// EnterLoggerOp is called when entering the loggerOp production.
-	EnterLoggerOp(c *LoggerOpContext)
+	// EnterPredicateExpression is called when entering the PredicateExpression production.
+	EnterPredicateExpression(c *PredicateExpressionContext)
 
-	// EnterLoggerConstraints is called when entering the loggerConstraints production.
-	EnterLoggerConstraints(c *LoggerConstraintsContext)
+	// EnterComparisonPredicate is called when entering the ComparisonPredicate production.
+	EnterComparisonPredicate(c *ComparisonPredicateContext)
 
-	// EnterValueComparison is called when entering the valueComparison production.
-	EnterValueComparison(c *ValueComparisonContext)
+	// EnterRegexPredicate is called when entering the RegexPredicate production.
+	EnterRegexPredicate(c *RegexPredicateContext)
 
-	// EnterValueCondition is called when entering the valueCondition production.
-	EnterValueCondition(c *ValueConditionContext)
+	// EnterInPredicate is called when entering the InPredicate production.
+	EnterInPredicate(c *InPredicateContext)
 
-	// EnterValueFactor is called when entering the valueFactor production.
-	EnterValueFactor(c *ValueFactorContext)
+	// EnterHasPredicate is called when entering the HasPredicate production.
+	EnterHasPredicate(c *HasPredicateContext)
 
-	// EnterCompareOp is called when entering the compareOp production.
-	EnterCompareOp(c *CompareOpContext)
+	// EnterValueList is called when entering the ValueList production.
+	EnterValueList(c *ValueListContext)
 
-	// EnterNumericLiteral is called when entering the NumericLiteral production.
-	EnterNumericLiteral(c *NumericLiteralContext)
+	// EnterObjField is called when entering the ObjField production.
+	EnterObjField(c *ObjFieldContext)
 
-	// EnterStringLiteral is called when entering the StringLiteral production.
-	EnterStringLiteral(c *StringLiteralContext)
+	// EnterLogField is called when entering the LogField production.
+	EnterLogField(c *LogFieldContext)
 
-	// EnterTimeLiteral is called when entering the TimeLiteral production.
-	EnterTimeLiteral(c *TimeLiteralContext)
+	// EnterObjFieldAccess is called when entering the ObjFieldAccess production.
+	EnterObjFieldAccess(c *ObjFieldAccessContext)
 
-	// EnterRegexLiteral is called when entering the RegexLiteral production.
-	EnterRegexLiteral(c *RegexLiteralContext)
+	// EnterLogFieldAccess is called when entering the LogFieldAccess production.
+	EnterLogFieldAccess(c *LogFieldAccessContext)
 
-	// EnterRegexOrString is called when entering the regexOrString production.
-	EnterRegexOrString(c *RegexOrStringContext)
+	// EnterNumberValue is called when entering the NumberValue production.
+	EnterNumberValue(c *NumberValueContext)
 
-	// EnterRegex is called when entering the regex production.
-	EnterRegex(c *RegexContext)
+	// EnterStringValue is called when entering the StringValue production.
+	EnterStringValue(c *StringValueContext)
 
-	// ExitFilter is called when exiting the filter production.
-	ExitFilter(c *FilterContext)
+	// EnterEqualsOp is called when entering the EqualsOp production.
+	EnterEqualsOp(c *EqualsOpContext)
 
-	// ExitExpression is called when exiting the expression production.
-	ExitExpression(c *ExpressionContext)
+	// EnterNotEqualsOp is called when entering the NotEqualsOp production.
+	EnterNotEqualsOp(c *NotEqualsOpContext)
 
-	// ExitPrimaryExpr is called when exiting the primaryExpr production.
-	ExitPrimaryExpr(c *PrimaryExprContext)
+	// EnterGreaterThanOp is called when entering the GreaterThanOp production.
+	EnterGreaterThanOp(c *GreaterThanOpContext)
 
-	// ExitIdExpr is called when exiting the idExpr production.
-	ExitIdExpr(c *IdExprContext)
+	// EnterLessThanOp is called when entering the LessThanOp production.
+	EnterLessThanOp(c *LessThanOpContext)
 
-	// ExitNameExpr is called when exiting the nameExpr production.
-	ExitNameExpr(c *NameExprContext)
+	// EnterGreaterOrEqualOp is called when entering the GreaterOrEqualOp production.
+	EnterGreaterOrEqualOp(c *GreaterOrEqualOpContext)
 
-	// ExitOperationExpr is called when exiting the operationExpr production.
-	ExitOperationExpr(c *OperationExprContext)
+	// EnterLessOrEqualOp is called when entering the LessOrEqualOp production.
+	EnterLessOrEqualOp(c *LessOrEqualOpContext)
 
-	// ExitOperations is called when exiting the operations production.
-	ExitOperations(c *OperationsContext)
+	// EnterRegexOp is called when entering the RegexOp production.
+	EnterRegexOp(c *RegexOpContext)
 
-	// ExitLoggerExpr is called when exiting the loggerExpr production.
-	ExitLoggerExpr(c *LoggerExprContext)
+	// EnterRegexNotOp is called when entering the RegexNotOp production.
+	EnterRegexNotOp(c *RegexNotOpContext)
 
-	// ExitMapVarExpr is called when exiting the mapVarExpr production.
-	ExitMapVarExpr(c *MapVarExprContext)
+	// EnterRegexValue is called when entering the RegexValue production.
+	EnterRegexValue(c *RegexValueContext)
 
-	// ExitLoggerOp is called when exiting the loggerOp production.
-	ExitLoggerOp(c *LoggerOpContext)
+	// ExitSelectStatement is called when exiting the SelectStatement production.
+	ExitSelectStatement(c *SelectStatementContext)
 
-	// ExitLoggerConstraints is called when exiting the loggerConstraints production.
-	ExitLoggerConstraints(c *LoggerConstraintsContext)
+	// ExitAllColumns is called when exiting the AllColumns production.
+	ExitAllColumns(c *AllColumnsContext)
 
-	// ExitValueComparison is called when exiting the valueComparison production.
-	ExitValueComparison(c *ValueComparisonContext)
+	// ExitStreamName is called when exiting the StreamName production.
+	ExitStreamName(c *StreamNameContext)
 
-	// ExitValueCondition is called when exiting the valueCondition production.
-	ExitValueCondition(c *ValueConditionContext)
+	// ExitWhereClause is called when exiting the WhereClause production.
+	ExitWhereClause(c *WhereClauseContext)
 
-	// ExitValueFactor is called when exiting the valueFactor production.
-	ExitValueFactor(c *ValueFactorContext)
+	// ExitAndToExpression is called when exiting the AndToExpression production.
+	ExitAndToExpression(c *AndToExpressionContext)
 
-	// ExitCompareOp is called when exiting the compareOp production.
-	ExitCompareOp(c *CompareOpContext)
+	// ExitOrExpression is called when exiting the OrExpression production.
+	ExitOrExpression(c *OrExpressionContext)
 
-	// ExitNumericLiteral is called when exiting the NumericLiteral production.
-	ExitNumericLiteral(c *NumericLiteralContext)
+	// ExitAndExpression is called when exiting the AndExpression production.
+	ExitAndExpression(c *AndExpressionContext)
 
-	// ExitStringLiteral is called when exiting the StringLiteral production.
-	ExitStringLiteral(c *StringLiteralContext)
+	// ExitPrimaryExpression is called when exiting the PrimaryExpression production.
+	ExitPrimaryExpression(c *PrimaryExpressionContext)
 
-	// ExitTimeLiteral is called when exiting the TimeLiteral production.
-	ExitTimeLiteral(c *TimeLiteralContext)
+	// ExitParenExpression is called when exiting the ParenExpression production.
+	ExitParenExpression(c *ParenExpressionContext)
 
-	// ExitRegexLiteral is called when exiting the RegexLiteral production.
-	ExitRegexLiteral(c *RegexLiteralContext)
+	// ExitPredicateExpression is called when exiting the PredicateExpression production.
+	ExitPredicateExpression(c *PredicateExpressionContext)
 
-	// ExitRegexOrString is called when exiting the regexOrString production.
-	ExitRegexOrString(c *RegexOrStringContext)
+	// ExitComparisonPredicate is called when exiting the ComparisonPredicate production.
+	ExitComparisonPredicate(c *ComparisonPredicateContext)
 
-	// ExitRegex is called when exiting the regex production.
-	ExitRegex(c *RegexContext)
+	// ExitRegexPredicate is called when exiting the RegexPredicate production.
+	ExitRegexPredicate(c *RegexPredicateContext)
+
+	// ExitInPredicate is called when exiting the InPredicate production.
+	ExitInPredicate(c *InPredicateContext)
+
+	// ExitHasPredicate is called when exiting the HasPredicate production.
+	ExitHasPredicate(c *HasPredicateContext)
+
+	// ExitValueList is called when exiting the ValueList production.
+	ExitValueList(c *ValueListContext)
+
+	// ExitObjField is called when exiting the ObjField production.
+	ExitObjField(c *ObjFieldContext)
+
+	// ExitLogField is called when exiting the LogField production.
+	ExitLogField(c *LogFieldContext)
+
+	// ExitObjFieldAccess is called when exiting the ObjFieldAccess production.
+	ExitObjFieldAccess(c *ObjFieldAccessContext)
+
+	// ExitLogFieldAccess is called when exiting the LogFieldAccess production.
+	ExitLogFieldAccess(c *LogFieldAccessContext)
+
+	// ExitNumberValue is called when exiting the NumberValue production.
+	ExitNumberValue(c *NumberValueContext)
+
+	// ExitStringValue is called when exiting the StringValue production.
+	ExitStringValue(c *StringValueContext)
+
+	// ExitEqualsOp is called when exiting the EqualsOp production.
+	ExitEqualsOp(c *EqualsOpContext)
+
+	// ExitNotEqualsOp is called when exiting the NotEqualsOp production.
+	ExitNotEqualsOp(c *NotEqualsOpContext)
+
+	// ExitGreaterThanOp is called when exiting the GreaterThanOp production.
+	ExitGreaterThanOp(c *GreaterThanOpContext)
+
+	// ExitLessThanOp is called when exiting the LessThanOp production.
+	ExitLessThanOp(c *LessThanOpContext)
+
+	// ExitGreaterOrEqualOp is called when exiting the GreaterOrEqualOp production.
+	ExitGreaterOrEqualOp(c *GreaterOrEqualOpContext)
+
+	// ExitLessOrEqualOp is called when exiting the LessOrEqualOp production.
+	ExitLessOrEqualOp(c *LessOrEqualOpContext)
+
+	// ExitRegexOp is called when exiting the RegexOp production.
+	ExitRegexOp(c *RegexOpContext)
+
+	// ExitRegexNotOp is called when exiting the RegexNotOp production.
+	ExitRegexNotOp(c *RegexNotOpContext)
+
+	// ExitRegexValue is called when exiting the RegexValue production.
+	ExitRegexValue(c *RegexValueContext)
 }

@@ -2,6 +2,7 @@ package examples
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 	"testing"
 	"time"
@@ -23,19 +24,24 @@ import (
 
 func TestNotificationWithDSL(t *testing.T) {
 	stmt := `
-		(
-			id: /myDevice-\d+/ AND 
-			name: 'homeHub' AND 
-			operation: report,desired
-		)
-		AND
-		(add,update:/^Sensors.indoor-\d+$/ == 'temp'  
-		WHERE (
-			value > 20 OR (value == /^re-\d+/ AND value != 'apa' OR (value > 99 AND value != /^bubben-\d+$/)))
-		)
-		OR 
-		(acknowledge)
-	`
+        SELECT * FROM Notification WHERE
+        (
+            obj.ID ~= 'myDevice-\\d+' AND
+            obj.Name == 'homeHub' AND
+            obj.Operation IN 'report','desired'
+        )
+        AND
+        (
+            log.Operation IN 'add','update' AND
+            log.Path ~= '^Sensors.indoor-\\d+$' AND
+            log.Name == 'temp' AND
+            (
+                log.Value > 20 OR (log.Value ~= '^re-\\d+' AND log.Value != 'apa' OR (log.Value > 99 AND log.Value ~!= '^bubben-\\d+$'))
+            )
+        )
+				OR
+        (log.Operation == 'acknowledge')
+    `
 
 	sel, err := selectlang.ToSelection(stmt)
 	require.NoError(t, err)
@@ -109,6 +115,28 @@ func TestNotificationWithDSL(t *testing.T) {
 			Desired:     res[0].DesiredModel,
 		},
 	)
+
+	// Print log information for debugging
+	fmt.Printf("Operation: %s\n", nResult[0].Operation.Operation)
+	fmt.Printf("ID: %s, Name: %s\n", nResult[0].Operation.ID.ID, nResult[0].Operation.ID.Name)
+
+	// Print managed logs
+	fmt.Println("Managed Logs:")
+	for op, logs := range chl.ManagedLog {
+		fmt.Printf("  Operation: %s\n", op)
+		for _, log := range logs {
+			fmt.Printf("    Path: %s, Value: %v\n", log.Path, log.NewValue.GetValue())
+		}
+	}
+
+	// Print plain logs
+	fmt.Println("Plain Logs:")
+	for op, logs := range chl.PlainLog {
+		fmt.Printf("  Operation: %s\n", op)
+		for _, log := range logs {
+			fmt.Printf("    Path: %s, Value: %v\n", log.Path, log.NewValue)
+		}
+	}
 
 	require.Len(t, nResult, 1)
 	assert.NoError(t, nResult[0].Error)

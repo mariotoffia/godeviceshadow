@@ -2,82 +2,131 @@
 
 == Overview
 
-The selection is done in the following manner:
-* All below can be combined using: AND, OR, NOT, (, )
-* ID: id, name <- regexp match
-* Operation: report, desired, delete | all
-* Logger[n]:
-** merge/desire op: add,remove,update,no-change,acknowledge | all
-** merge/desire path <- regexp match
-** merge/desire [name], value <- operators: ==, !=, >, <, >=, <=, regexp match, before, after.
-** Supported value types: (float,int,uint, string, bool, time.Time)
-
-The logger value name is optional and can only be applied to `model.ValueAndTimestamp.GetValue()` that returns a `map[string]any`.
-If no value name it is assumed that the value is a scalar value.
-
-Since there may be many logger entries in the expression it is possible to combine them with AND, OR and NOT. It is also possible
-use parenthesis to group expressions. Logger expressions always need a grouping since it is always a qualifier to operation + optional path
-and then the value expression. That means that all before the first _AND_ is a logger entry selection expression.
-
-Operator: regexp '/{regex expression}/' can only be applied to string value. The _before_, _after_ can only be used with `time.Time` values and expects
-a `time.RFC3339` formatted string.
-
-Example ID expressions:
-```
-(id: /myDevice-\d+/ AND name: 'myShadow')
-```
-
-The above example checks if the id and name matches the regexp _/myDevice-\d+/_ and the name is equal to _myShadow_.
-
-
-Example ID and Operation expressions:
-```
-(id: /myDevice-\d+/ AND operation: report,delete)
-```
-
-The above example checks if the id matches the regexp `/myDevice-\d+/` and the operation is either `report` or `delete`.
-
-Example Logger expressions:
+The selection language uses a SQL-like syntax for specifying selection criteria. The basic format is:
 
 ```
-(add,update:/^Sensors-.*-indoor$/ == 'temp' WHERE (value > 20 OR value < 10))
-```
-The above example checks the add, update operations if any path matches the regexp `^Sensors-.*-indoor$` and the value is a map that has
-"temp" as key and the value is either greater than 20 or less than 10.
-
-```
-(add,update:/^Sensors-.*-indoor$/ WHERE (value > 20 OR value < 10))
-```
-All add, update operations that has a path matching the regexp `^Sensors-.*-indoor$` and the value is either greater than 20 or less than 10.
-This requires the value to be a scalar value.
-
-```
-(add,update WHERE (value > 20 OR value < 10))
-```
-This captures all add, update operation and checks all scalars if they are greater than 20 or less than 10.
-
-```
-(add,update,acknowledge)
-```
-This captures all add, update, acknowledge operations.
-
-Combine all Examples:
-```
-(id: /myDevice-\d+/ AND operation: report,delete) AND (add,update:/^Sensors-.*-indoor$/ WHERE (value > 20 OR value < 10))
+SELECT * FROM Notification WHERE <conditions>
 ```
 
-```
-(id: /myDevice-\d+/ AND name: 'myShadow') AND (add,update:/^Sensors-.*-indoor$/ == 'temp' WHERE (value > 20 OR value < 10)) OR (add,update)
+The selection language enables filtering notification events based on both object properties and log entries:
+
+* *Object properties* (`obj.*`) - Filter based on shadow device/object metadata
+* *Log properties* (`log.*`) - Filter based on log entry details including operations and paths
+
+=== Object and Log Properties
+
+.Available Properties for Filtering
+[cols="2,2,4,4"]
+|===
+| Category | Property | Description | Example Usage
+
+| Object | `obj.ID` 
+| The unique identifier of the shadow device/object 
+| `obj.ID == 'device-123'`
+
+| Object | `obj.Name` 
+| The name of the shadow device/object 
+| `obj.Name == 'homeShadow'`
+
+| Object | `obj.Operation` 
+| The operation type performed on the shadow (report, desired, delete) 
+| `obj.Operation IN 'report', 'desired'`
+
+| Log | `log.Operation` 
+| The operation performed in the log entry (add, update, remove, acknowledge, no-change) 
+| `log.Operation IN 'add', 'update'`
+
+| Log | `log.Path` 
+| The path to the property changed in the log entry 
+| `log.Path ~= 'sensors/.*/indoor'`
+
+| Log | `log.Name` 
+| The key name in a map value
+| `log.Name == 'temp'`
+
+| Log | `log.Value` 
+| The value associated with a log entry. Can be a scalar or a map 
+| `log.Value > 20` AND `log.Name == 'temp'`
+|===
+
+=== Supported Operators
+
+* *Comparison operators:* `==` (equals), `!=` (not equals), `>` (greater than), `<` (less than), `>=` (greater than or equal), `<=` (less than or equal)
+* *Pattern matching:* `~=` (regex match) and `~!=` (regex not match)
+* *Collection operators:* `IN` (value in list)
+* *Time operators:* `before`, `after` (for timestamp comparisons)
+* *Logical operators:* `AND`, `OR`, and parentheses for grouping
+
+=== Examples
+
+==== Object Property Examples
+
+.Filter by Device ID
+```sql
+SELECT * FROM Notification WHERE obj.ID == 'device-123'
 ```
 
-=== Constraints & Bugs
+.Filter by Device ID with Regex
+```sql
+SELECT * FROM Notification WHERE obj.ID ~= 'myDevice-\\d+'
+```
 
-This is a *toy* _DSL_ and therefore improvement _PR_ are accepted gratefully.
+.Filter by Object Name and Operation
+```sql
+SELECT * FROM Notification WHERE obj.Name == 'homeShadow' AND obj.Operation IN 'report', 'desired'
+```
+
+==== Log Property Examples
+
+.Filter by Log Operation
+```sql
+SELECT * FROM Notification WHERE log.Operation IN 'add', 'update'
+```
+
+.Filter by Path with Regex
+```sql
+SELECT * FROM Notification WHERE log.Path ~= 'sensors/.*/indoor'
+```
+
+.Filter by Value (Scalar)
+```sql
+SELECT * FROM Notification WHERE log.Path == 'sensors/temperature/indoor' AND log.Value > 20
+```
+
+.Filter by Map Key and Value
+```sql
+SELECT * FROM Notification WHERE log.Name == 'temp' AND log.Value > 20
+```
+
+==== Combined Examples
+
+.Complex Combined Example
+```sql
+SELECT * FROM Notification WHERE
+  (obj.ID ~= 'myDevice-\\d+' AND obj.Name == 'homeShadow')
+  AND
+  (
+    (log.Operation IN 'add', 'update' AND log.Path ~= 'sensors/.*/indoor' AND log.Value > 20)
+    OR
+    (log.Operation == 'acknowledge')
+  )
+```
+
+=== Implementation Details
+
+The selection language is implemented using ANTLR4 for parsing expressions. When evaluating a selection, the system:
+
+1. Parses the SQL-like expression into a selection tree
+2. Evaluates the selection against a `NotifierOperation` object
+3. Returns whether the operation matches the selection criteria
+
+=== Constraints & Limitations
+
+This is a pre-alpha _DSL_ - expect problems and limitations!
 
 .Constraints Table
 [cols="3,5"]
 |===
-| Constraint                      | Description
-| No direct nested parenthesis    
-| It does not support e.g. `A OR \((B AND C) OR (Q AND R))` it has to have a _LHS_ value e.g. `A OR (B AND C) OR (Q AND R)`
+| Constraint | Description
+| Complex nested expressions | While nested expressions are supported, extremely complex nested expressions might cause parsing issues
 |===
