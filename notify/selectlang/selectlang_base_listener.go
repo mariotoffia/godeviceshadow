@@ -188,6 +188,12 @@ func (s *BaseselectlangListener) EnterRegexOp(ctx *RegexOpContext) {}
 // ExitRegexOp is called when production RegexOp is exited.
 func (s *BaseselectlangListener) ExitRegexOp(ctx *RegexOpContext) {}
 
+// EnterRegexNotOp is called when production RegexNotOp is entered.
+func (s *BaseselectlangListener) EnterRegexNotOp(ctx *RegexNotOpContext) {}
+
+// ExitRegexNotOp is called when production RegexNotOp is exited.
+func (s *BaseselectlangListener) ExitRegexNotOp(ctx *RegexNotOpContext) {}
+
 // EnterRegexValue is called when production RegexValue is entered.
 func (s *BaseselectlangListener) EnterRegexValue(ctx *RegexValueContext) {}
 

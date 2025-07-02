@@ -90,6 +90,7 @@ comp_operator
 // The regex operator.
 regex_operator
     : REGEX_OP                                        #RegexOp
+    | REGEX_NOT_OP                                    #RegexNotOp
     ;
 
 // A regex value is provided as a string literal.
@@ -120,6 +121,8 @@ LE: '<=';
 
 // The regex operator is represented by '~='.
 REGEX_OP: '~=';
+// The regex not operator is represented by '~!='.
+REGEX_NOT_OP: '~!=';
 
 // Parentheses and comma.
 LPAREN: '(';

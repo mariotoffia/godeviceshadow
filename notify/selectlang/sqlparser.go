@@ -201,6 +201,13 @@ func evalBasic(val string, p predicateNode) bool {
 			re, err := reutils.Shared.GetOrCompile(s)
 			return err == nil && re.MatchString(val)
 		}
+	case "~!=":
+		if s, ok := p.value.(string); ok {
+			// Handle double backslashes in regex pattern
+			s = strings.ReplaceAll(s, "\\\\", "\\")
+			re, err := reutils.Shared.GetOrCompile(s)
+			return err == nil && !re.MatchString(val)
+		}
 	case "IN":
 		for _, v := range p.values {
 			if s, ok := v.(string); ok && val == s {
@@ -306,6 +313,18 @@ func evalAny(val any, p predicateNode) bool {
 		}
 		return false
 
+	case "~!=":
+		if pattern, ok := p.value.(string); ok {
+			// Handle double backslashes in regex pattern
+			pattern = strings.ReplaceAll(pattern, "\\\\", "\\")
+			re, err := reutils.Shared.GetOrCompile(pattern)
+			if err != nil {
+				return false
+			}
+			return !re.MatchString(s)
+		}
+		return false
+
 	case "IN":
 		for _, v := range p.values {
 			if s == stringify(v) {
@@ -399,12 +418,24 @@ func buildNodeFromPredicate(ctx IPredicateContext) node {
 		op := c.Comp_operator().GetText()
 		return predicateNode{field: fieldName(c.Field()), op: op, value: parseValue(c.Value())}
 	case *RegexPredicateContext:
-		if rv, ok := c.Regex_value().(*RegexValueContext); ok {
-			val := rv.STRING().GetText()
-			// Remove the quotes from the string literal
-			val = val[1 : len(val)-1]
-			// The regex pattern is already escaped correctly in the string
-			return predicateNode{field: fieldName(c.Field()), op: "~=", value: val}
+		if _, ok := c.Regex_operator().(*RegexOpContext); ok {
+			// Regular regex match with ~=
+			if rv, ok := c.Regex_value().(*RegexValueContext); ok {
+				val := rv.STRING().GetText()
+				// Remove the quotes from the string literal
+				val = val[1 : len(val)-1]
+				// The regex pattern is already escaped correctly in the string
+				return predicateNode{field: fieldName(c.Field()), op: "~=", value: val}
+			}
+		} else {
+			// Regex not match with ~!=
+			if rv, ok := c.Regex_value().(*RegexValueContext); ok {
+				val := rv.STRING().GetText()
+				// Remove the quotes from the string literal
+				val = val[1 : len(val)-1]
+				// The regex pattern is already escaped correctly in the string
+				return predicateNode{field: fieldName(c.Field()), op: "~!=", value: val}
+			}
 		}
 	case *InPredicateContext:
 		vals := []any{}

@@ -91,6 +91,9 @@ type selectlangListener interface {
 	// EnterRegexOp is called when entering the RegexOp production.
 	EnterRegexOp(c *RegexOpContext)
 
+	// EnterRegexNotOp is called when entering the RegexNotOp production.
+	EnterRegexNotOp(c *RegexNotOpContext)
+
 	// EnterRegexValue is called when entering the RegexValue production.
 	EnterRegexValue(c *RegexValueContext)
 
@@ -177,6 +180,9 @@ type selectlangListener interface {
 
 	// ExitRegexOp is called when exiting the RegexOp production.
 	ExitRegexOp(c *RegexOpContext)
+
+	// ExitRegexNotOp is called when exiting the RegexNotOp production.
+	ExitRegexNotOp(c *RegexNotOpContext)
 
 	// ExitRegexValue is called when exiting the RegexValue production.
 	ExitRegexValue(c *RegexValueContext)

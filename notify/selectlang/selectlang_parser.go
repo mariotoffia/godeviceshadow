@@ -34,14 +34,14 @@ func selectlangParserInit() {
 	staticData.LiteralNames = []string{
 		"", "'SELECT'", "'FROM'", "'WHERE'", "'AND'", "'OR'", "'IN'", "'HAS'",
 		"'*'", "'.'", "'=='", "'!='", "'>'", "'<'", "'>='", "'<='", "'~='",
-		"'('", "')'", "','", "'obj'", "'log'", "'ID'", "'Name'", "'Operation'",
+		"'~!='", "'('", "')'", "','", "'obj'", "'log'", "'ID'", "'Name'", "'Operation'",
 		"'Path'", "'Value'",
 	}
 	staticData.SymbolicNames = []string{
 		"", "SELECT", "FROM", "WHERE", "AND", "OR", "IN", "HAS", "STAR", "DOT",
-		"EQ", "NE", "GT", "LT", "GE", "LE", "REGEX_OP", "LPAREN", "RPAREN",
-		"COMMA", "OBJ", "LOG", "ID_FIELD", "NAME_FIELD", "OP_FIELD", "PATH_FIELD",
-		"VAL_FIELD", "IDENTIFIER", "NUMBER", "STRING", "WS",
+		"EQ", "NE", "GT", "LT", "GE", "LE", "REGEX_OP", "REGEX_NOT_OP", "LPAREN",
+		"RPAREN", "COMMA", "OBJ", "LOG", "ID_FIELD", "NAME_FIELD", "OP_FIELD",
+		"PATH_FIELD", "VAL_FIELD", "IDENTIFIER", "NUMBER", "STRING", "WS",
 	}
 	staticData.RuleNames = []string{
 		"select_stmt", "columns", "stream", "where_clause", "expression", "and_expr",
@@ -50,7 +50,7 @@ func selectlangParserInit() {
 	}
 	staticData.PredictionContextCache = antlr.NewPredictionContextCache()
 	staticData.serializedATN = []int32{
-		4, 1, 30, 132, 2, 0, 7, 0, 2, 1, 7, 1, 2, 2, 7, 2, 2, 3, 7, 3, 2, 4, 7,
+		4, 1, 31, 134, 2, 0, 7, 0, 2, 1, 7, 1, 2, 2, 7, 2, 2, 3, 7, 3, 2, 4, 7,
 		4, 2, 5, 7, 5, 2, 6, 7, 6, 2, 7, 7, 7, 2, 8, 7, 8, 2, 9, 7, 9, 2, 10, 7,
 		10, 2, 11, 7, 11, 2, 12, 7, 12, 2, 13, 7, 13, 2, 14, 7, 14, 2, 15, 7, 15,
 		1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 3, 0, 38, 8, 0, 1, 0, 1, 0, 1, 1, 1, 1, 1,
@@ -62,47 +62,48 @@ func selectlangParserInit() {
 		8, 8, 10, 8, 12, 8, 102, 9, 8, 1, 9, 1, 9, 3, 9, 106, 8, 9, 1, 10, 1, 10,
 		1, 10, 1, 10, 1, 11, 1, 11, 1, 11, 1, 11, 1, 12, 1, 12, 3, 12, 118, 8,
 		12, 1, 13, 1, 13, 1, 13, 1, 13, 1, 13, 1, 13, 3, 13, 126, 8, 13, 1, 14,
-		1, 14, 1, 15, 1, 15, 1, 15, 0, 2, 8, 10, 16, 0, 2, 4, 6, 8, 10, 12, 14,
-		16, 18, 20, 22, 24, 26, 28, 30, 0, 2, 1, 0, 22, 24, 1, 0, 23, 26, 130,
-		0, 32, 1, 0, 0, 0, 2, 41, 1, 0, 0, 0, 4, 43, 1, 0, 0, 0, 6, 45, 1, 0, 0,
-		0, 8, 48, 1, 0, 0, 0, 10, 59, 1, 0, 0, 0, 12, 75, 1, 0, 0, 0, 14, 93, 1,
-		0, 0, 0, 16, 95, 1, 0, 0, 0, 18, 105, 1, 0, 0, 0, 20, 107, 1, 0, 0, 0,
-		22, 111, 1, 0, 0, 0, 24, 117, 1, 0, 0, 0, 26, 125, 1, 0, 0, 0, 28, 127,
-		1, 0, 0, 0, 30, 129, 1, 0, 0, 0, 32, 33, 5, 1, 0, 0, 33, 34, 3, 2, 1, 0,
-		34, 35, 5, 2, 0, 0, 35, 37, 3, 4, 2, 0, 36, 38, 3, 6, 3, 0, 37, 36, 1,
-		0, 0, 0, 37, 38, 1, 0, 0, 0, 38, 39, 1, 0, 0, 0, 39, 40, 5, 0, 0, 1, 40,
-		1, 1, 0, 0, 0, 41, 42, 5, 8, 0, 0, 42, 3, 1, 0, 0, 0, 43, 44, 5, 27, 0,
-		0, 44, 5, 1, 0, 0, 0, 45, 46, 5, 3, 0, 0, 46, 47, 3, 8, 4, 0, 47, 7, 1,
-		0, 0, 0, 48, 49, 6, 4, -1, 0, 49, 50, 3, 10, 5, 0, 50, 56, 1, 0, 0, 0,
-		51, 52, 10, 2, 0, 0, 52, 53, 5, 5, 0, 0, 53, 55, 3, 10, 5, 0, 54, 51, 1,
-		0, 0, 0, 55, 58, 1, 0, 0, 0, 56, 54, 1, 0, 0, 0, 56, 57, 1, 0, 0, 0, 57,
-		9, 1, 0, 0, 0, 58, 56, 1, 0, 0, 0, 59, 60, 6, 5, -1, 0, 60, 61, 3, 12,
-		6, 0, 61, 67, 1, 0, 0, 0, 62, 63, 10, 2, 0, 0, 63, 64, 5, 4, 0, 0, 64,
-		66, 3, 12, 6, 0, 65, 62, 1, 0, 0, 0, 66, 69, 1, 0, 0, 0, 67, 65, 1, 0,
-		0, 0, 67, 68, 1, 0, 0, 0, 68, 11, 1, 0, 0, 0, 69, 67, 1, 0, 0, 0, 70, 71,
-		5, 17, 0, 0, 71, 72, 3, 8, 4, 0, 72, 73, 5, 18, 0, 0, 73, 76, 1, 0, 0,
-		0, 74, 76, 3, 14, 7, 0, 75, 70, 1, 0, 0, 0, 75, 74, 1, 0, 0, 0, 76, 13,
-		1, 0, 0, 0, 77, 78, 3, 18, 9, 0, 78, 79, 3, 26, 13, 0, 79, 80, 3, 24, 12,
-		0, 80, 94, 1, 0, 0, 0, 81, 82, 3, 18, 9, 0, 82, 83, 3, 28, 14, 0, 83, 84,
-		3, 30, 15, 0, 84, 94, 1, 0, 0, 0, 85, 86, 3, 18, 9, 0, 86, 87, 5, 6, 0,
-		0, 87, 88, 3, 16, 8, 0, 88, 94, 1, 0, 0, 0, 89, 90, 3, 18, 9, 0, 90, 91,
-		5, 7, 0, 0, 91, 92, 3, 24, 12, 0, 92, 94, 1, 0, 0, 0, 93, 77, 1, 0, 0,
-		0, 93, 81, 1, 0, 0, 0, 93, 85, 1, 0, 0, 0, 93, 89, 1, 0, 0, 0, 94, 15,
-		1, 0, 0, 0, 95, 100, 3, 24, 12, 0, 96, 97, 5, 19, 0, 0, 97, 99, 3, 24,
-		12, 0, 98, 96, 1, 0, 0, 0, 99, 102, 1, 0, 0, 0, 100, 98, 1, 0, 0, 0, 100,
-		101, 1, 0, 0, 0, 101, 17, 1, 0, 0, 0, 102, 100, 1, 0, 0, 0, 103, 106, 3,
-		20, 10, 0, 104, 106, 3, 22, 11, 0, 105, 103, 1, 0, 0, 0, 105, 104, 1, 0,
-		0, 0, 106, 19, 1, 0, 0, 0, 107, 108, 5, 20, 0, 0, 108, 109, 5, 9, 0, 0,
-		109, 110, 7, 0, 0, 0, 110, 21, 1, 0, 0, 0, 111, 112, 5, 21, 0, 0, 112,
-		113, 5, 9, 0, 0, 113, 114, 7, 1, 0, 0, 114, 23, 1, 0, 0, 0, 115, 118, 5,
-		28, 0, 0, 116, 118, 5, 29, 0, 0, 117, 115, 1, 0, 0, 0, 117, 116, 1, 0,
-		0, 0, 118, 25, 1, 0, 0, 0, 119, 126, 5, 10, 0, 0, 120, 126, 5, 11, 0, 0,
-		121, 126, 5, 12, 0, 0, 122, 126, 5, 13, 0, 0, 123, 126, 5, 14, 0, 0, 124,
-		126, 5, 15, 0, 0, 125, 119, 1, 0, 0, 0, 125, 120, 1, 0, 0, 0, 125, 121,
-		1, 0, 0, 0, 125, 122, 1, 0, 0, 0, 125, 123, 1, 0, 0, 0, 125, 124, 1, 0,
-		0, 0, 126, 27, 1, 0, 0, 0, 127, 128, 5, 16, 0, 0, 128, 29, 1, 0, 0, 0,
-		129, 130, 5, 29, 0, 0, 130, 31, 1, 0, 0, 0, 9, 37, 56, 67, 75, 93, 100,
-		105, 117, 125,
+		1, 14, 3, 14, 130, 8, 14, 1, 15, 1, 15, 1, 15, 0, 2, 8, 10, 16, 0, 2, 4,
+		6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 0, 2, 1, 0, 23, 25, 1,
+		0, 24, 27, 133, 0, 32, 1, 0, 0, 0, 2, 41, 1, 0, 0, 0, 4, 43, 1, 0, 0, 0,
+		6, 45, 1, 0, 0, 0, 8, 48, 1, 0, 0, 0, 10, 59, 1, 0, 0, 0, 12, 75, 1, 0,
+		0, 0, 14, 93, 1, 0, 0, 0, 16, 95, 1, 0, 0, 0, 18, 105, 1, 0, 0, 0, 20,
+		107, 1, 0, 0, 0, 22, 111, 1, 0, 0, 0, 24, 117, 1, 0, 0, 0, 26, 125, 1,
+		0, 0, 0, 28, 129, 1, 0, 0, 0, 30, 131, 1, 0, 0, 0, 32, 33, 5, 1, 0, 0,
+		33, 34, 3, 2, 1, 0, 34, 35, 5, 2, 0, 0, 35, 37, 3, 4, 2, 0, 36, 38, 3,
+		6, 3, 0, 37, 36, 1, 0, 0, 0, 37, 38, 1, 0, 0, 0, 38, 39, 1, 0, 0, 0, 39,
+		40, 5, 0, 0, 1, 40, 1, 1, 0, 0, 0, 41, 42, 5, 8, 0, 0, 42, 3, 1, 0, 0,
+		0, 43, 44, 5, 28, 0, 0, 44, 5, 1, 0, 0, 0, 45, 46, 5, 3, 0, 0, 46, 47,
+		3, 8, 4, 0, 47, 7, 1, 0, 0, 0, 48, 49, 6, 4, -1, 0, 49, 50, 3, 10, 5, 0,
+		50, 56, 1, 0, 0, 0, 51, 52, 10, 2, 0, 0, 52, 53, 5, 5, 0, 0, 53, 55, 3,
+		10, 5, 0, 54, 51, 1, 0, 0, 0, 55, 58, 1, 0, 0, 0, 56, 54, 1, 0, 0, 0, 56,
+		57, 1, 0, 0, 0, 57, 9, 1, 0, 0, 0, 58, 56, 1, 0, 0, 0, 59, 60, 6, 5, -1,
+		0, 60, 61, 3, 12, 6, 0, 61, 67, 1, 0, 0, 0, 62, 63, 10, 2, 0, 0, 63, 64,
+		5, 4, 0, 0, 64, 66, 3, 12, 6, 0, 65, 62, 1, 0, 0, 0, 66, 69, 1, 0, 0, 0,
+		67, 65, 1, 0, 0, 0, 67, 68, 1, 0, 0, 0, 68, 11, 1, 0, 0, 0, 69, 67, 1,
+		0, 0, 0, 70, 71, 5, 18, 0, 0, 71, 72, 3, 8, 4, 0, 72, 73, 5, 19, 0, 0,
+		73, 76, 1, 0, 0, 0, 74, 76, 3, 14, 7, 0, 75, 70, 1, 0, 0, 0, 75, 74, 1,
+		0, 0, 0, 76, 13, 1, 0, 0, 0, 77, 78, 3, 18, 9, 0, 78, 79, 3, 26, 13, 0,
+		79, 80, 3, 24, 12, 0, 80, 94, 1, 0, 0, 0, 81, 82, 3, 18, 9, 0, 82, 83,
+		3, 28, 14, 0, 83, 84, 3, 30, 15, 0, 84, 94, 1, 0, 0, 0, 85, 86, 3, 18,
+		9, 0, 86, 87, 5, 6, 0, 0, 87, 88, 3, 16, 8, 0, 88, 94, 1, 0, 0, 0, 89,
+		90, 3, 18, 9, 0, 90, 91, 5, 7, 0, 0, 91, 92, 3, 24, 12, 0, 92, 94, 1, 0,
+		0, 0, 93, 77, 1, 0, 0, 0, 93, 81, 1, 0, 0, 0, 93, 85, 1, 0, 0, 0, 93, 89,
+		1, 0, 0, 0, 94, 15, 1, 0, 0, 0, 95, 100, 3, 24, 12, 0, 96, 97, 5, 20, 0,
+		0, 97, 99, 3, 24, 12, 0, 98, 96, 1, 0, 0, 0, 99, 102, 1, 0, 0, 0, 100,
+		98, 1, 0, 0, 0, 100, 101, 1, 0, 0, 0, 101, 17, 1, 0, 0, 0, 102, 100, 1,
+		0, 0, 0, 103, 106, 3, 20, 10, 0, 104, 106, 3, 22, 11, 0, 105, 103, 1, 0,
+		0, 0, 105, 104, 1, 0, 0, 0, 106, 19, 1, 0, 0, 0, 107, 108, 5, 21, 0, 0,
+		108, 109, 5, 9, 0, 0, 109, 110, 7, 0, 0, 0, 110, 21, 1, 0, 0, 0, 111, 112,
+		5, 22, 0, 0, 112, 113, 5, 9, 0, 0, 113, 114, 7, 1, 0, 0, 114, 23, 1, 0,
+		0, 0, 115, 118, 5, 29, 0, 0, 116, 118, 5, 30, 0, 0, 117, 115, 1, 0, 0,
+		0, 117, 116, 1, 0, 0, 0, 118, 25, 1, 0, 0, 0, 119, 126, 5, 10, 0, 0, 120,
+		126, 5, 11, 0, 0, 121, 126, 5, 12, 0, 0, 122, 126, 5, 13, 0, 0, 123, 126,
+		5, 14, 0, 0, 124, 126, 5, 15, 0, 0, 125, 119, 1, 0, 0, 0, 125, 120, 1,
+		0, 0, 0, 125, 121, 1, 0, 0, 0, 125, 122, 1, 0, 0, 0, 125, 123, 1, 0, 0,
+		0, 125, 124, 1, 0, 0, 0, 126, 27, 1, 0, 0, 0, 127, 130, 5, 16, 0, 0, 128,
+		130, 5, 17, 0, 0, 129, 127, 1, 0, 0, 0, 129, 128, 1, 0, 0, 0, 130, 29,
+		1, 0, 0, 0, 131, 132, 5, 30, 0, 0, 132, 31, 1, 0, 0, 0, 10, 37, 56, 67,
+		75, 93, 100, 105, 117, 125, 129,
 	}
 	deserializer := antlr.NewATNDeserializer(nil)
 	staticData.atn = deserializer.Deserialize(staticData.serializedATN)
@@ -140,37 +141,38 @@ func NewselectlangParser(input antlr.TokenStream) *selectlangParser {
 
 // selectlangParser tokens.
 const (
-	selectlangParserEOF        = antlr.TokenEOF
-	selectlangParserSELECT     = 1
-	selectlangParserFROM       = 2
-	selectlangParserWHERE      = 3
-	selectlangParserAND        = 4
-	selectlangParserOR         = 5
-	selectlangParserIN         = 6
-	selectlangParserHAS        = 7
-	selectlangParserSTAR       = 8
-	selectlangParserDOT        = 9
-	selectlangParserEQ         = 10
-	selectlangParserNE         = 11
-	selectlangParserGT         = 12
-	selectlangParserLT         = 13
-	selectlangParserGE         = 14
-	selectlangParserLE         = 15
-	selectlangParserREGEX_OP   = 16
-	selectlangParserLPAREN     = 17
-	selectlangParserRPAREN     = 18
-	selectlangParserCOMMA      = 19
-	selectlangParserOBJ        = 20
-	selectlangParserLOG        = 21
-	selectlangParserID_FIELD   = 22
-	selectlangParserNAME_FIELD = 23
-	selectlangParserOP_FIELD   = 24
-	selectlangParserPATH_FIELD = 25
-	selectlangParserVAL_FIELD  = 26
-	selectlangParserIDENTIFIER = 27
-	selectlangParserNUMBER     = 28
-	selectlangParserSTRING     = 29
-	selectlangParserWS         = 30
+	selectlangParserEOF          = antlr.TokenEOF
+	selectlangParserSELECT       = 1
+	selectlangParserFROM         = 2
+	selectlangParserWHERE        = 3
+	selectlangParserAND          = 4
+	selectlangParserOR           = 5
+	selectlangParserIN           = 6
+	selectlangParserHAS          = 7
+	selectlangParserSTAR         = 8
+	selectlangParserDOT          = 9
+	selectlangParserEQ           = 10
+	selectlangParserNE           = 11
+	selectlangParserGT           = 12
+	selectlangParserLT           = 13
+	selectlangParserGE           = 14
+	selectlangParserLE           = 15
+	selectlangParserREGEX_OP     = 16
+	selectlangParserREGEX_NOT_OP = 17
+	selectlangParserLPAREN       = 18
+	selectlangParserRPAREN       = 19
+	selectlangParserCOMMA        = 20
+	selectlangParserOBJ          = 21
+	selectlangParserLOG          = 22
+	selectlangParserID_FIELD     = 23
+	selectlangParserNAME_FIELD   = 24
+	selectlangParserOP_FIELD     = 25
+	selectlangParserPATH_FIELD   = 26
+	selectlangParserVAL_FIELD    = 27
+	selectlangParserIDENTIFIER   = 28
+	selectlangParserNUMBER       = 29
+	selectlangParserSTRING       = 30
+	selectlangParserWS           = 31
 )
 
 // selectlangParser rules.
@@ -2444,7 +2446,7 @@ func (p *selectlangParser) Obj_field() (localctx IObj_fieldContext) {
 		p.SetState(109)
 		_la = p.GetTokenStream().LA(1)
 
-		if !((int64(_la) & ^0x3f) == 0 && ((int64(1)<<_la)&29360128) != 0) {
+		if !((int64(_la) & ^0x3f) == 0 && ((int64(1)<<_la)&58720256) != 0) {
 			p.GetErrorHandler().RecoverInline(p)
 		} else {
 			p.GetErrorHandler().ReportMatch(p)
@@ -2600,7 +2602,7 @@ func (p *selectlangParser) Log_field() (localctx ILog_fieldContext) {
 		p.SetState(113)
 		_la = p.GetTokenStream().LA(1)
 
-		if !((int64(_la) & ^0x3f) == 0 && ((int64(1)<<_la)&125829120) != 0) {
+		if !((int64(_la) & ^0x3f) == 0 && ((int64(1)<<_la)&251658240) != 0) {
 			p.GetErrorHandler().RecoverInline(p)
 		} else {
 			p.GetErrorHandler().ReportMatch(p)
@@ -3207,6 +3209,40 @@ func (s *Regex_operatorContext) ToStringTree(ruleNames []string, recog antlr.Rec
 	return antlr.TreesStringTree(s, ruleNames, recog)
 }
 
+type RegexNotOpContext struct {
+	Regex_operatorContext
+}
+
+func NewRegexNotOpContext(parser antlr.Parser, ctx antlr.ParserRuleContext) *RegexNotOpContext {
+	var p = new(RegexNotOpContext)
+
+	InitEmptyRegex_operatorContext(&p.Regex_operatorContext)
+	p.parser = parser
+	p.CopyAll(ctx.(*Regex_operatorContext))
+
+	return p
+}
+
+func (s *RegexNotOpContext) GetRuleContext() antlr.RuleContext {
+	return s
+}
+
+func (s *RegexNotOpContext) REGEX_NOT_OP() antlr.TerminalNode {
+	return s.GetToken(selectlangParserREGEX_NOT_OP, 0)
+}
+
+func (s *RegexNotOpContext) EnterRule(listener antlr.ParseTreeListener) {
+	if listenerT, ok := listener.(selectlangListener); ok {
+		listenerT.EnterRegexNotOp(s)
+	}
+}
+
+func (s *RegexNotOpContext) ExitRule(listener antlr.ParseTreeListener) {
+	if listenerT, ok := listener.(selectlangListener); ok {
+		listenerT.ExitRegexNotOp(s)
+	}
+}
+
 type RegexOpContext struct {
 	Regex_operatorContext
 }
@@ -3244,15 +3280,40 @@ func (s *RegexOpContext) ExitRule(listener antlr.ParseTreeListener) {
 func (p *selectlangParser) Regex_operator() (localctx IRegex_operatorContext) {
 	localctx = NewRegex_operatorContext(p, p.GetParserRuleContext(), p.GetState())
 	p.EnterRule(localctx, 28, selectlangParserRULE_regex_operator)
-	localctx = NewRegexOpContext(p, localctx)
-	p.EnterOuterAlt(localctx, 1)
-	{
-		p.SetState(127)
-		p.Match(selectlangParserREGEX_OP)
-		if p.HasError() {
-			// Recognition error - abort rule
-			goto errorExit
+	p.SetState(129)
+	p.GetErrorHandler().Sync(p)
+	if p.HasError() {
+		goto errorExit
+	}
+
+	switch p.GetTokenStream().LA(1) {
+	case selectlangParserREGEX_OP:
+		localctx = NewRegexOpContext(p, localctx)
+		p.EnterOuterAlt(localctx, 1)
+		{
+			p.SetState(127)
+			p.Match(selectlangParserREGEX_OP)
+			if p.HasError() {
+				// Recognition error - abort rule
+				goto errorExit
+			}
 		}
+
+	case selectlangParserREGEX_NOT_OP:
+		localctx = NewRegexNotOpContext(p, localctx)
+		p.EnterOuterAlt(localctx, 2)
+		{
+			p.SetState(128)
+			p.Match(selectlangParserREGEX_NOT_OP)
+			if p.HasError() {
+				// Recognition error - abort rule
+				goto errorExit
+			}
+		}
+
+	default:
+		p.SetError(antlr.NewNoViableAltException(p, nil, nil, nil, nil, nil))
+		goto errorExit
 	}
 
 errorExit:
@@ -3362,7 +3423,7 @@ func (p *selectlangParser) Regex_value() (localctx IRegex_valueContext) {
 	localctx = NewRegexValueContext(p, localctx)
 	p.EnterOuterAlt(localctx, 1)
 	{
-		p.SetState(129)
+		p.SetState(131)
 		p.Match(selectlangParserSTRING)
 		if p.HasError() {
 			// Recognition error - abort rule
