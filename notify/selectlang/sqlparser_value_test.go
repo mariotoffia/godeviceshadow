@@ -91,41 +91,41 @@ func TestLogValueOperations(t *testing.T) {
 	}
 }
 
-// Test log.Value HAS operator operations
-func TestLogValueHasOperator(t *testing.T) {
+// Test log.Name to check map keys (replacing previous HAS operator)
+func TestLogNameForMapKeys(t *testing.T) {
 	testCases := []struct {
 		name     string
 		query    string
 		expected bool
 	}{
 		{
-			name:     "HAS operator with existing key",
-			query:    "SELECT * FROM Notification WHERE log.Value HAS 'temp'",
+			name:     "Name equal operator with existing key",
+			query:    "SELECT * FROM Notification WHERE log.Name == 'temp'",
 			expected: true,
 		},
 		{
-			name:     "HAS operator with non-existing key",
-			query:    "SELECT * FROM Notification WHERE log.Value HAS 'nonexistent'",
+			name:     "Name equal operator with non-existing key",
+			query:    "SELECT * FROM Notification WHERE log.Name == 'nonexistent'",
 			expected: false,
 		},
 		{
-			name:     "Complex query with HAS operator",
-			query:    "SELECT * FROM Notification WHERE (obj.ID ~= 'device-\\d+' AND log.Value HAS 'temp') OR log.Path == 'devices/status'",
+			name:     "Complex query with Name equal",
+			query:    "SELECT * FROM Notification WHERE (obj.ID ~= 'device-\\d+' AND log.Name == 'temp') OR log.Path == 'devices/status'",
 			expected: true,
 		},
 		{
-			name:     "Combined HAS and other conditions",
-			query:    "SELECT * FROM Notification WHERE log.Value HAS 'temp' AND log.Operation == 'add'",
+			name:     "Combined Name equal and other conditions",
+			query:    "SELECT * FROM Notification WHERE log.Name == 'temp' AND log.Operation == 'add'",
 			expected: true,
 		},
 		{
-			name:     "Multiple HAS conditions - one passing",
-			query:    "SELECT * FROM Notification WHERE log.Value HAS 'temp' OR log.Value HAS 'nonexistent'",
+			name:     "Multiple Name conditions - one passing",
+			query:    "SELECT * FROM Notification WHERE log.Name == 'temp' OR log.Name == 'nonexistent'",
 			expected: true,
 		},
 		{
-			name:     "Multiple HAS conditions - none passing",
-			query:    "SELECT * FROM Notification WHERE log.Value HAS 'nonexistent1' OR log.Value HAS 'nonexistent2'",
+			name:     "Multiple Name conditions - none passing",
+			query:    "SELECT * FROM Notification WHERE log.Name == 'nonexistent1' OR log.Name == 'nonexistent2'",
 			expected: false,
 		},
 	}

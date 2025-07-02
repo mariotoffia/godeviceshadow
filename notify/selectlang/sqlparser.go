@@ -104,9 +104,45 @@ func (p predicateNode) Eval(op notifiermodel.NotifierOperation) bool {
 		}
 		return false
 	case "log.Name":
-		// The log.Name field would typically refer to a name within the path
-		// This is not explicitly implemented in the provided code
-		// As a fallback, we can check if any path contains the value as a substring
+		// The log.Name field now refers to a key in the Value map if Value is a map
+		// Check keys in managed logs
+		for _, m := range op.MergeLogger.ManagedLog {
+			for _, mv := range m {
+				if valueMap, ok := mv.NewValue.GetValue().(map[string]any); ok {
+					// For each key in the map, check if it matches the predicate
+					for key := range valueMap {
+						if evalBasic(key, p) {
+							return true
+						}
+					}
+				}
+			}
+		}
+		// Check keys in plain logs
+		for _, m := range op.MergeLogger.PlainLog {
+			for _, pv := range m {
+				if valueMap, ok := pv.NewValue.(map[string]any); ok {
+					// For each key in the map, check if it matches the predicate
+					for key := range valueMap {
+						if evalBasic(key, p) {
+							return true
+						}
+					}
+				}
+			}
+		}
+		// Check keys in acknowledged desires
+		for _, v := range op.DesireLogger.Acknowledged() {
+			if valueMap, ok := v.GetValue().(map[string]any); ok {
+				// For each key in the map, check if it matches the predicate
+				for key := range valueMap {
+					if evalBasic(key, p) {
+						return true
+					}
+				}
+			}
+		}
+		// Fallback to path checking (for backward compatibility)
 		for _, m := range op.MergeLogger.ManagedLog {
 			for _, mv := range m {
 				if pathContainsValue(mv.Path, p) {
@@ -250,18 +286,6 @@ func toFloat(v any) (float64, bool) {
 }
 
 func evalAny(val any, p predicateNode) bool {
-	// Special handling for HAS operator to check for key existence
-	if p.op == "HAS" {
-		// Check if the value is a map and contains the specified key
-		if m, ok := val.(map[string]any); ok {
-			if keyStr, ok := p.value.(string); ok {
-				_, exists := m[keyStr]
-				return exists
-			}
-		}
-		return false
-	}
-
 	s := stringify(val)
 
 	switch p.op {
@@ -445,8 +469,6 @@ func buildNodeFromPredicate(ctx IPredicateContext) node {
 			}
 		}
 		return predicateNode{field: fieldName(c.Field()), op: "IN", values: vals}
-	case *HasPredicateContext:
-		return predicateNode{field: fieldName(c.Field()), op: "HAS", value: parseValue(c.Value())}
 	}
 
 	return nil

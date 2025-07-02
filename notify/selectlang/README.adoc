@@ -46,7 +46,7 @@ The selection language enables filtering notification events based on both objec
 
 | Log | `log.Value` 
 | The value associated with a log entry. Can be a scalar or a map 
-| `log.Value > 20` or `log.Value HAS 'temp'`
+| `log.Value > 20` or `log.Name == 'temp'`
 |===
 
 === Supported Operators
@@ -95,7 +95,7 @@ SELECT * FROM Notification WHERE log.Path == 'sensors/temperature/indoor' AND lo
 
 .Filter by Value (Map)
 ```sql
-SELECT * FROM Notification WHERE log.Path == 'sensors/temperature/indoor' AND log.Value HAS 'temp'
+SELECT * FROM Notification WHERE log.Path == 'sensors/temperature/indoor' AND log.Name == 'temp'
 ```
 
 ==== Combined Examples

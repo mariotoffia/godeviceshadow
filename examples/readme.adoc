@@ -16,7 +16,9 @@ This shows how to use and expect from the merge package.
 
 === Plain Merge
 
-This is the `merge.Merge` function that allows for merging two models together and have one or more loggers attached to the merge operation. Two modes
+This is the `merge.Merge` function that allows for merging two models together and have one or more loggers attac            log.Operation IN 'add','update' AND
+            log.Path ~= '^Sensors.indoor-\\d+$' AND
+            log.Name == 'temp' AND to the merge operation. Two modes
 of merge is possible, `merge.ServerIsMaster` and `merge.ClientIsMaster`. The first one is the default and does not allow for deletions, the latter
 allows for deletions.
 

@@ -360,3 +360,55 @@ func TestLogNameOperations(t *testing.T) {
 		})
 	}
 }
+
+// Test log.Name field operations for map keys
+func TestLogNameMapKeyOperations(t *testing.T) {
+	testCases := []struct {
+		name     string
+		query    string
+		expected bool
+	}{
+		{
+			name:     "Equal match for map key",
+			query:    "SELECT * FROM Notification WHERE log.Name == 'temp'",
+			expected: true,
+		},
+		{
+			name:     "Equal no match for map key",
+			query:    "SELECT * FROM Notification WHERE log.Name == 'nonexistent'",
+			expected: false,
+		},
+		{
+			name:     "Regex match for map key",
+			query:    "SELECT * FROM Notification WHERE log.Name ~= '^te.*'",
+			expected: true,
+		},
+		{
+			name:     "Regex no match for map key",
+			query:    "SELECT * FROM Notification WHERE log.Name ~= '^xyz.*'",
+			expected: false,
+		},
+		{
+			name:     "IN match for map key",
+			query:    "SELECT * FROM Notification WHERE log.Name IN 'temp', 'other'",
+			expected: true,
+		},
+		{
+			name:     "IN no match for map key",
+			query:    "SELECT * FROM Notification WHERE log.Name IN 'nonexistent1', 'nonexistent2'",
+			expected: false,
+		},
+	}
+
+	op := createTestOperation()
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			selection, err := selectlang.ToSelection(tc.query)
+			require.NoError(t, err)
+
+			result, _ := selection.Select(op, true)
+			assert.Equal(t, tc.expected, result)
+		})
+	}
+}

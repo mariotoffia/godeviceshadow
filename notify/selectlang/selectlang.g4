@@ -42,12 +42,11 @@ primary_expr
     | predicate                                       #PredicateExpression
     ;
 
-// A predicate can be a comparison, regex match, an IN predicate, or a HAS predicate.
+// A predicate can be a comparison, regex match, or an IN predicate.
 predicate
     : field comp_operator value                       #ComparisonPredicate
     | field regex_operator regex_value                #RegexPredicate
     | field IN value_list                             #InPredicate
-    | field HAS value                                 #HasPredicate
     ;
 
 // A comma‐separated list of literal values.
@@ -108,7 +107,6 @@ WHERE: 'WHERE';
 AND: 'AND';
 OR: 'OR';
 IN: 'IN';
-HAS: 'HAS';
 STAR: '*';
 DOT: '.';
 
