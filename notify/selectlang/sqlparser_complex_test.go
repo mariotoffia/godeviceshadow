@@ -27,7 +27,7 @@ func TestComplexNestedQuery(t *testing.T) {
             log.Path ~= '^Sensors-.*-indoor$' AND
             log.Value == 'temp' AND
             (
-                log.Value > 20 OR (log.Value ~= 're-\\d+' AND log.Value != 'apa' OR (log.Value > 99 AND log.Value != 'bubben-\\d+'))
+                log.Value > 20 OR (log.Value ~= 're-\\d+' AND log.Value != 'apa' OR (log.Value > 99 AND log.Value ~!= 'bubben-\\d+'))
             )
         )
         OR

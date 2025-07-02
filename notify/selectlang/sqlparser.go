@@ -97,119 +97,12 @@ func (p predicateNode) evalGlobal(ctx *EvalContext) bool {
 	case "obj.Operation":
 		return evalBasic(string(op.Operation), p)
 	case "log.Operation":
-		// Check merge operations in both managed and plain logs
-		for oper := range op.MergeLogger.ManagedLog {
-			if evalBasic(oper.String(), p) {
-				return true
-			}
-		}
-		for oper := range op.MergeLogger.PlainLog {
-			if evalBasic(oper.String(), p) {
-				return true
-			}
-		}
-		// Check for acknowledge operations in the desire logger
-		if len(op.DesireLogger.Acknowledged()) > 0 {
-			if p.op == "IN" {
-				for _, v := range p.values {
-					if s, ok := v.(string); ok && s == "acknowledge" {
-						return true
-					}
-				}
-			} else if s, ok := p.value.(string); ok && s == "acknowledge" {
-				return true
-			}
-		}
+		// log.Operation should be evaluated using evalLogEntry, not evalGlobal
+		// This path should never be reached - return false for safety
 		return false
-	case "log.Path":
-		// Check paths in managed logs
-		for _, m := range op.MergeLogger.ManagedLog {
-			for _, mv := range m {
-				if evalBasic(mv.Path, p) {
-					return true
-				}
-			}
-		}
-		// Check paths in plain logs
-		for _, m := range op.MergeLogger.PlainLog {
-			for _, pv := range m {
-				if evalBasic(pv.Path, p) {
-					return true
-				}
-			}
-		}
-		// Check paths in acknowledged desires
-		for path := range op.DesireLogger.Acknowledged() {
-			if evalBasic(path, p) {
-				return true
-			}
-		}
-		return false
-	case "log.Name":
-		// Check keys in managed logs
-		for _, m := range op.MergeLogger.ManagedLog {
-			for _, mv := range m {
-				if valueMap, ok := mv.NewValue.GetValue().(map[string]any); ok {
-					// For each key in the map, check if it matches the predicate
-					for key := range valueMap {
-						if evalBasic(key, p) {
-							return true
-						}
-					}
-				}
-				// No longer check path as a fallback
-			}
-		}
-		// Check keys in plain logs
-		for _, m := range op.MergeLogger.PlainLog {
-			for _, pv := range m {
-				if valueMap, ok := pv.NewValue.(map[string]any); ok {
-					// For each key in the map, check if it matches the predicate
-					for key := range valueMap {
-						if evalBasic(key, p) {
-							return true
-						}
-					}
-				}
-				// No longer check path as a fallback
-			}
-		}
-		// Check keys in acknowledged desires
-		for _, v := range op.DesireLogger.Acknowledged() {
-			if valueMap, ok := v.GetValue().(map[string]any); ok {
-				// For each key in the map, check if it matches the predicate
-				for key := range valueMap {
-					if evalBasic(key, p) {
-						return true
-					}
-				}
-			}
-			// No longer check path as a fallback
-		}
-		return false
-	case "log.Value":
-		// Check values in managed logs
-		for _, m := range op.MergeLogger.ManagedLog {
-			for _, mv := range m {
-				if evalAny(mv.NewValue.GetValue(), p) {
-					return true
-				}
-			}
-		}
-		// Check values in plain logs
-		for _, m := range op.MergeLogger.PlainLog {
-			for _, pv := range m {
-				if evalAny(pv.NewValue, p) {
-					return true
-				}
-			}
-		}
-		// Check values in acknowledged desires
-		for _, v := range op.DesireLogger.Acknowledged() {
-			if evalAny(v.GetValue(), p) {
-				return true
-			}
-		}
+	case "log.Path", "log.Name", "log.Value":
+		// These log fields should be evaluated using evalLogEntry, not evalGlobal
+		// This path should never be reached - return false for safety
 		return false
 	default:
 		// Unknown field should cause an error rather than silently returning false
@@ -643,11 +536,6 @@ func validateFields(n node) error {
 		if !validFields[t.field] {
 			return fmt.Errorf("unknown field: %s", t.field)
 		}
-
-		// Special validation for HAS operator
-		if t.op == "HAS" && t.field != "log.Value" {
-			return fmt.Errorf("HAS operator can only be used with log.Value field")
-		}
 	}
 	return nil
 }
@@ -666,14 +554,13 @@ func ToSelection(expr string) (notifiermodel.Selection, error) {
 			CurrentLog:   nil,
 		}
 
-		// First, check global conditions (obj.* fields)
-		// Try to evaluate without log context first - this handles 'obj' related fields
-		// and can be an optimization for expressions that don't involve log fields
-		if checkNonLogFields(n) && n.Eval(baseCtx) {
-			return true, nil
+		// First, check if this query contains only obj.* fields (no log fields)
+		// If so, we can evaluate using the global context only
+		if onlyObjectFields(n) {
+			return n.Eval(baseCtx), nil
 		}
 
-		// Then, check each log entry individually
+		// Otherwise, we need to check each log entry individually
 		// Check for log operations in managed logs
 		for logOp, entries := range op.MergeLogger.ManagedLog {
 			for _, entry := range entries {
@@ -726,15 +613,15 @@ func ToSelection(expr string) (notifiermodel.Selection, error) {
 	}), nil
 }
 
-// checkNonLogFields checks if a node tree contains only non-log fields
-func checkNonLogFields(n node) bool {
+// onlyObjectFields checks if a node tree contains only obj.* fields and no log.* fields
+func onlyObjectFields(n node) bool {
 	switch t := n.(type) {
 	case orNode:
-		return checkNonLogFields(t.left) && checkNonLogFields(t.right)
+		return onlyObjectFields(t.left) && onlyObjectFields(t.right)
 	case andNode:
-		return checkNonLogFields(t.left) && checkNonLogFields(t.right)
+		return onlyObjectFields(t.left) && onlyObjectFields(t.right)
 	case predicateNode:
-		return !strings.HasPrefix(t.field, "log.")
+		return strings.HasPrefix(t.field, "obj.")
 	default:
 		return true
 	}
