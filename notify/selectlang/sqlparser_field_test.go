@@ -318,49 +318,6 @@ func TestLogPathOperations(t *testing.T) {
 	}
 }
 
-// Test log.Name field operations (using path as fallback)
-func TestLogNameOperations(t *testing.T) {
-	testCases := []struct {
-		name     string
-		query    string
-		expected bool
-	}{
-		{
-			name:     "Equal match (managed log)",
-			query:    "SELECT * FROM Notification WHERE log.Name == 'sensors/temperature/indoor'",
-			expected: true,
-		},
-		{
-			name:     "Equal no match",
-			query:    "SELECT * FROM Notification WHERE log.Name == 'unknown/path'",
-			expected: false,
-		},
-		{
-			name:     "Regex match",
-			query:    "SELECT * FROM Notification WHERE log.Name ~= '.*temperature.*'",
-			expected: true,
-		},
-		{
-			name:     "IN match",
-			query:    "SELECT * FROM Notification WHERE log.Name IN 'sensors/temperature/indoor', 'other/path'",
-			expected: true,
-		},
-	}
-
-	op := createTestOperation()
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			sel, err := selectlang.ToSelection(tc.query)
-			require.NoError(t, err)
-			require.NotNil(t, sel)
-
-			selected, _ := sel.Select(op, false)
-			assert.Equal(t, tc.expected, selected)
-		})
-	}
-}
-
 // Test log.Name field operations for map keys
 func TestLogNameMapKeyOperations(t *testing.T) {
 	testCases := []struct {

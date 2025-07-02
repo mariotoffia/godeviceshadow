@@ -207,13 +207,78 @@ func TestSyntaxErrorRecovery(t *testing.T) {
 	}
 }
 
-// TestComplexQueryPerformance tests the performance of complex queries
-func TestComplexQueryPerformance(t *testing.T) {
-	// Always skip this test by default to avoid long-running tests in CI/CD
-	// Can be run manually when needed by setting the GOTEST_PERFORMANCE environment variable
-	t.Skip("Skipping performance test")
-
+// BenchmarkComplexQueries provides benchmark tests for complex query performance
+func BenchmarkComplexQueries(b *testing.B) {
 	op := createTestOperation()
+
+	// Add test path for log.Path test
+	op.MergeLogger.PlainLog[model.MergeOperationAdd] = append(
+		op.MergeLogger.PlainLog[model.MergeOperationAdd],
+		changelogger.PlainValue{
+			Path:     "test/benchmark",
+			NewValue: "benchmark-value",
+		},
+	)
+
+	benchmarks := []struct {
+		name  string
+		query string
+	}{
+		{
+			name: "MultipleANDConditions",
+			query: "SELECT * FROM Notification WHERE " +
+				"obj.ID == 'device-123' AND " +
+				"obj.Name == 'homeShadow' AND " +
+				"obj.Operation == 'report' AND " +
+				"log.Path ~= 'test/' AND " +
+				"log.Value != 'offline'",
+		},
+		{
+			name: "MultipleORConditions",
+			query: "SELECT * FROM Notification WHERE " +
+				"obj.ID == 'device-123' OR " +
+				"obj.ID == 'other-device' OR " +
+				"obj.ID == 'another-device'",
+		},
+		{
+			name: "NestedQueryWithParentheses",
+			query: "SELECT * FROM Notification WHERE " +
+				"(obj.ID == 'device-123' AND obj.Name == 'homeShadow') OR " +
+				"(log.Path ~= 'test/' AND log.Value != 'offline')",
+		},
+	}
+
+	for _, bm := range benchmarks {
+		// Parse the query once outside the benchmark
+		sel, err := selectlang.ToSelection(bm.query)
+		if err != nil {
+			b.Fatalf("Failed to parse query '%s': %v", bm.query, err)
+		}
+
+		b.Run(bm.name, func(b *testing.B) {
+			// Reset the timer for the actual benchmark
+			b.ResetTimer()
+
+			// Run the benchmark
+			for i := 0; i < b.N; i++ {
+				_, _ = sel.Select(op, false)
+			}
+		})
+	}
+}
+
+// TestComplexQueries tests the functionality of complex queries
+func TestComplexQueries(t *testing.T) {
+	op := createTestOperation()
+
+	// Add test path for log.Path test
+	op.MergeLogger.PlainLog[model.MergeOperationAdd] = append(
+		op.MergeLogger.PlainLog[model.MergeOperationAdd],
+		changelogger.PlainValue{
+			Path:     "test/functionality",
+			NewValue: "test-value",
+		},
+	)
 
 	testCases := []struct {
 		name     string
@@ -221,17 +286,16 @@ func TestComplexQueryPerformance(t *testing.T) {
 		expected bool
 	}{
 		{
-			name: "Query with many AND conditions",
+			name: "Multiple AND conditions",
 			query: "SELECT * FROM Notification WHERE " +
 				"obj.ID == 'device-123' AND " +
 				"obj.Name == 'homeShadow' AND " +
 				"obj.Operation == 'report' AND " +
-				"log.Path ~= 'test/' AND " +
-				"log.Value != 'offline'",
+				"log.Path ~= 'test/'",
 			expected: true,
 		},
 		{
-			name: "Query with many OR conditions",
+			name: "Multiple OR conditions",
 			query: "SELECT * FROM Notification WHERE " +
 				"obj.ID == 'device-123' OR " +
 				"obj.ID == 'other-device' OR " +
@@ -242,32 +306,19 @@ func TestComplexQueryPerformance(t *testing.T) {
 			name: "Nested query with parentheses",
 			query: "SELECT * FROM Notification WHERE " +
 				"(obj.ID == 'device-123' AND obj.Name == 'homeShadow') OR " +
-				"(log.Path ~= 'test/' AND log.Value != 'offline')",
+				"(log.Path ~= 'nonexistent/' AND log.Value == 'missing')",
 			expected: true,
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			// Performance test: run the query multiple times
-			const iterations = 10
-
-			// Parse the query once (don't include in timing)
 			sel, err := selectlang.ToSelection(tc.query)
 			require.NoError(t, err)
 			require.NotNil(t, sel)
 
-			// Time the execution
-			start := time.Now()
-			for i := 0; i < iterations; i++ {
-				selected, _ := sel.Select(op, false)
-				assert.Equal(t, tc.expected, selected)
-			}
-			duration := time.Since(start)
-
-			// Log the performance metrics
-			t.Logf("Query executed %d times in %v (avg: %v per query)",
-				iterations, duration, duration/time.Duration(iterations))
+			selected, _ := sel.Select(op, false)
+			assert.Equal(t, tc.expected, selected)
 		})
 	}
 }

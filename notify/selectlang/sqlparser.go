@@ -11,19 +11,19 @@ import (
 )
 
 type node interface {
-	Eval(op notifiermodel.NotifierOperation) bool
+	Eval(ctx *EvalContext) bool
 }
 
 type orNode struct{ left, right node }
 
-func (n orNode) Eval(op notifiermodel.NotifierOperation) bool {
-	return n.left.Eval(op) || n.right.Eval(op)
+func (n orNode) Eval(ctx *EvalContext) bool {
+	return n.left.Eval(ctx) || n.right.Eval(ctx)
 }
 
 type andNode struct{ left, right node }
 
-func (n andNode) Eval(op notifiermodel.NotifierOperation) bool {
-	return n.left.Eval(op) && n.right.Eval(op)
+func (n andNode) Eval(ctx *EvalContext) bool {
+	return n.left.Eval(ctx) && n.right.Eval(ctx)
 }
 
 type predicateNode struct {
@@ -33,7 +33,49 @@ type predicateNode struct {
 	values []any
 }
 
-func (p predicateNode) Eval(op notifiermodel.NotifierOperation) bool {
+func (p predicateNode) Eval(ctx *EvalContext) bool {
+	// If we're in log context, evaluate based on the current log entry
+	if ctx.InLogContext && ctx.CurrentLog != nil {
+		return p.evalLogEntry(ctx)
+	}
+
+	// Otherwise, fall back to global evaluation
+	return p.evalGlobal(ctx)
+}
+
+// evalLogEntry evaluates the predicate against the current log entry
+func (p predicateNode) evalLogEntry(ctx *EvalContext) bool {
+	switch p.field {
+	case "log.Operation":
+		// Special handling for acknowledge operations
+		if ctx.CurrentLog.Operation == MergeOperationAcknowledge {
+			return evalBasic("acknowledge", p)
+		}
+		return evalBasic(ctx.CurrentLog.Operation.String(), p)
+	case "log.Path":
+		return evalBasic(ctx.CurrentLog.Path, p)
+	case "log.Name":
+		if len(ctx.CurrentLog.Keys) > 0 {
+			// Check if any key matches the predicate
+			for key := range ctx.CurrentLog.Keys {
+				if evalBasic(key, p) {
+					return true
+				}
+			}
+		}
+		return false
+	case "log.Value":
+		return evalAny(ctx.CurrentLog.Value, p)
+	default:
+		// For non-log fields, use global evaluation
+		return p.evalGlobal(ctx)
+	}
+}
+
+// evalGlobal evaluates the predicate against the global operation
+func (p predicateNode) evalGlobal(ctx *EvalContext) bool {
+	op := ctx.OriginalOp
+
 	switch p.field {
 	case "obj.ID":
 		if p.op == "~=" {
@@ -104,7 +146,6 @@ func (p predicateNode) Eval(op notifiermodel.NotifierOperation) bool {
 		}
 		return false
 	case "log.Name":
-		// The log.Name field now refers to a key in the Value map if Value is a map
 		// Check keys in managed logs
 		for _, m := range op.MergeLogger.ManagedLog {
 			for _, mv := range m {
@@ -116,6 +157,7 @@ func (p predicateNode) Eval(op notifiermodel.NotifierOperation) bool {
 						}
 					}
 				}
+				// No longer check path as a fallback
 			}
 		}
 		// Check keys in plain logs
@@ -129,6 +171,7 @@ func (p predicateNode) Eval(op notifiermodel.NotifierOperation) bool {
 						}
 					}
 				}
+				// No longer check path as a fallback
 			}
 		}
 		// Check keys in acknowledged desires
@@ -141,26 +184,7 @@ func (p predicateNode) Eval(op notifiermodel.NotifierOperation) bool {
 					}
 				}
 			}
-		}
-		// Fallback to path checking (for backward compatibility)
-		for _, m := range op.MergeLogger.ManagedLog {
-			for _, mv := range m {
-				if pathContainsValue(mv.Path, p) {
-					return true
-				}
-			}
-		}
-		for _, m := range op.MergeLogger.PlainLog {
-			for _, pv := range m {
-				if pathContainsValue(pv.Path, p) {
-					return true
-				}
-			}
-		}
-		for path := range op.DesireLogger.Acknowledged() {
-			if pathContainsValue(path, p) {
-				return true
-			}
+			// No longer check path as a fallback
 		}
 		return false
 	case "log.Value":
@@ -194,32 +218,7 @@ func (p predicateNode) Eval(op notifiermodel.NotifierOperation) bool {
 	}
 }
 
-// pathContainsValue checks if a path contains the value as specified in the predicate
-func pathContainsValue(path string, p predicateNode) bool {
-	switch p.op {
-	case "==":
-		if s, ok := p.value.(string); ok {
-			return path == s
-		}
-	case "!=":
-		if s, ok := p.value.(string); ok {
-			return path != s
-		}
-	case "~=":
-		if s, ok := p.value.(string); ok {
-			re, err := reutils.Shared.GetOrCompile(s)
-			return err == nil && re.MatchString(path)
-		}
-	case "IN":
-		for _, v := range p.values {
-			if s, ok := v.(string); ok && path == s {
-				return true
-			}
-		}
-	}
-	return false
-}
-
+// evalBasic evaluates a string value against a predicate
 func evalBasic(val string, p predicateNode) bool {
 	switch p.op {
 	case "==":
@@ -658,10 +657,85 @@ func ToSelection(expr string) (notifiermodel.Selection, error) {
 	if err != nil || n == nil {
 		return nil, err
 	}
+
 	return notifiermodel.FuncSelection(func(op notifiermodel.NotifierOperation, value bool) (bool, []notifiermodel.SelectedValue) {
-		if n.Eval(op) {
+		// Create a base evaluation context
+		baseCtx := &EvalContext{
+			OriginalOp:   op,
+			InLogContext: false,
+			CurrentLog:   nil,
+		}
+
+		// First, check global conditions (obj.* fields)
+		// Try to evaluate without log context first - this handles 'obj' related fields
+		// and can be an optimization for expressions that don't involve log fields
+		if checkNonLogFields(n) && n.Eval(baseCtx) {
 			return true, nil
 		}
+
+		// Then, check each log entry individually
+		// Check for log operations in managed logs
+		for logOp, entries := range op.MergeLogger.ManagedLog {
+			for _, entry := range entries {
+				logEntry := CreateLogEntry(logOp, entry.Path, entry.NewValue.GetValue())
+				logCtx := &EvalContext{
+					OriginalOp:   op,
+					InLogContext: true,
+					CurrentLog:   &logEntry,
+				}
+
+				if n.Eval(logCtx) {
+					return true, nil
+				}
+			}
+		}
+
+		// Check for log operations in plain logs
+		for logOp, entries := range op.MergeLogger.PlainLog {
+			for _, entry := range entries {
+				logEntry := CreateLogEntry(logOp, entry.Path, entry.NewValue)
+				logCtx := &EvalContext{
+					OriginalOp:   op,
+					InLogContext: true,
+					CurrentLog:   &logEntry,
+				}
+
+				if n.Eval(logCtx) {
+					return true, nil
+				}
+			}
+		}
+
+		// Check for acknowledge operations in the desire logger
+		if len(op.DesireLogger.Acknowledged()) > 0 {
+			for path, value := range op.DesireLogger.Acknowledged() {
+				logEntry := CreateLogEntry(MergeOperationAcknowledge, path, value.GetValue())
+				logCtx := &EvalContext{
+					OriginalOp:   op,
+					InLogContext: true,
+					CurrentLog:   &logEntry,
+				}
+
+				if n.Eval(logCtx) {
+					return true, nil
+				}
+			}
+		}
+
 		return false, nil
 	}), nil
+}
+
+// checkNonLogFields checks if a node tree contains only non-log fields
+func checkNonLogFields(n node) bool {
+	switch t := n.(type) {
+	case orNode:
+		return checkNonLogFields(t.left) && checkNonLogFields(t.right)
+	case andNode:
+		return checkNonLogFields(t.left) && checkNonLogFields(t.right)
+	case predicateNode:
+		return !strings.HasPrefix(t.field, "log.")
+	default:
+		return true
+	}
 }

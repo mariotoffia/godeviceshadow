@@ -41,8 +41,8 @@ The selection language enables filtering notification events based on both objec
 | `log.Path ~= 'sensors/.*/indoor'`
 
 | Log | `log.Name` 
-| Alias for log.Path, kept for backward compatibility 
-| `log.Name == 'sensors/temperature/indoor'`
+| The key name in a map value or fallback to path for non-map values 
+| `log.Name == 'temp'`
 
 | Log | `log.Value` 
 | The value associated with a log entry. Can be a scalar or a map 
@@ -53,7 +53,7 @@ The selection language enables filtering notification events based on both objec
 
 * *Comparison operators:* `==` (equals), `!=` (not equals), `>` (greater than), `<` (less than), `>=` (greater than or equal), `<=` (less than or equal)
 * *Pattern matching:* `~=` (regex match) and `~!=` (regex not match)
-* *Collection operators:* `IN` (value in list), `HAS` (map key exists)
+* *Collection operators:* `IN` (value in list)
 * *Time operators:* `before`, `after` (for timestamp comparisons)
 * *Logical operators:* `AND`, `OR`, and parentheses for grouping
 
@@ -93,9 +93,9 @@ SELECT * FROM Notification WHERE log.Path ~= 'sensors/.*/indoor'
 SELECT * FROM Notification WHERE log.Path == 'sensors/temperature/indoor' AND log.Value > 20
 ```
 
-.Filter by Value (Map)
+.Filter by Map Key and Value
 ```sql
-SELECT * FROM Notification WHERE log.Path == 'sensors/temperature/indoor' AND log.Name == 'temp'
+SELECT * FROM Notification WHERE log.Name == 'temp' AND log.Value > 20
 ```
 
 ==== Combined Examples
