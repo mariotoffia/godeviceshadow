@@ -43,8 +43,8 @@ github.com/jmespath/go-jmespath/internal/testify v1.5.1 h1:shLQSRRSCCPj3f2gpwzGw
 github.com/jmespath/go-jmespath/internal/testify v1.5.1/go.mod h1:L3OGu8Wl2/fWfCI6z80xFu9LTZmf1ZRjMHUOPmWr69U=
 github.com/mariotoffia/godeviceshadow v0.0.5 h1:02nltvpGd5vgGjeRj5eSOz/mTtpVK0irCyyl4ixYrr4=
 github.com/mariotoffia/godeviceshadow v0.0.5/go.mod h1:eq0Ec4K+PJ94wnrXYt990wNfS5KSJ95sfqJsqbLDI9U=
-github.com/mariotoffia/godeviceshadow/notify/selectlang v0.0.1 h1:JfPbPSvHsf9QiWCSXh9c0/2Pq9fxKMtsIciZd014/MU=
-github.com/mariotoffia/godeviceshadow/notify/selectlang v0.0.1/go.mod h1:ensfqwFOckTlG+GWJhrx4c9fqnS/Bvk9UeeyAZ8XHSA=
+github.com/mariotoffia/godeviceshadow/notify/selectlang v0.1.0 h1:7aQ/bm+j/d7rSGMa1QaNqyHLfgPKimvKcjZjuJjQqCM=
+github.com/mariotoffia/godeviceshadow/notify/selectlang v0.1.0/go.mod h1:YtWdjc7TqLeZ55HsschKEAPBxBjLv00KS0qTO/M0rGI=
 github.com/mariotoffia/godeviceshadow/persistence/dynamodbpersistence v0.1.2 h1:FNCIYCAtMa2T73IVtqhYz14v91K2lOW8XM2BbEtRN5g=
 github.com/mariotoffia/godeviceshadow/persistence/dynamodbpersistence v0.1.2/go.mod h1:+XA8HZEjLQnigT88ttUgtw++nTstDv8Wt4ny4kJuHP8=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
