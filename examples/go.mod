@@ -11,7 +11,7 @@ go 1.23.5
 // Inter module dependencies
 require (
 	github.com/mariotoffia/godeviceshadow v0.0.5
-	github.com/mariotoffia/godeviceshadow/notify/selectlang v0.0.1
+	github.com/mariotoffia/godeviceshadow/notify/selectlang v0.1.0
 	github.com/mariotoffia/godeviceshadow/persistence/dynamodbpersistence v0.1.2
 )
 
