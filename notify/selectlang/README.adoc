@@ -41,12 +41,12 @@ The selection language enables filtering notification events based on both objec
 | `log.Path ~= 'sensors/.*/indoor'`
 
 | Log | `log.Name` 
-| The key name in a map value or fallback to path for non-map values 
+| The key name in a map value
 | `log.Name == 'temp'`
 
 | Log | `log.Value` 
 | The value associated with a log entry. Can be a scalar or a map 
-| `log.Value > 20` or `log.Name == 'temp'`
+| `log.Value > 20` AND `log.Name == 'temp'`
 |===
 
 === Supported Operators
