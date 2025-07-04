@@ -1,6 +1,8 @@
 .PHONY: test
 test:
 	@go test ./... -cover
+integration-test:
+	@go test -tags=integration ./... -cover
 
 .PHONY: dep
 dep:
