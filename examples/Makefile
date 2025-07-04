@@ -2,6 +2,13 @@ SHELL := /bin/bash
 
 SUB_MODULE := examples
 
+.PHONY: test
+test:
+	@go test ./... -cover
+.PHONY: integration-test
+integration-test:
+	@go test -tags=integration ./... -cover
+.PHONY: version
 .PHONY: version
 version:
 	@if [ -z "$(v)" ]; then \
