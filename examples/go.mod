@@ -1,6 +1,6 @@
 module github.com/mariotoffia/godeviceshadow/examples
 
-go 1.23.5
+go 1.24
 
 // replace github.com/mariotoffia/godeviceshadow => ..
 
