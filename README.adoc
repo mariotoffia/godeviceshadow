@@ -2,6 +2,12 @@
 
 = Go Device Shadow (godeviceshadow)
 
+image:https://github.com/mariotoffia/godeviceshadow/actions/workflows/go-test.yml/badge.svg[Go Tests,link=https://github.com/mariotoffia/godeviceshadow/actions/workflows/go-test.yml]
+image:https://img.shields.io/github/go-mod/go-version/mariotoffia/godeviceshadow[Go Version]
+image:https://img.shields.io/github/license/mariotoffia/godeviceshadow[License]
+image:https://img.shields.io/github/v/release/mariotoffia/godeviceshadow[Release]
+image:https://goreportcard.com/badge/github.com/mariotoffia/godeviceshadow[Go Report Card,link=https://goreportcard.com/report/github.com/mariotoffia/godeviceshadow]
+
 == Introduction
 This is an implementation of a device shadow storage and notification for DynamoDB and SQS/SNS. It is pluggable for other storage/notifications.
 
@@ -143,6 +149,13 @@ The project uses GitHub Actions for continuous integration. Tests are automatica
 - Code is pushed to the main branch
 
 The CI workflow runs `make test` in the main module and in the examples directory to ensure all tests pass.
+
+The project includes badges in the README that show:
+- CI workflow status: Shows if the tests are passing
+- Go version: The Go version used in the project
+- License: The project's license type
+- Latest release: Shows the latest release version
+- Go Report Card: Code quality report from goreportcard.com
 
 .godeviceshadow
 ====
