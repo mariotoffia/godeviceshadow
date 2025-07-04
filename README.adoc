@@ -6,7 +6,6 @@ image:https://github.com/mariotoffia/godeviceshadow/actions/workflows/go-test.ym
 image:https://img.shields.io/github/go-mod/go-version/mariotoffia/godeviceshadow[Go Version]
 image:https://img.shields.io/github/license/mariotoffia/godeviceshadow[License]
 image:https://img.shields.io/github/v/release/mariotoffia/godeviceshadow[Release]
-image:https://goreportcard.com/badge/github.com/mariotoffia/godeviceshadow[Go Report Card,link=https://goreportcard.com/report/github.com/mariotoffia/godeviceshadow]
 
 == Introduction
 This is an implementation of a device shadow storage and notification for DynamoDB and SQS/SNS. It is pluggable for other storage/notifications.
