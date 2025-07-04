@@ -9,14 +9,15 @@ import (
 )
 
 // MergeMode indicates how merging is done regarding deletions.
-type MergeMode int
+// This is a duplicate of model.MergeMode to maintain backward compatibility.
+type MergeMode = model.MergeMode
 
 const (
 	// ClientIsMaster is when a client is considered the master
 	// and deletions are propagated.
-	ClientIsMaster MergeMode = 1
+	ClientIsMaster MergeMode = model.ClientIsMaster
 	// ServerIsMaster, only updates and additions are propagated.
-	ServerIsMaster MergeMode = 2
+	ServerIsMaster MergeMode = model.ServerIsMaster
 )
 
 // MergeOptions holds configuration for how the merge should be performed.
@@ -28,6 +29,10 @@ type MergeOptions struct {
 	// override value is "empty" it will override the base value. If set to `false` it will
 	// keep the base value.
 	DoOverrideWithEmpty bool
+	// MergeSlicesByID when set to `true`, it will attempt to merge slices by matching elements
+	// with the same ID (requires elements to implement IdValueAndTimestamp). When `false` or
+	// when elements don't implement IdValueAndTimestamp, slices are merged by position.
+	MergeSlicesByID bool
 	// Loggers will be notified on add, updated, remove, not-changed operations while merging.
 	Loggers MergeLoggers
 }
@@ -39,13 +44,21 @@ type MergeObject struct {
 
 // Merge merges newModel into oldModel following the specified rules:
 //
-//  1. If a field implements ValueAndTimestamp:
+//  1. If the type implements the Merger interface, its custom Merge method is used.
+//
+//  2. If a field implements ValueAndTimestamp or IdValueAndTimestamp:
 //     - Compare timestamps. The newer timestamp wins.
 //     - If Mode=ClientIsMaster and field missing in newModel, remove from merged result.
 //     - If Mode=ServerIsMaster and field missing in newModel, keep from oldModel.
 //     - If timestamps are equal => no update (keep old).
 //
-//  2. If a field does not implement ValueAndTimestamp:
+//  3. For slices/arrays with elements implementing IdValueAndTimestamp and MergeSlicesByID=true:
+//     - Elements are matched by ID instead of by position.
+//     - Elements with the same ID are merged recursively.
+//     - New elements in newModel are added.
+//     - Elements only in oldModel are kept if ServerIsMaster, removed if ClientIsMaster.
+//
+//  4. If a field does not implement ValueAndTimestamp:
 //     - Overwrite from newModel if present.
 //     - If absent in newModel: remove if ClientIsMaster, keep if ServerIsMaster.
 //
@@ -93,6 +106,15 @@ func MergeAny(oldModel, newModel any, opts MergeOptions) (any, error) {
 func mergeRecursive(base, override reflect.Value, obj MergeObject) (reflect.Value, error) {
 	if !override.IsValid() {
 		return reflect.Value{}, fmt.Errorf("both base: '%T' and override: '%T' must be valid", base.Interface(), override.Interface())
+	}
+
+	// Check for Merger interface before unwrapping
+	if merger, ok := base.Interface().(model.Merger); ok {
+		result, err := merger.Merge(override.Interface(), model.MergeMode(obj.Mode))
+		if err != nil {
+			return reflect.Value{}, err
+		}
+		return reflect.ValueOf(result), nil
 	}
 
 	baseVal := base
@@ -201,64 +223,13 @@ func mergeSlice(baseVal, overrideVal reflect.Value, opts MergeObject) (reflect.V
 		}
 	}
 
-	baseLen := baseVal.Len()
-	ovLen := overrideVal.Len()
-
-	// Merge each element up to the min of both lengths
-	minLen := baseLen
-	maxLen := ovLen
-	if ovLen < minLen {
-		minLen = ovLen
-		maxLen = baseLen
+	// If MergeSlicesByID is enabled, try to merge by ID
+	if opts.MergeSlicesByID {
+		return mergeSliceByID(baseVal, overrideVal, opts)
 	}
 
-	// Create a new slice of the same type as baseVal
-	result := reflect.MakeSlice(baseVal.Type(), 0, maxLen)
-
-	for i := 0; i < minLen; i++ {
-		baseElem := baseVal.Index(i)
-		ovElem := overrideVal.Index(i)
-
-		opts.CurrentPath = fmt.Sprintf("%s.%d", basePath, i)
-		mergedElem, err := mergeRecursive(baseElem, ovElem, opts)
-
-		if err != nil {
-			return reflect.Value{}, err
-		}
-
-		result = reflect.Append(result, mergedElem)
-	}
-
-	// new slice is longer -> add extra elements in override
-	if ovLen > minLen {
-		for i := minLen; i < ovLen; i++ {
-			opts.CurrentPath = fmt.Sprintf("%s.%d", basePath, i)
-			result = reflect.Append(result, overrideVal.Index(i))
-
-			notifyRecursive(overrideVal.Index(i), model.MergeOperationAdd, opts)
-		}
-	}
-
-	// old slice is longer -> remove or keep
-	if baseLen > minLen {
-		if opts.Mode == ServerIsMaster {
-			// ServerIsMaster -> keep
-			for i := minLen; i < baseLen; i++ {
-				opts.CurrentPath = fmt.Sprintf("%s.%d", basePath, i)
-				result = reflect.Append(result, baseVal.Index(i))
-
-				notifyRecursive(baseVal.Index(i), model.MergeOperationNotChanged, opts)
-			}
-		} else /*ClientIsMaster*/ {
-			for i := minLen; i < baseLen; i++ {
-				opts.CurrentPath = fmt.Sprintf("%s.%d", basePath, i)
-
-				notifyRecursive(baseVal.Index(i), model.MergeOperationRemove, opts)
-			}
-		}
-	}
-
-	return result, nil
+	// Otherwise, fall back to positional merge
+	return mergeSliceByPosition(baseVal, overrideVal, opts)
 }
 
 // mergeStruct merges two struct values (non-timestamped case).
@@ -406,6 +377,11 @@ func unwrapValueAndTimestamp(rv reflect.Value) (model.ValueAndTimestamp, bool) {
 		return nil, false
 	}
 
+	// Check for IdValueAndTimestamp first (which also implements ValueAndTimestamp)
+	if idvt, ok := unwrapIdValueAndTimestamp(rv); ok {
+		return idvt, true
+	}
+
 	// Unwrap pointers and interfaces recursively
 	rv = unwrapReflectValue(rv)
 
@@ -508,4 +484,191 @@ func getJSONTag(field reflect.StructField) string {
 	}
 
 	return tag
+}
+
+// mergeSliceByPosition merges two slices based on their positions (original implementation)
+func mergeSliceByPosition(baseVal, overrideVal reflect.Value, opts MergeObject) (reflect.Value, error) {
+	baseLen := baseVal.Len()
+	ovLen := overrideVal.Len()
+	basePath := opts.CurrentPath
+
+	// Merge each element up to the min of both lengths
+	minLen := baseLen
+	maxLen := ovLen
+	if ovLen < minLen {
+		minLen = ovLen
+		maxLen = baseLen
+	}
+
+	// Create a new slice of the same type as baseVal
+	result := reflect.MakeSlice(baseVal.Type(), 0, maxLen)
+
+	for i := 0; i < minLen; i++ {
+		baseElem := baseVal.Index(i)
+		ovElem := overrideVal.Index(i)
+
+		opts.CurrentPath = fmt.Sprintf("%s.%d", basePath, i)
+		mergedElem, err := mergeRecursive(baseElem, ovElem, opts)
+
+		if err != nil {
+			return reflect.Value{}, err
+		}
+
+		result = reflect.Append(result, mergedElem)
+	}
+
+	// new slice is longer -> add extra elements in override
+	if ovLen > minLen {
+		for i := minLen; i < ovLen; i++ {
+			opts.CurrentPath = fmt.Sprintf("%s.%d", basePath, i)
+			result = reflect.Append(result, overrideVal.Index(i))
+
+			notifyRecursive(overrideVal.Index(i), model.MergeOperationAdd, opts)
+		}
+	}
+
+	// old slice is longer -> remove or keep
+	if baseLen > minLen {
+		if opts.Mode == ServerIsMaster {
+			// ServerIsMaster -> keep
+			for i := minLen; i < baseLen; i++ {
+				opts.CurrentPath = fmt.Sprintf("%s.%d", basePath, i)
+				result = reflect.Append(result, baseVal.Index(i))
+
+				notifyRecursive(baseVal.Index(i), model.MergeOperationNotChanged, opts)
+			}
+		} else /*ClientIsMaster*/ {
+			for i := minLen; i < baseLen; i++ {
+				opts.CurrentPath = fmt.Sprintf("%s.%d", basePath, i)
+
+				notifyRecursive(baseVal.Index(i), model.MergeOperationRemove, opts)
+			}
+		}
+	}
+
+	return result, nil
+}
+
+// unwrapIdValueAndTimestamp attempts to convert a reflect.Value to IdValueAndTimestamp
+func unwrapIdValueAndTimestamp(rv reflect.Value) (model.IdValueAndTimestamp, bool) {
+	// Must be a pointer or interface with non nil value
+	if !rv.IsValid() || rv.Kind() == reflect.Invalid || (rv.Kind() == reflect.Ptr || rv.Kind() == reflect.Interface) && rv.IsNil() {
+		return nil, false
+	}
+
+	// Unwrap pointers and interfaces recursively
+	origRv := rv
+	rv = unwrapReflectValue(rv)
+
+	if !rv.IsValid() {
+		return nil, false
+	}
+
+	// Try direct conversion first
+	if idvt, ok := origRv.Interface().(model.IdValueAndTimestamp); ok {
+		return idvt, true
+	}
+
+	// If not addressable, make a copy
+	if !rv.CanAddr() {
+		copy := reflect.New(rv.Type())
+		copy.Elem().Set(rv)
+		rv = copy
+	} else {
+		rv = rv.Addr()
+	}
+
+	// Try conversion on the addressable value
+	if idvt, ok := rv.Interface().(model.IdValueAndTimestamp); ok {
+		return idvt, true
+	}
+
+	return nil, false
+}
+
+// mergeSliceByID merges two slices by matching elements with the same ID
+func mergeSliceByID(baseVal, overrideVal reflect.Value, opts MergeObject) (reflect.Value, error) {
+	baseLen := baseVal.Len()
+	ovLen := overrideVal.Len()
+	basePath := opts.CurrentPath
+
+	// Create a new slice of the same type as baseVal
+	result := reflect.MakeSlice(baseVal.Type(), 0, baseLen+ovLen)
+
+	// Maps to track elements by ID
+	baseMap := make(map[string]int)     // ID -> index in baseVal
+	overrideMap := make(map[string]int) // ID -> index in overrideVal
+	processed := make(map[string]bool)  // IDs that have been processed
+
+	// First, try to extract IDs from base elements
+	var canUseIDs bool = true
+	for i := 0; i < baseLen; i++ {
+		elem := baseVal.Index(i)
+		if idvt, ok := unwrapIdValueAndTimestamp(elem); ok {
+			id := idvt.GetID()
+			baseMap[id] = i
+		} else {
+			// If any element doesn't implement IdValueAndTimestamp, fall back to positional merge
+			canUseIDs = false
+			break
+		}
+	}
+
+	// If we can't use IDs, fall back to positional merge
+	if !canUseIDs {
+		return mergeSliceByPosition(baseVal, overrideVal, opts)
+	}
+
+	// Extract IDs from override elements
+	for i := 0; i < ovLen; i++ {
+		elem := overrideVal.Index(i)
+		if idvt, ok := unwrapIdValueAndTimestamp(elem); ok {
+			id := idvt.GetID()
+			overrideMap[id] = i
+		} else {
+			// If any element doesn't implement IdValueAndTimestamp, fall back to positional merge
+			return mergeSliceByPosition(baseVal, overrideVal, opts)
+		}
+	}
+
+	// Process elements that exist in both slices
+	for id, baseIdx := range baseMap {
+		baseElem := baseVal.Index(baseIdx)
+
+		if overrideIdx, exists := overrideMap[id]; exists {
+			// Element exists in both - merge them
+			overrideElem := overrideVal.Index(overrideIdx)
+			opts.CurrentPath = fmt.Sprintf("%s.%s", basePath, id)
+
+			mergedElem, err := mergeRecursive(baseElem, overrideElem, opts)
+			if err != nil {
+				return reflect.Value{}, err
+			}
+
+			result = reflect.Append(result, mergedElem)
+			processed[id] = true
+		} else if opts.Mode == ServerIsMaster {
+			// Element only in base and server is master - keep it
+			opts.CurrentPath = fmt.Sprintf("%s.%s", basePath, id)
+			result = reflect.Append(result, baseElem)
+			notifyRecursive(baseElem, model.MergeOperationNotChanged, opts)
+		} else {
+			// Element only in base and client is master - remove it
+			opts.CurrentPath = fmt.Sprintf("%s.%s", basePath, id)
+			notifyRecursive(baseElem, model.MergeOperationRemove, opts)
+		}
+	}
+
+	// Add elements that only exist in override
+	for id, overrideIdx := range overrideMap {
+		if !processed[id] {
+			// Element only in override - add it
+			overrideElem := overrideVal.Index(overrideIdx)
+			opts.CurrentPath = fmt.Sprintf("%s.%s", basePath, id)
+			result = reflect.Append(result, overrideElem)
+			notifyRecursive(overrideElem, model.MergeOperationAdd, opts)
+		}
+	}
+
+	return result, nil
 }

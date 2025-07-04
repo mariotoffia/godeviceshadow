@@ -10,42 +10,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-type Sensor struct {
-	ID        int
-	TimeStamp time.Time
-	Value     any
-}
-
-type Circuit struct {
-	ID      int
-	Sensors []Sensor
-}
-
-type Device struct {
-	Name     string
-	Circuits []Circuit
-}
-
-func (s *Sensor) GetTimestamp() time.Time {
-	return s.TimeStamp
-}
-func (s *Sensor) GetValue() any {
-	return s.Value
-}
-
-// For map testing
-type TimestampedMapVal struct {
-	Value     string
-	UpdatedAt time.Time
-}
-
-func (tmv *TimestampedMapVal) GetTimestamp() time.Time {
-	return tmv.UpdatedAt
-}
-func (tmv *TimestampedMapVal) GetValue() any {
-	return tmv.Value
-}
-
 func TestMergeOneNewerInSlice(t *testing.T) {
 	now := time.Now().UTC()
 	oneHourAgo := now.Add(-1 * time.Hour)
@@ -198,81 +162,6 @@ func TestMergeDifferentLengthSlices(t *testing.T) {
 	assert.Equal(t, now, circuit3.Sensors[0].TimeStamp)
 }
 
-func TestMergeMaps(t *testing.T) {
-	now := time.Now().UTC()
-	oldMap := map[string]TimestampedMapVal{
-		"keep":   {Value: "old", UpdatedAt: now.Add(-2 * time.Hour)},
-		"remove": {Value: "willRemove", UpdatedAt: now.Add(-1 * time.Hour)},
-	}
-	newMap := map[string]TimestampedMapVal{
-		"keep":  {Value: "new", UpdatedAt: now.Add(-1 * time.Hour)}, // old is older => replaced if newer
-		"added": {Value: "brandNew", UpdatedAt: now},                // brand new key
-	}
-
-	type MapHolder struct {
-		M map[string]TimestampedMapVal
-	}
-
-	oldObj := MapHolder{M: oldMap}
-	newObj := MapHolder{M: newMap}
-
-	merged, err := merge.Merge(oldObj, newObj, merge.MergeOptions{
-		Mode: merge.ClientIsMaster,
-	})
-	require.NoError(t, err)
-	require.NotNil(t, merged.M)
-
-	require.Contains(t, merged.M, "keep")
-	assert.Equal(t, "new", merged.M["keep"].Value, "Should override because new is strictly newer")
-
-	require.Contains(t, merged.M, "added")
-	assert.Equal(t, "brandNew", merged.M["added"].Value)
-
-	require.NotContains(t, merged.M, "remove")
-
-	mergedSM, err := merge.Merge(oldObj, newObj, merge.MergeOptions{
-		Mode: merge.ServerIsMaster,
-	})
-
-	require.NoError(t, err)
-	require.NotNil(t, mergedSM.M)
-
-	require.Contains(t, mergedSM.M, "remove")
-}
-
-func TestMergeMaps2(t *testing.T) {
-	now := time.Now().UTC()
-	oldMap := map[string]TimestampedMapVal{
-		"keep":   {Value: "old", UpdatedAt: now.Add(-2 * time.Hour)},
-		"remove": {Value: "willRemove", UpdatedAt: now.Add(-1 * time.Hour)},
-	}
-	newMap := map[string]TimestampedMapVal{
-		"keep":  {Value: "new", UpdatedAt: now.Add(-1 * time.Hour)}, // old is older => replaced if newer
-		"added": {Value: "brandNew", UpdatedAt: now},                // brand new key
-	}
-
-	merged, err := merge.Merge(oldMap, newMap, merge.MergeOptions{
-		Mode: merge.ClientIsMaster,
-	})
-	require.NoError(t, err)
-	require.NotNil(t, merged)
-
-	require.Contains(t, merged, "keep")
-	assert.Equal(t, "new", merged["keep"].Value, "Should override because new is strictly newer")
-
-	require.Contains(t, merged, "added")
-	assert.Equal(t, "brandNew", merged["added"].Value)
-
-	require.NotContains(t, merged, "remove")
-
-	mergedSM, err := merge.Merge(oldMap, newMap, merge.MergeOptions{
-		Mode: merge.ServerIsMaster,
-	})
-	require.NoError(t, err)
-	require.NotNil(t, mergedSM)
-	require.Contains(t, mergedSM, "remove")
-}
-
 func TestEmptySlices(t *testing.T) {
 	oldDevice := Device{
 		Name:     "OldCorner",
@@ -336,7 +225,7 @@ func TestEqualTimestampNoUpdate(t *testing.T) {
 	assert.Equal(t, t0, merged.Circuits[0].Sensors[0].TimeStamp, "Timestamps are equal => no update => keep old (though they look the same in practice).")
 }
 
-func BenchmarkMergeOneNewerInSlice(t *testing.B) {
+func BenchmarkMergeSimpleInCommon(t *testing.B) {
 	now := time.Now().UTC()
 	oneHourAgo := now.Add(-1 * time.Hour)
 
