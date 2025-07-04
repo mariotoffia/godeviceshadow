@@ -6,6 +6,7 @@ image:https://github.com/mariotoffia/godeviceshadow/actions/workflows/go-test.ym
 image:https://img.shields.io/github/go-mod/go-version/mariotoffia/godeviceshadow[Go Version]
 image:https://img.shields.io/github/license/mariotoffia/godeviceshadow[License]
 image:https://img.shields.io/github/v/release/mariotoffia/godeviceshadow[Release]
+image:https://sonarcloud.io/api/project_badges/measure?project=mariotoffia_godeviceshadow&metric=alert_status[Quality Gate Status,link=https://sonarcloud.io/summary/new_code?id=mariotoffia_godeviceshadow]
 
 == Introduction
 This is an implementation of a device shadow storage and notification for DynamoDB and SQS/SNS. It is pluggable for other storage/notifications.
