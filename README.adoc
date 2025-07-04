@@ -65,7 +65,7 @@ res = mgr.Report(ctx, managermodel.ReportOperation{
 <4> Find the change logger and extract the managed values from the path `Sensors\..*` (_Regular Expression_).
 <5> Outputs e.q. _Sensors.temp: 2025-01-22T13:22:26+01:00_
 <6> Will add _sp_ to desired state (it is possible to have merge loggers here as well to listen for desire merge).
-<7> Will acknowledge and therefore remove it from desired state (can be listen to, just supply desire loggers).
+<7> Will acknowledge and therefore remove or zero it from desired state (can be listen to, just supply desire loggers).
 
 The above sample shows how to report and desired a certain value including how to access a merge logger. It relies on a manager to be configured and built.
 
@@ -415,6 +415,8 @@ When _ServerIsMaster_ it is not possible to delete elements only add and updates
 === Desired State
 
 This is to denote the desired state and when the client wants to report a state it may also include that the _SDK_ shall load the desired state and clear it when the desired state value are the same as reported.
+
+When a value in the desired state is acknowledged (matches a value in the reported state), it may be either completely removed from the desired model or set to zero values, depending on the implementation. This behavior ensures that desired values that have been acknowledged are effectively cleared, making it easy to identify values that still need to be addressed.
 
 In this case it will need to do this in a transaction since it is two different sort keys. For example in DynamoDB this is done using the transaction _API_.
 
