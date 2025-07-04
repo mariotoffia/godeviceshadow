@@ -136,6 +136,14 @@ To view all examples, visit the https://github.com/mariotoffia/godeviceshadow/tr
 === Modules
 These are the out-of-the-box modules that are available in the `godeviceshadow` repository. They are all submodules and may be used separately or together with the core runtime.
 
+=== Continuous Integration
+
+The project uses GitHub Actions for continuous integration. Tests are automatically run when:
+- A pull request is created or updated targeting the main branch
+- Code is pushed to the main branch
+
+The CI workflow runs `make test` in the main module and in the examples directory to ensure all tests pass.
+
 .godeviceshadow
 ====
 This is the root module.

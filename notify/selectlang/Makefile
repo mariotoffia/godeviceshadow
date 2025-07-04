@@ -1,14 +1,17 @@
 SHELL := /bin/bash
 
 SUB_MODULE := notify/selectlang
-
+.PHONY: test
+test:
+	@go test ./... -cover
+.PHONY: integration-test
+integration-test:
+	@go test -tags=integration ./... -cover
 .PHONY: generate
 generate:
 	@echo "Generating language files..."
 	@antlr -Dlanguage=Go -no-visitor -package selectlang -o . selectlang.g4
 	@rm selectlang.interp selectlang.tokens selectlangLexer.interp selectlangLexer.tokens
-
-
 .PHONY: version
 version:
 	@if [ -z "$(v)" ]; then \

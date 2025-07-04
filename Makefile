@@ -1,9 +1,9 @@
 .PHONY: test
 test:
 	@go test ./... -cover
+.PHONY: integration-test
 integration-test:
 	@go test -tags=integration ./... -cover
-
 .PHONY: dep
 dep:
 	@make -C tools dep

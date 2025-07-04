@@ -1,0 +1,38 @@
+name: Go Tests for Submodules
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'notify/dynamodbnotifier/**'
+      - 'notify/selectlang/**'
+      - 'persistence/dynamodbpersistence/**'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'notify/dynamodbnotifier/**'
+      - 'notify/selectlang/**'
+      - 'persistence/dynamodbpersistence/**'
+
+jobs:
+  test-submodules:
+    name: Test Submodules
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        module: 
+          - 'notify/dynamodbnotifier'
+          - 'notify/selectlang'
+          - 'persistence/dynamodbpersistence'
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.24'
+        cache: true
+
+    - name: Run tests for ${{ matrix.module }}
+      run: cd ${{ matrix.module }} && make test

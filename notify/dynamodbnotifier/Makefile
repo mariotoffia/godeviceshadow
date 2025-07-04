@@ -2,6 +2,12 @@ SHELL := /bin/bash
 
 SUB_MODULE := notify/dynamodbnotifier
 
+.PHONY: test
+test:
+	@go test ./... -cover
+.PHONY: integration-test
+integration-test:
+	@go test -tags=integration ./... -cover
 .PHONY: version
 version:
 	@if [ -z "$(v)" ]; then \
