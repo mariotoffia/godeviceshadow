@@ -61,7 +61,7 @@ func TestNotificationWithDSL(t *testing.T) {
 						res = append(res, notifiermodel.NotificationTargetResult{
 							Operation: op,
 							Target:    target,
-							Custom:    map[string]any{"pass": true},
+							Custom:    map[string]any{"pass": true, "test": "string"},
 						})
 					}
 
