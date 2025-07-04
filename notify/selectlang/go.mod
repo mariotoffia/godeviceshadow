@@ -2,7 +2,7 @@ module github.com/mariotoffia/godeviceshadow/notify/selectlang
 
 go 1.24
 
-require github.com/mariotoffia/godeviceshadow v0.0.7
+require github.com/mariotoffia/godeviceshadow v0.0.9
 
 require (
 	github.com/antlr4-go/antlr/v4 v4.13.1
