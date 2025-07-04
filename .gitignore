@@ -8,6 +8,11 @@
 *.so
 *.dylib
 
+# coverage files
+coverage.out
+coverage.html
+
+
 # MacOSX
 .DS_Store
 

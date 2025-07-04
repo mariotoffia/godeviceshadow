@@ -31,6 +31,12 @@ func formatKey(key reflect.Value) string {
 	case reflect.Interface:
 		// Recursively handle the underlying type of the interface
 		return formatKey(key.Elem())
+	case reflect.Ptr:
+		// Handle pointer by dereferencing if not nil
+		if key.IsNil() {
+			return "<nil>"
+		}
+		return formatKey(key.Elem())
 	default:
 		return fmt.Sprintf("<unsupported key type: %s>", key.Type())
 	}
