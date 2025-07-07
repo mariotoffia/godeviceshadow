@@ -14,13 +14,13 @@ ifndef::imagesdir[:imagesdir: ../meta/assets]
 
 This `Persistence` implementation uses DynamoDB and conditionals with version to ensure consistency.
 
-[.green.icon]#icon:check-circle[]# Key features:
+Key features:
 
-* [.blue.icon]#icon:database[]# Uses DynamoDB as the backend storage
-* [.purple.icon]#icon:lock[]# Ensures consistency with conditional writes and versioning
-* [.orange.icon]#icon:clone[]# Supports both separate and combined storage models
-* [.green.icon]#icon:exchange[]# Provides atomic transaction support
-* [.red.icon]#icon:bolt[]# Efficient parallel processing for better performance
+* 💾 *DynamoDB Backend* - Uses DynamoDB as the backend storage
+* 🔒 *Consistency* - Ensures data integrity with conditional writes and versioning
+* 🔀 *Flexible Storage* - Supports both separate and combined storage models
+* ⚛️ *Atomic Transactions* - Provides atomic transaction support
+* ⚡ *Performance* - Efficient parallel processing for better throughput
 
 NOTE: When reported and desired is stored together, the `Write` operation must receive both `Reported` and `Desired` documents, otherwise this implementation will return an error!
 
