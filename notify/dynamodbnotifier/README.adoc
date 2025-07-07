@@ -4,6 +4,14 @@
 
 This is a simple implementation of listening of DynamoDB events and notifying using the `notifiermodel.Notifier` not process filters/selections and targets (as usual).
 
+Key features:
+
+* 📡 *Event Streaming* - Listens to DynamoDB streams for data changes
+* 🔔 *Notification System* - Uses `notifiermodel.Notifier` to process and distribute events
+* 🔄 *Fault Tolerance* - Handles failures with automatic retry mechanisms
+* 🎯 *Flexible Targets* - Supports notification to various targets like SQS, SNS, etc.
+* 🔍 *Filtering* - Applies notification filters and selections for targeted updates
+
 This allows for a more fault tolerant usage of dynamodb as persistence and notify of e.g. _SQS_ targets of changes. If it fails, it will re-process the event and retry sending to target.
 
 == Lambda
