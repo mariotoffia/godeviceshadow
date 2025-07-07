@@ -4,8 +4,8 @@
 
 The selection language uses a SQL-like syntax for specifying selection criteria. The basic format is:
 
-```
-SELECT * FROM Notification WHERE <conditions>
+```sql
+SELECT * FROM Notification WHERE <obj-conditions> AND/OR <logger-conditions>
 ```
 
 Key features:
