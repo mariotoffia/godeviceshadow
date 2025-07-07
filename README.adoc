@@ -31,13 +31,13 @@ GoDeviceShadow provides a pluggable device shadow implementation with persistenc
 |Core module with the main runtime, merge logic, and interfaces
 
 |💾 *dynamodbpersistence*
-|Persistence implementation for Amazon DynamoDB
+|Persistence implementation for Amazon DynamoDB. https://github.com/mariotoffia/godeviceshadow/tree/main/persistence/dynamodbpersistence[README]
 
 |📡 *dynamodbnotifier*
-|DynamoDB Streams based event notification system
+|DynamoDB Streams based event notification system. https://github.com/mariotoffia/godeviceshadow/tree/main/notify/dynamodbnotifier[README]
 
 |🔤 *selectlang*
-|DSL for creating notification selection filters
+|DSL for creating notification selection filters. https://github.com/mariotoffia/godeviceshadow/tree/main/notify/selectlang[README]
 |===
 
 == Introduction
@@ -170,50 +170,6 @@ The `Selection` may be used to capture a set of values. Just submit `true` on th
 
 == TIP 💡: View All Examples
 To view all examples, visit the https://github.com/mariotoffia/godeviceshadow/tree/main/examples[Examples] directory.
-
-=== Modules
-These are the out-of-the-box modules that are available in the `godeviceshadow` repository. They are all submodules and may be used separately or together with the core runtime.
-
-.godeviceshadow
-====
-This is the root module.
-💡The core runtime do not have any dependencies except for the go framework. Only plugins may have dependencies.💡
-
-[source,bash]
-----
-go get github.com/mariotoffia/godeviceshadow@latest
-----
-====
-
-.dynamodbpersistence
-====
-This module persist the models to DynamoDB. Check the https://github.com/mariotoffia/godeviceshadow/tree/main/persistence/dynamodbpersistence[README] for more information.
-
-[source,bash]
-----
-go get github.com/mariotoffia/godeviceshadow/persistence/dynamodbpersistence@latest
-----
-====
-
-.dynamodbnotifier
-====
-DynamoDB Streams Listener/Notifier. Check the https://github.com/mariotoffia/godeviceshadow/tree/main/notify/dynamodbnotifier[README] for more information.
-
-[source,bash]
-----
-go get github.com/mariotoffia/godeviceshadow/notify/dynamodbnotifier@latest
-----
-====
-
-.selectlang
-====
-Experimental _DSL_ to render notification filter. Please see the https://github.com/mariotoffia/godeviceshadow/tree/main/notify/selectlang[README] for more information.
-
-[source,bash]
-----
-go get github.com/mariotoffia/godeviceshadow/notify/selectlang@latest
-----
-====
 
 == Core Concepts
 
