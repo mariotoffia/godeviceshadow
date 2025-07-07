@@ -30,14 +30,14 @@ GoDeviceShadow provides a pluggable device shadow implementation with persistenc
 |📦 *godeviceshadow*
 |Core module with the main runtime, merge logic, and interfaces
 
-|💾 *dynamodbpersistence*
-|Persistence implementation for Amazon DynamoDB. https://github.com/mariotoffia/godeviceshadow/tree/main/persistence/dynamodbpersistence[README]
+|💾 https://github.com/mariotoffia/godeviceshadow/tree/main/persistence/dynamodbpersistence[dynamodbpersistence]
+|Persistence implementation for Amazon DynamoDB.
 
-|📡 *dynamodbnotifier*
-|DynamoDB Streams based event notification system. https://github.com/mariotoffia/godeviceshadow/tree/main/notify/dynamodbnotifier[README]
+|📡 https://github.com/mariotoffia/godeviceshadow/tree/main/notify/dynamodbnotifier[dynamodbnotifier]
+|DynamoDB Streams based event notification system.
 
-|🔤 *selectlang*
-|DSL for creating notification selection filters. https://github.com/mariotoffia/godeviceshadow/tree/main/notify/selectlang[README]
+|🔤 https://github.com/mariotoffia/godeviceshadow/tree/main/notify/selectlang[selectlang]
+|DSL for creating notification selection filters.
 |===
 
 == Introduction
