@@ -8,12 +8,12 @@ image:https://img.shields.io/github/license/mariotoffia/godeviceshadow[License]
 image:https://img.shields.io/github/v/release/mariotoffia/godeviceshadow[Release]
 image:https://sonarcloud.io/api/project_badges/measure?project=mariotoffia_godeviceshadow&metric=alert_status[Quality Gate Status,link=https://sonarcloud.io/summary/new_code?id=mariotoffia_godeviceshadow]
 
-== Summary
+== Introduction
 [.lead]
 GoDeviceShadow provides a pluggable device shadow implementation with persistence and notification capabilities.
 
 * 🧩 *Modular Architecture* - Use components together or separately with a pluggable design
-* 🔄 *Shadow State Management* - Handles both reported and desired states with configurable merging strategies
+* 🔄 *Shadow State Management* - Handles both reported and desired states with configurable merging strategies - but can be handled in any custom way!
 * 🗄️ *Pluggable Persistence* - Built-in support for in-memory storage.
 * 📢 *Notification System* - Configurable event notification with filtering capabilities for in-memory notifications is built-in.
 * 🔍 *Change Tracking* - Detailed logging of changes through merge loggers
@@ -40,17 +40,10 @@ GoDeviceShadow provides a pluggable device shadow implementation with persistenc
 |DSL for creating notification selection filters.
 |===
 
-== Introduction
-This is an implementation of a device shadow storage and notification for DynamoDB and SQS/SNS. It is pluggable for other storage/notifications.
-
 === Quick Start
-This is a somewhat emulation of the existing IoT Core Device Shadow. However, it separates the _Reported_ and _Desired_ states into two different sort keys to allow for more data and better querying and better performance if e.g. most of the time _Reported_ is updated. It is possible to direct the _persistence_ to use combined or separate storage.
+This system is in it's essence a in memory diff-merge tool that allows code to track changes in real-time changes in model. It has the ability to do the `Desired` function that will acknowledge reported values. It allows to use `ServerIsMaster` or `ClientIsMaster` to control how merging of reported and desired are performed.
 
-It handles reported and desired as with a device shadow but also allows to use `ServerIsMaster` or `ClientIsMaster` to control how merging of reported and desired are performed.
-
-Most are pluggable and components may be used separately or it is possible to write your own manager or all other components. E.g. just use storage to read and write models and diff them.
-
-The storage is pluggable, but it comes with a DynamoDB and in-memory implementation out of the box. It is possible to write your own loggers to participate in the diff/merge process to e.g. update a timeseries database upon add/update of sensor data etc.
+It separates Reported and Desired states and thus can be stored separately or combined (see DynamoDB persistence) for performance and flexibility. Persistence, notification is pluggable.
 
 .Example Report, Desire & Loggers
 [source,go]
