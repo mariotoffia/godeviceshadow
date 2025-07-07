@@ -8,6 +8,14 @@ The selection language uses a SQL-like syntax for specifying selection criteria.
 SELECT * FROM Notification WHERE <conditions>
 ```
 
+Key features:
+
+* 🔍 *SQL-like Syntax* - Familiar query language for defining notification filters
+* 🏷️ *Dual Property Support* - Filter based on both object metadata and log entries
+* 🧩 *Regex Pattern Matching* - Powerful pattern matching with regular expressions
+* ⚙️ *Rich Operators* - Comparison, collection, time, and logical operators
+* 🔄 *Dynamic Evaluation* - Real-time evaluation against notification operations
+
 The selection language enables filtering notification events based on both object properties and log entries:
 
 * *Object properties* (`obj.*`) - Filter based on shadow device/object metadata
