@@ -8,6 +8,38 @@ image:https://img.shields.io/github/license/mariotoffia/godeviceshadow[License]
 image:https://img.shields.io/github/v/release/mariotoffia/godeviceshadow[Release]
 image:https://sonarcloud.io/api/project_badges/measure?project=mariotoffia_godeviceshadow&metric=alert_status[Quality Gate Status,link=https://sonarcloud.io/summary/new_code?id=mariotoffia_godeviceshadow]
 
+== Summary
+[.lead]
+GoDeviceShadow provides a pluggable device shadow implementation with persistence and notification capabilities.
+
+* 🧩 *Modular Architecture* - Use components together or separately with a pluggable design
+* 🔄 *Shadow State Management* - Handles both reported and desired states with configurable merging strategies
+* 🗄️ *Pluggable Persistence* - Built-in support for in-memory storage.
+* 📢 *Notification System* - Configurable event notification with filtering capabilities for in-memory notifications is built-in.
+* 🔍 *Change Tracking* - Detailed logging of changes through merge loggers
+* 🧰 *Type-Safe Models* - Works with Go structs instead of plain JSON for type safety
+* 🚀 *No Dependencies* - Core runtime has zero external dependencies (only plugins have dependencies)
+* 🔌 *Extensible* - Easy to implement custom plugins for storage, notification, and logging
+
+=== Module Overview
+
+[cols="1,4"]
+|===
+|Module |Description
+
+|📦 *godeviceshadow*
+|Core module with the main runtime, merge logic, and interfaces
+
+|💾 *dynamodbpersistence*
+|Persistence implementation for Amazon DynamoDB
+
+|📡 *dynamodbnotifier*
+|DynamoDB Streams based event notification system
+
+|🔤 *selectlang*
+|DSL for creating notification selection filters
+|===
+
 == Introduction
 This is an implementation of a device shadow storage and notification for DynamoDB and SQS/SNS. It is pluggable for other storage/notifications.
 
@@ -141,21 +173,6 @@ To view all examples, visit the https://github.com/mariotoffia/godeviceshadow/tr
 
 === Modules
 These are the out-of-the-box modules that are available in the `godeviceshadow` repository. They are all submodules and may be used separately or together with the core runtime.
-
-=== Continuous Integration
-
-The project uses GitHub Actions for continuous integration. Tests are automatically run when:
-- A pull request is created or updated targeting the main branch
-- Code is pushed to the main branch
-
-The CI workflow runs `make test` in the main module and in the examples directory to ensure all tests pass.
-
-The project includes badges in the README that show:
-- CI workflow status: Shows if the tests are passing
-- Go version: The Go version used in the project
-- License: The project's license type
-- Latest release: Shows the latest release version
-- Go Report Card: Code quality report from goreportcard.com
 
 .godeviceshadow
 ====
