@@ -1,6 +1,7 @@
 package merge
 
 import (
+	"context"
 	"fmt"
 	"reflect"
 	"strings"
@@ -63,9 +64,9 @@ type MergeObject struct {
 //     - If absent in newModel: remove if ClientIsMaster, keep if ServerIsMaster.
 //
 // Returns the merged model. Neither _oldModel_ nor _newModel_ is modified.
-func Merge[T any](oldModel, newModel T, opts MergeOptions) (T, error) {
+func Merge[T any](ctx context.Context, oldModel, newModel T, opts MergeOptions) (T, error) {
 
-	mergedVal, err := MergeAny(oldModel, newModel, opts)
+	mergedVal, err := MergeAny(ctx, oldModel, newModel, opts)
 
 	var zero T
 
@@ -76,7 +77,7 @@ func Merge[T any](oldModel, newModel T, opts MergeOptions) (T, error) {
 	return mergedVal.(T), nil
 }
 
-func MergeAny(oldModel, newModel any, opts MergeOptions) (any, error) {
+func MergeAny(ctx context.Context, oldModel, newModel any, opts MergeOptions) (any, error) {
 	//
 	oldVal := reflect.ValueOf(oldModel)
 	newVal := reflect.ValueOf(newModel)
@@ -85,13 +86,13 @@ func MergeAny(oldModel, newModel any, opts MergeOptions) (any, error) {
 		return oldModel, fmt.Errorf("oldModel: '%T' and newModel: '%T' must be of the same type", oldModel, newModel)
 	}
 
-	if err := opts.Loggers.NotifyPrepare(); err != nil {
+	if err := opts.Loggers.NotifyPrepare(ctx); err != nil {
 		return oldModel, err
 	}
 
-	mergedVal, err := mergeRecursive(oldVal, newVal, MergeObject{MergeOptions: opts})
+	mergedVal, err := mergeRecursive(ctx, oldVal, newVal, MergeObject{MergeOptions: opts})
 
-	if err2 := opts.Loggers.NotifyPost(err); err2 != nil {
+	if err2 := opts.Loggers.NotifyPost(ctx, err); err2 != nil {
 		return oldModel, err2
 	}
 
@@ -103,7 +104,7 @@ func MergeAny(oldModel, newModel any, opts MergeOptions) (any, error) {
 }
 
 // mergeRecursive will try to merge base with override recursively.
-func mergeRecursive(base, override reflect.Value, obj MergeObject) (reflect.Value, error) {
+func mergeRecursive(ctx context.Context, base, override reflect.Value, obj MergeObject) (reflect.Value, error) {
 	if !override.IsValid() {
 		return reflect.Value{}, fmt.Errorf("both base: '%T' and override: '%T' must be valid", base.Interface(), override.Interface())
 	}
@@ -148,11 +149,11 @@ func mergeRecursive(base, override reflect.Value, obj MergeObject) (reflect.Valu
 
 		switch {
 		case newTS.After(oldTS):
-			obj.Loggers.NotifyManaged(obj.CurrentPath, model.MergeOperationUpdate, baseValTS, overrideValTS, oldTS, newTS)
+			obj.Loggers.NotifyManaged(ctx, obj.CurrentPath, model.MergeOperationUpdate, baseValTS, overrideValTS, oldTS, newTS)
 
 			return override, nil // override newer -> replace
 		default:
-			obj.Loggers.NotifyManaged(obj.CurrentPath, model.MergeOperationNotChanged, baseValTS, overrideValTS, oldTS, newTS)
+			obj.Loggers.NotifyManaged(ctx, obj.CurrentPath, model.MergeOperationNotChanged, baseValTS, overrideValTS, oldTS, newTS)
 
 			return base, nil // override less or equal -> no update -> keep old
 		}
@@ -160,16 +161,16 @@ func mergeRecursive(base, override reflect.Value, obj MergeObject) (reflect.Valu
 
 	switch baseVal.Kind() {
 	case reflect.Struct:
-		return mergeStruct(baseVal, overrideVal, obj)
+		return mergeStruct(ctx, baseVal, overrideVal, obj)
 	case reflect.Map:
-		return mergeMap(baseVal, overrideVal, obj)
+		return mergeMap(ctx, baseVal, overrideVal, obj)
 	case reflect.Slice, reflect.Array:
-		return mergeSlice(baseVal, overrideVal, obj)
+		return mergeSlice(ctx, baseVal, overrideVal, obj)
 	// Basic types (int, string, ...)
 	default:
 		if obj.Mode == ServerIsMaster {
 			if isEmptyValue(overrideVal) {
-				obj.Loggers.NotifyPlain(obj.CurrentPath, model.MergeOperationNotChanged, baseVal.Interface(), overrideVal.Interface())
+				obj.Loggers.NotifyPlain(ctx, obj.CurrentPath, model.MergeOperationNotChanged, baseVal.Interface(), overrideVal.Interface())
 
 				return base, nil
 			}
@@ -183,20 +184,20 @@ func mergeRecursive(base, override reflect.Value, obj MergeObject) (reflect.Valu
 		ov := overrideVal.Interface()
 
 		if bv != ov {
-			obj.Loggers.NotifyPlain(obj.CurrentPath, model.MergeOperationUpdate, bv, ov)
+			obj.Loggers.NotifyPlain(ctx, obj.CurrentPath, model.MergeOperationUpdate, bv, ov)
 
 			return override, nil // not equal -> override
 		} else {
-			obj.Loggers.NotifyPlain(obj.CurrentPath, model.MergeOperationNotChanged, bv, ov)
+			obj.Loggers.NotifyPlain(ctx, obj.CurrentPath, model.MergeOperationNotChanged, bv, ov)
 
 			return base, nil // equal -> keep old
 		}
 	}
 }
 
-func mergeSlice(baseVal, overrideVal reflect.Value, opts MergeObject) (reflect.Value, error) {
+func mergeSlice(ctx context.Context, baseVal, overrideVal reflect.Value, opts MergeObject) (reflect.Value, error) {
 	if baseVal.IsNil() {
-		notifyRecursive(overrideVal, model.MergeOperationAdd, opts)
+		notifyRecursive(ctx, overrideVal, model.MergeOperationAdd, opts)
 
 		return overrideVal, nil
 	}
@@ -210,14 +211,14 @@ func mergeSlice(baseVal, overrideVal reflect.Value, opts MergeObject) (reflect.V
 			for i := 0; i < baseVal.Len(); i++ {
 				opts.CurrentPath = fmt.Sprintf("%s.%d", basePath, i)
 
-				notifyRecursive(baseVal.Index(i), model.MergeOperationRemove, opts)
+				notifyRecursive(ctx, baseVal.Index(i), model.MergeOperationRemove, opts)
 			}
 			return overrideVal, nil
 		case ServerIsMaster:
 			for i := 0; i < baseVal.Len(); i++ {
 				opts.CurrentPath = fmt.Sprintf("%s.%d", basePath, i)
 
-				notifyRecursive(baseVal.Index(i), model.MergeOperationNotChanged, opts)
+				notifyRecursive(ctx, baseVal.Index(i), model.MergeOperationNotChanged, opts)
 			}
 			return baseVal, nil
 		}
@@ -225,15 +226,15 @@ func mergeSlice(baseVal, overrideVal reflect.Value, opts MergeObject) (reflect.V
 
 	// If MergeSlicesByID is enabled, try to merge by ID
 	if opts.MergeSlicesByID {
-		return mergeSliceByID(baseVal, overrideVal, opts)
+		return mergeSliceByID(ctx, baseVal, overrideVal, opts)
 	}
 
 	// Otherwise, fall back to positional merge
-	return mergeSliceByPosition(baseVal, overrideVal, opts)
+	return mergeSliceByPosition(ctx, baseVal, overrideVal, opts)
 }
 
 // mergeStruct merges two struct values (non-timestamped case).
-func mergeStruct(baseVal, overrideVal reflect.Value, opts MergeObject) (reflect.Value, error) {
+func mergeStruct(ctx context.Context, baseVal, overrideVal reflect.Value, opts MergeObject) (reflect.Value, error) {
 	if !baseVal.IsValid() || !overrideVal.IsValid() {
 		return reflect.Value{}, fmt.Errorf("both base: '%T' and override: '%T' must be valid", baseVal.Interface(), overrideVal.Interface())
 	}
@@ -267,7 +268,7 @@ func mergeStruct(baseVal, overrideVal reflect.Value, opts MergeObject) (reflect.
 				result.Field(i).Set(fieldValue)
 			} else {
 				// Merge the dereferenced values
-				mergedValue, err := mergeRecursive(fieldValue.Elem(), overrideFieldValue.Elem(), opts)
+				mergedValue, err := mergeRecursive(ctx, fieldValue.Elem(), overrideFieldValue.Elem(), opts)
 				if err != nil {
 					return reflect.Value{}, err
 				}
@@ -277,7 +278,7 @@ func mergeStruct(baseVal, overrideVal reflect.Value, opts MergeObject) (reflect.
 			}
 		} else {
 			// Handle non-pointer fields
-			merged, err := mergeRecursive(fieldValue, overrideFieldValue, opts)
+			merged, err := mergeRecursive(ctx, fieldValue, overrideFieldValue, opts)
 			if err != nil {
 				return reflect.Value{}, err
 			}
@@ -289,9 +290,9 @@ func mergeStruct(baseVal, overrideVal reflect.Value, opts MergeObject) (reflect.
 }
 
 // mergeMap merges two map values (non-timestamped case).
-func mergeMap(baseVal, overrideVal reflect.Value, opts MergeObject) (reflect.Value, error) {
+func mergeMap(ctx context.Context, baseVal, overrideVal reflect.Value, opts MergeObject) (reflect.Value, error) {
 	if baseVal.IsNil() {
-		notifyRecursive(overrideVal, model.MergeOperationAdd, opts)
+		notifyRecursive(ctx, overrideVal, model.MergeOperationAdd, opts)
 
 		return overrideVal, nil
 	}
@@ -304,7 +305,7 @@ func mergeMap(baseVal, overrideVal reflect.Value, opts MergeObject) (reflect.Val
 			for _, key := range baseVal.MapKeys() {
 				opts.CurrentPath = concatPath(basePath, formatKey(key))
 
-				notifyRecursive(baseVal.MapIndex(key), model.MergeOperationRemove, opts)
+				notifyRecursive(ctx, baseVal.MapIndex(key), model.MergeOperationRemove, opts)
 			}
 
 			return overrideVal, nil
@@ -312,7 +313,7 @@ func mergeMap(baseVal, overrideVal reflect.Value, opts MergeObject) (reflect.Val
 			for _, key := range baseVal.MapKeys() {
 				opts.CurrentPath = concatPath(basePath, formatKey(key))
 
-				notifyRecursive(baseVal.MapIndex(key), model.MergeOperationNotChanged, opts)
+				notifyRecursive(ctx, baseVal.MapIndex(key), model.MergeOperationNotChanged, opts)
 			}
 
 			return baseVal, nil
@@ -337,7 +338,7 @@ func mergeMap(baseVal, overrideVal reflect.Value, opts MergeObject) (reflect.Val
 		if !baseValForKey.IsValid() {
 			result.SetMapIndex(key, overrideVal) // add
 
-			notifyRecursive(overrideVal, model.MergeOperationAdd, opts)
+			notifyRecursive(ctx, overrideVal, model.MergeOperationAdd, opts)
 
 			continue
 		}
@@ -346,7 +347,7 @@ func mergeMap(baseVal, overrideVal reflect.Value, opts MergeObject) (reflect.Val
 		delete(baseKeys, formatKey(key))
 
 		// Merge recursively
-		merged, err := mergeRecursive(baseValForKey, overrideVal, opts)
+		merged, err := mergeRecursive(ctx, baseValForKey, overrideVal, opts)
 
 		if err != nil {
 			return reflect.Value{}, err
@@ -362,9 +363,9 @@ func mergeMap(baseVal, overrideVal reflect.Value, opts MergeObject) (reflect.Val
 		if opts.Mode == ServerIsMaster {
 			result.SetMapIndex(v, baseVal.MapIndex(v)) // keep
 
-			notifyRecursive(baseVal.MapIndex(v), model.MergeOperationNotChanged, opts)
+			notifyRecursive(ctx, baseVal.MapIndex(v), model.MergeOperationNotChanged, opts)
 		} else /*ClientIsMaster*/ {
-			notifyRecursive(baseVal.MapIndex(v), model.MergeOperationRemove, opts)
+			notifyRecursive(ctx, baseVal.MapIndex(v), model.MergeOperationRemove, opts)
 		}
 	}
 
@@ -487,7 +488,7 @@ func getJSONTag(field reflect.StructField) string {
 }
 
 // mergeSliceByPosition merges two slices based on their positions (original implementation)
-func mergeSliceByPosition(baseVal, overrideVal reflect.Value, opts MergeObject) (reflect.Value, error) {
+func mergeSliceByPosition(ctx context.Context, baseVal, overrideVal reflect.Value, opts MergeObject) (reflect.Value, error) {
 	baseLen := baseVal.Len()
 	ovLen := overrideVal.Len()
 	basePath := opts.CurrentPath
@@ -508,7 +509,7 @@ func mergeSliceByPosition(baseVal, overrideVal reflect.Value, opts MergeObject) 
 		ovElem := overrideVal.Index(i)
 
 		opts.CurrentPath = fmt.Sprintf("%s.%d", basePath, i)
-		mergedElem, err := mergeRecursive(baseElem, ovElem, opts)
+		mergedElem, err := mergeRecursive(ctx, baseElem, ovElem, opts)
 
 		if err != nil {
 			return reflect.Value{}, err
@@ -523,7 +524,7 @@ func mergeSliceByPosition(baseVal, overrideVal reflect.Value, opts MergeObject) 
 			opts.CurrentPath = fmt.Sprintf("%s.%d", basePath, i)
 			result = reflect.Append(result, overrideVal.Index(i))
 
-			notifyRecursive(overrideVal.Index(i), model.MergeOperationAdd, opts)
+			notifyRecursive(ctx, overrideVal.Index(i), model.MergeOperationAdd, opts)
 		}
 	}
 
@@ -535,13 +536,13 @@ func mergeSliceByPosition(baseVal, overrideVal reflect.Value, opts MergeObject) 
 				opts.CurrentPath = fmt.Sprintf("%s.%d", basePath, i)
 				result = reflect.Append(result, baseVal.Index(i))
 
-				notifyRecursive(baseVal.Index(i), model.MergeOperationNotChanged, opts)
+				notifyRecursive(ctx, baseVal.Index(i), model.MergeOperationNotChanged, opts)
 			}
 		} else /*ClientIsMaster*/ {
 			for i := minLen; i < baseLen; i++ {
 				opts.CurrentPath = fmt.Sprintf("%s.%d", basePath, i)
 
-				notifyRecursive(baseVal.Index(i), model.MergeOperationRemove, opts)
+				notifyRecursive(ctx, baseVal.Index(i), model.MergeOperationRemove, opts)
 			}
 		}
 	}
@@ -587,7 +588,7 @@ func unwrapIdValueAndTimestamp(rv reflect.Value) (model.IdValueAndTimestamp, boo
 }
 
 // mergeSliceByID merges two slices by matching elements with the same ID
-func mergeSliceByID(baseVal, overrideVal reflect.Value, opts MergeObject) (reflect.Value, error) {
+func mergeSliceByID(ctx context.Context, baseVal, overrideVal reflect.Value, opts MergeObject) (reflect.Value, error) {
 	baseLen := baseVal.Len()
 	ovLen := overrideVal.Len()
 	basePath := opts.CurrentPath
@@ -616,7 +617,7 @@ func mergeSliceByID(baseVal, overrideVal reflect.Value, opts MergeObject) (refle
 
 	// If we can't use IDs, fall back to positional merge
 	if !canUseIDs {
-		return mergeSliceByPosition(baseVal, overrideVal, opts)
+		return mergeSliceByPosition(ctx, baseVal, overrideVal, opts)
 	}
 
 	// Extract IDs from override elements
@@ -627,7 +628,7 @@ func mergeSliceByID(baseVal, overrideVal reflect.Value, opts MergeObject) (refle
 			overrideMap[id] = i
 		} else {
 			// If any element doesn't implement IdValueAndTimestamp, fall back to positional merge
-			return mergeSliceByPosition(baseVal, overrideVal, opts)
+			return mergeSliceByPosition(ctx, baseVal, overrideVal, opts)
 		}
 	}
 
@@ -640,7 +641,7 @@ func mergeSliceByID(baseVal, overrideVal reflect.Value, opts MergeObject) (refle
 			overrideElem := overrideVal.Index(overrideIdx)
 			opts.CurrentPath = fmt.Sprintf("%s.%s", basePath, id)
 
-			mergedElem, err := mergeRecursive(baseElem, overrideElem, opts)
+			mergedElem, err := mergeRecursive(ctx, baseElem, overrideElem, opts)
 			if err != nil {
 				return reflect.Value{}, err
 			}
@@ -651,11 +652,11 @@ func mergeSliceByID(baseVal, overrideVal reflect.Value, opts MergeObject) (refle
 			// Element only in base and server is master - keep it
 			opts.CurrentPath = fmt.Sprintf("%s.%s", basePath, id)
 			result = reflect.Append(result, baseElem)
-			notifyRecursive(baseElem, model.MergeOperationNotChanged, opts)
+			notifyRecursive(ctx, baseElem, model.MergeOperationNotChanged, opts)
 		} else {
 			// Element only in base and client is master - remove it
 			opts.CurrentPath = fmt.Sprintf("%s.%s", basePath, id)
-			notifyRecursive(baseElem, model.MergeOperationRemove, opts)
+			notifyRecursive(ctx, baseElem, model.MergeOperationRemove, opts)
 		}
 	}
 
@@ -666,7 +667,7 @@ func mergeSliceByID(baseVal, overrideVal reflect.Value, opts MergeObject) (refle
 			overrideElem := overrideVal.Index(overrideIdx)
 			opts.CurrentPath = fmt.Sprintf("%s.%s", basePath, id)
 			result = reflect.Append(result, overrideElem)
-			notifyRecursive(overrideElem, model.MergeOperationAdd, opts)
+			notifyRecursive(ctx, overrideElem, model.MergeOperationAdd, opts)
 		}
 	}
 

@@ -1,6 +1,7 @@
 package stdmgr
 
 import (
+	"context"
 	"time"
 
 	"github.com/mariotoffia/godeviceshadow/model"
@@ -26,7 +27,7 @@ func (dal *DesiredAckLogger) New() model.DesiredLogger {
 }
 
 // Acknowledge is called when a desired value has been acknowledged (`model.DesiredLogger` interface).
-func (dal *DesiredAckLogger) Acknowledge(path string, value model.ValueAndTimestamp) {
+func (dal *DesiredAckLogger) Acknowledge(ctx context.Context, path string, value model.ValueAndTimestamp) {
 	dal.Dirty = true
 }
 
@@ -36,6 +37,7 @@ func (mdl *MergeDirtyLogger) New() model.MergeLogger {
 }
 
 func (mdl *MergeDirtyLogger) Managed(
+	ctx context.Context,
 	path string,
 	operation model.MergeOperation,
 	oldValue, newValue model.ValueAndTimestamp,
@@ -46,7 +48,7 @@ func (mdl *MergeDirtyLogger) Managed(
 	}
 }
 
-func (mdl *MergeDirtyLogger) Plain(path string, operation model.MergeOperation, oldValue, newValue any) {
+func (mdl *MergeDirtyLogger) Plain(ctx context.Context, path string, operation model.MergeOperation, oldValue, newValue any) {
 	if !mdl.IgnorePlain && operation != model.MergeOperationNotChanged {
 		mdl.Dirty = true
 	}

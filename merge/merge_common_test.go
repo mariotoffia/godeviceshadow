@@ -1,6 +1,7 @@
 package merge_test
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -35,7 +36,7 @@ func TestMergeOneNewerInSlice(t *testing.T) {
 			},
 		},
 	}
-	mergedCircuit, err := merge.Merge(oldDevice, newDevice, merge.MergeOptions{
+	mergedCircuit, err := merge.Merge(context.Background(), oldDevice, newDevice, merge.MergeOptions{
 		Mode: merge.ClientIsMaster,
 	})
 
@@ -65,7 +66,7 @@ func TestDeleteWhenClientIsMaster(t *testing.T) {
 		},
 	}
 
-	merged, err := merge.Merge(oldDevice, newDevice, merge.MergeOptions{
+	merged, err := merge.Merge(context.Background(), oldDevice, newDevice, merge.MergeOptions{
 		Mode: merge.ClientIsMaster,
 	})
 	require.NoError(t, err)
@@ -90,7 +91,7 @@ func TestRetainWhenServerIsMaster(t *testing.T) {
 		},
 	}
 
-	merged, err := merge.Merge(oldDevice, newDevice, merge.MergeOptions{
+	merged, err := merge.Merge(context.Background(), oldDevice, newDevice, merge.MergeOptions{
 		Mode: merge.ServerIsMaster,
 	})
 	require.NoError(t, err)
@@ -135,7 +136,7 @@ func TestMergeDifferentLengthSlices(t *testing.T) {
 		},
 	}
 
-	merged, err := merge.Merge(oldDevice, newDevice, merge.MergeOptions{
+	merged, err := merge.Merge(context.Background(), oldDevice, newDevice, merge.MergeOptions{
 		Mode: merge.ClientIsMaster,
 	})
 	require.NoError(t, err)
@@ -172,7 +173,7 @@ func TestEmptySlices(t *testing.T) {
 		Circuits: nil, // explicitly nil
 	}
 
-	merged, err := merge.Merge(oldDevice, newDevice, merge.MergeOptions{
+	merged, err := merge.Merge(context.Background(), oldDevice, newDevice, merge.MergeOptions{
 		Mode: merge.ClientIsMaster,
 	})
 	require.NoError(t, err)
@@ -181,7 +182,7 @@ func TestEmptySlices(t *testing.T) {
 	require.Empty(t, merged.Circuits, "Should remove old slices since new is nil and client is master")
 
 	// If server is master, we keep the old even if new is nil
-	mergedSM, err := merge.Merge(oldDevice, newDevice, merge.MergeOptions{
+	mergedSM, err := merge.Merge(context.Background(), oldDevice, newDevice, merge.MergeOptions{
 		Mode: merge.ServerIsMaster,
 	})
 	require.NoError(t, err)
@@ -214,7 +215,7 @@ func TestEqualTimestampNoUpdate(t *testing.T) {
 		},
 	}
 
-	merged, err := merge.Merge(oldDevice, newDevice, merge.MergeOptions{
+	merged, err := merge.Merge(context.Background(), oldDevice, newDevice, merge.MergeOptions{
 		Mode:                merge.ClientIsMaster,
 		DoOverrideWithEmpty: true,
 	})
@@ -254,7 +255,7 @@ func BenchmarkMergeSimpleInCommon(t *testing.B) {
 	t.ResetTimer()
 
 	for i := 0; i < t.N; i++ {
-		_, _ = merge.Merge(oldDevice, newDevice, merge.MergeOptions{
+		_, _ = merge.Merge(context.Background(), oldDevice, newDevice, merge.MergeOptions{
 			Mode: merge.ClientIsMaster,
 		})
 	}

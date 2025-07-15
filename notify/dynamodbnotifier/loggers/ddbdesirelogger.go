@@ -1,6 +1,7 @@
 package loggers
 
 import (
+	"context"
 	"time"
 
 	"github.com/mariotoffia/godeviceshadow/loggers/desirelogger"
@@ -30,18 +31,19 @@ func (l *DynamoDbDesireLogger) New() model.MergeLogger {
 	return &DynamoDbDesireLogger{DesireLogger: desirelogger.New()}
 }
 
-func (sl *DynamoDbDesireLogger) Plain(path string, operation model.MergeOperation, oldValue, newValue any) {
+func (sl *DynamoDbDesireLogger) Plain(ctx context.Context, path string, operation model.MergeOperation, oldValue, newValue any) {
 	// NOOP
 }
 
 // Managed is called in a merge operation, it only handles removed -> add to acknowledged.
 func (sl *DynamoDbDesireLogger) Managed(
+	ctx context.Context,
 	path string,
 	operation model.MergeOperation,
 	oldValue, newValue model.ValueAndTimestamp,
 	oldTimeStamp, newTimeStamp time.Time,
 ) {
 	if operation == model.MergeOperationRemove {
-		sl.Acknowledge(path, newValue)
+		sl.Acknowledge(ctx, path, newValue)
 	}
 }

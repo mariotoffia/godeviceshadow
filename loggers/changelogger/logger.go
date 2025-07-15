@@ -1,6 +1,7 @@
 package changelogger
 
 import (
+	"context"
 	"time"
 
 	"github.com/mariotoffia/godeviceshadow/model"
@@ -31,7 +32,7 @@ func Find(loggers []model.MergeLogger) *ChangeMergeLogger {
 	return nil
 }
 
-func (sl *ChangeMergeLogger) Plain(path string, operation model.MergeOperation, oldValue, newValue any) {
+func (sl *ChangeMergeLogger) Plain(ctx context.Context, path string, operation model.MergeOperation, oldValue, newValue any) {
 	sl.PlainLog[operation] = append(sl.PlainLog[operation], PlainValue{
 		Path:     path,
 		OldValue: oldValue,
@@ -40,6 +41,7 @@ func (sl *ChangeMergeLogger) Plain(path string, operation model.MergeOperation, 
 }
 
 func (sl *ChangeMergeLogger) Managed(
+	ctx context.Context,
 	path string,
 	operation model.MergeOperation,
 	oldValue, newValue model.ValueAndTimestamp,

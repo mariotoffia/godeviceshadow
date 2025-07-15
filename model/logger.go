@@ -1,13 +1,14 @@
 package model
 
 import (
+	"context"
 	"time"
 )
 
 type DesiredLogger interface {
 	// Acknowledge is called each time a reported value is equal to the desired and it is removed
 	// from the desired model.
-	Acknowledge(path string, value ValueAndTimestamp)
+	Acknowledge(ctx context.Context, path string, value ValueAndTimestamp)
 }
 
 // MergeLogger is a interface that will be called in the different merge
@@ -19,6 +20,7 @@ type MergeLogger interface {
 	// The path is a a _JSON_ path to the value that has been processed. It is extracted from the
 	// field names, map keys, and slice indexes. If field names do have a JSON tag, the tag is used instead.
 	Managed(
+		ctx context.Context,
 		path string,
 		operation MergeOperation,
 		oldValue, newValue ValueAndTimestamp,
@@ -27,7 +29,7 @@ type MergeLogger interface {
 
 	// Plain is called when a value has been processed in a merge operation. It is even called when a value
 	// has not been changed. This is called when a "plain" value has been processed and not a "managed" value.
-	Plain(path string, operation MergeOperation, oldValue, newValue any)
+	Plain(ctx context.Context, path string, operation MergeOperation, oldValue, newValue any)
 }
 
 // CreatableMergeLogger is when a merge logger can be instantiated. This is is a requirement for the `Manager` to be able to return
@@ -48,14 +50,14 @@ type CreatableDesiredLogger interface {
 type MergeLoggerPrepare interface {
 	// Prepare will be called just before any merge operation is taking place.
 	// If it returns an error, the merge operation _may_ be aborted.
-	Prepare() error
+	Prepare(ctx context.Context) error
 }
 
 // MergeLoggerPost is called after all merge operations have been performed.
 type MergeLoggerPost interface {
 	// Post is invoked when finished (either successfully or erroneously) and
 	// returns an error if the post operation failed.
-	Post(err error) error
+	Post(ctx context.Context, err error) error
 }
 
 type MergeOperation int

@@ -2,6 +2,7 @@ package strlogger
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"time"
 
@@ -42,7 +43,7 @@ func (sl *StringLogger) printHeader() {
 		sl.header = true
 	}
 }
-func (sl *StringLogger) Plain(path string, operation model.MergeOperation, oldValue, newValue any) {
+func (sl *StringLogger) Plain(ctx context.Context, path string, operation model.MergeOperation, oldValue, newValue any) {
 	sl.printHeader()
 
 	fmt.Fprintf(&sl.log, lf,
@@ -53,6 +54,7 @@ func (sl *StringLogger) Plain(path string, operation model.MergeOperation, oldVa
 }
 
 func (sl *StringLogger) Managed(
+	ctx context.Context,
 	path string,
 	operation model.MergeOperation,
 	oldValue, newValue model.ValueAndTimestamp,

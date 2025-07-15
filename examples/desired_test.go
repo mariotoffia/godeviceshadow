@@ -1,6 +1,7 @@
 package examples
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"testing"
@@ -53,12 +54,14 @@ func TestDesiredReported(t *testing.T) {
 	var err error
 
 	// Simulate new actuation -> plain merge
-	desired, err = merge.Merge(desired, HomeTemperatureHub{
-		IndoorTempSP: &IndoorTemperatureSetPoint{
-			SetPoint:  22.0,
-			UpdatedAt: parse("2023-01-01T13:00:00+01:00"),
-		},
-	}, merge.MergeOptions{})
+	desired, err = merge.Merge(
+		context.Background(),
+		desired, HomeTemperatureHub{
+			IndoorTempSP: &IndoorTemperatureSetPoint{
+				SetPoint:  22.0,
+				UpdatedAt: parse("2023-01-01T13:00:00+01:00"),
+			},
+		}, merge.MergeOptions{})
 	require.NoError(t, err)
 	require.Equal(t, 22.0, desired.IndoorTempSP.SetPoint)
 
@@ -68,21 +71,23 @@ func TestDesiredReported(t *testing.T) {
 	// {"indoor_temp_sp":{"sp":22,"ts":"2023-01-01T13:00:00+01:00"}}
 
 	// Report back to the device shadow
-	reported, err = merge.Merge(reported, HomeTemperatureHub{
-		IndoorTempSP: &IndoorTemperatureSetPoint{
-			SetPoint: 22.0,
-			// Must be added or newer ts than the "old" reported
-			UpdatedAt: parse("2023-01-01T13:05:00+01:00"),
-		},
-	}, merge.MergeOptions{
-		Mode: merge.ServerIsMaster,
-	})
+	reported, err = merge.Merge(
+		context.Background(),
+		reported, HomeTemperatureHub{
+			IndoorTempSP: &IndoorTemperatureSetPoint{
+				SetPoint: 22.0,
+				// Must be added or newer ts than the "old" reported
+				UpdatedAt: parse("2023-01-01T13:05:00+01:00"),
+			},
+		}, merge.MergeOptions{
+			Mode: merge.ServerIsMaster,
+		})
 
 	require.NoError(t, err)
 	require.Equal(t, 22.0, reported.IndoorTempSP.SetPoint)
 
 	// Acknowledge in the desired model -> removed from model
-	desired, err = merge.Desired(reported, desired, merge.DesiredOptions{})
+	desired, err = merge.Desired(context.Background(), reported, desired, merge.DesiredOptions{})
 	require.NoError(t, err)
 	// Check that the indoor temp setpoint is either nil or has zero values
 	if desired.IndoorTempSP != nil {

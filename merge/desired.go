@@ -1,6 +1,7 @@
 package merge
 
 import (
+	"context"
 	"fmt"
 	"reflect"
 	"strings"
@@ -75,9 +76,9 @@ type DesiredObject struct {
 //	// - Temperature: nil (removed because it matched)
 //	// - Humidity: MyValueTS{Value: 45.0, ...} (kept because it didn't match)
 //	// - FanSpeed: MyValueTS{Value: "high", ...} (kept because it wasn't in reported)
-func Desired[T any](reportedModel, desiredModel T, opts DesiredOptions) (T, error) {
+func Desired[T any](ctx context.Context, reportedModel, desiredModel T, opts DesiredOptions) (T, error) {
 	//
-	mergedVal, err := DesiredAny(reportedModel, desiredModel, opts)
+	mergedVal, err := DesiredAny(ctx, reportedModel, desiredModel, opts)
 
 	var zero T
 
@@ -88,7 +89,7 @@ func Desired[T any](reportedModel, desiredModel T, opts DesiredOptions) (T, erro
 	return mergedVal.(T), nil
 }
 
-func DesiredAny(reportedModel, desiredModel any, opts DesiredOptions) (any, error) {
+func DesiredAny(ctx context.Context, reportedModel, desiredModel any, opts DesiredOptions) (any, error) {
 	//
 	// Handle nil cases
 	if reportedModel == nil && desiredModel == nil {
@@ -130,7 +131,7 @@ func DesiredAny(reportedModel, desiredModel any, opts DesiredOptions) (any, erro
 	}
 
 	// Process the desired model recursively
-	result := desiredRecursive(reportedVal, desiredVal, desiredObj)
+	result := desiredRecursive(ctx, reportedVal, desiredVal, desiredObj)
 
 	// Check if we have any errors
 	if len(desiredObj.Errors) > 0 && !opts.ContinueOnError {
@@ -149,7 +150,7 @@ func DesiredAny(reportedModel, desiredModel any, opts DesiredOptions) (any, erro
 	return nil, nil
 }
 
-func desiredRecursive(reportedVal, desiredVal reflect.Value, obj DesiredObject) reflect.Value {
+func desiredRecursive(ctx context.Context, reportedVal, desiredVal reflect.Value, obj DesiredObject) reflect.Value {
 	// Safety check for invalid values
 	if !reportedVal.IsValid() || !desiredVal.IsValid() {
 		return reflect.Value{}
@@ -172,7 +173,7 @@ func desiredRecursive(reportedVal, desiredVal reflect.Value, obj DesiredObject) 
 
 		// Process the elements
 		if reportedElem.IsValid() && desiredElem.IsValid() {
-			result := desiredRecursive(reportedElem, desiredElem, obj)
+			result := desiredRecursive(ctx, reportedElem, desiredElem, obj)
 
 			if result.IsValid() {
 				// Create a new pointer to the result
@@ -196,7 +197,7 @@ func desiredRecursive(reportedVal, desiredVal reflect.Value, obj DesiredObject) 
 			if vtsutils.Equals(rvt, dvt) {
 				// Safely notify about the acknowledgment
 				if obj.Loggers != nil {
-					obj.Loggers.NotifyAcknowledge(obj.CurrentPath, rvt)
+					obj.Loggers.NotifyAcknowledge(ctx, obj.CurrentPath, rvt)
 				}
 
 				// Remove from desired model
@@ -241,7 +242,7 @@ func desiredRecursive(reportedVal, desiredVal reflect.Value, obj DesiredObject) 
 
 			obj.CurrentPath = concatPath(basePath, tag)
 
-			if r := desiredRecursive(reportedVal.Field(i), desiredVal.Field(i), obj); r.IsValid() {
+			if r := desiredRecursive(ctx, reportedVal.Field(i), desiredVal.Field(i), obj); r.IsValid() {
 				desiredVal.Field(i).Set(r)
 			}
 		}
@@ -270,7 +271,7 @@ func desiredRecursive(reportedVal, desiredVal reflect.Value, obj DesiredObject) 
 
 			// If key exists in desired, process it
 			if desiredMapVal.IsValid() {
-				result := desiredRecursive(reportedMapVal, desiredMapVal, obj)
+				result := desiredRecursive(ctx, reportedMapVal, desiredMapVal, obj)
 
 				// Update or remove map key based on result
 				if result.IsValid() && !result.IsZero() {
@@ -292,7 +293,7 @@ func desiredRecursive(reportedVal, desiredVal reflect.Value, obj DesiredObject) 
 		}
 
 		// Try ID-based matching first if elements implement IdValueAndTimestamp
-		idBasedResult := desiredSliceById(reportedVal, desiredVal, obj)
+		idBasedResult := desiredSliceById(ctx, reportedVal, desiredVal, obj)
 		if idBasedResult.IsValid() {
 			return idBasedResult
 		}
@@ -317,7 +318,7 @@ func desiredRecursive(reportedVal, desiredVal reflect.Value, obj DesiredObject) 
 
 			// Process items that can be set
 			if desiredItem.CanSet() {
-				if r := desiredRecursive(reportedItem, desiredItem, obj); r.IsValid() {
+				if r := desiredRecursive(ctx, reportedItem, desiredItem, obj); r.IsValid() {
 					desiredItem.Set(r)
 				}
 			}
@@ -332,7 +333,7 @@ func desiredRecursive(reportedVal, desiredVal reflect.Value, obj DesiredObject) 
 // For example, if you have a list of sensors in both reported and desired state, they can be matched by their unique IDs.
 //
 // Returns the processed desired slice value if successful, or an invalid reflect.Value if ID-based matching couldn't be applied.
-func desiredSliceById(reportedVal, desiredVal reflect.Value, obj DesiredObject) reflect.Value {
+func desiredSliceById(ctx context.Context, reportedVal, desiredVal reflect.Value, obj DesiredObject) reflect.Value {
 	basePath := obj.CurrentPath
 
 	// Create maps to track elements by ID
@@ -376,7 +377,7 @@ func desiredSliceById(reportedVal, desiredVal reflect.Value, obj DesiredObject) 
 			obj.CurrentPath = fmt.Sprintf("%s.%s", basePath, desiredId)
 
 			// Process the elements recursively
-			if r := desiredRecursive(reportedElem, desiredElem, obj); r.IsValid() {
+			if r := desiredRecursive(ctx, reportedElem, desiredElem, obj); r.IsValid() {
 				desiredElem.Set(r)
 			}
 		}

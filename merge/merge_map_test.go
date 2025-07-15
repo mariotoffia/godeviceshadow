@@ -1,6 +1,7 @@
 package merge_test
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -27,7 +28,7 @@ func TestMapWithStructHolder(t *testing.T) {
 	oldObj := MapHolder{M: oldMap}
 	newObj := MapHolder{M: newMap}
 
-	merged, err := merge.Merge(oldObj, newObj, merge.MergeOptions{
+	merged, err := merge.Merge(context.Background(), oldObj, newObj, merge.MergeOptions{
 		Mode: merge.ClientIsMaster,
 	})
 	require.NoError(t, err)
@@ -41,7 +42,7 @@ func TestMapWithStructHolder(t *testing.T) {
 
 	require.NotContains(t, merged.M, "remove")
 
-	mergedSM, err := merge.Merge(oldObj, newObj, merge.MergeOptions{
+	mergedSM, err := merge.Merge(context.Background(), oldObj, newObj, merge.MergeOptions{
 		Mode: merge.ServerIsMaster,
 	})
 
@@ -63,7 +64,7 @@ func TestDirectMapMerging(t *testing.T) {
 		"added": {Value: "brandNew", UpdatedAt: now},                // brand new key
 	}
 
-	merged, err := merge.Merge(oldMap, newMap, merge.MergeOptions{
+	merged, err := merge.Merge(context.Background(), oldMap, newMap, merge.MergeOptions{
 		Mode: merge.ClientIsMaster,
 	})
 	require.NoError(t, err)
@@ -77,7 +78,7 @@ func TestDirectMapMerging(t *testing.T) {
 
 	require.NotContains(t, merged, "remove")
 
-	mergedSM, err := merge.Merge(oldMap, newMap, merge.MergeOptions{
+	mergedSM, err := merge.Merge(context.Background(), oldMap, newMap, merge.MergeOptions{
 		Mode: merge.ServerIsMaster,
 	})
 	require.NoError(t, err)
@@ -105,7 +106,7 @@ func TestMapWithIntegerKeys(t *testing.T) {
 		},
 	}
 
-	merged, err := merge.Merge(oldMap, newMap, merge.MergeOptions{
+	merged, err := merge.Merge(context.Background(), oldMap, newMap, merge.MergeOptions{
 		Mode: merge.ClientIsMaster,
 	})
 
@@ -118,7 +119,7 @@ func TestMapWithIntegerKeys(t *testing.T) {
 	assert.NotContains(t, merged.M, 2)
 
 	// With ServerIsMaster
-	mergedSM, err := merge.Merge(oldMap, newMap, merge.MergeOptions{
+	mergedSM, err := merge.Merge(context.Background(), oldMap, newMap, merge.MergeOptions{
 		Mode: merge.ServerIsMaster,
 	})
 
@@ -162,7 +163,7 @@ func TestNestedMaps(t *testing.T) {
 	}
 
 	// With ClientIsMaster
-	merged, err := merge.Merge(oldObj, newObj, merge.MergeOptions{
+	merged, err := merge.Merge(context.Background(), oldObj, newObj, merge.MergeOptions{
 		Mode: merge.ClientIsMaster,
 	})
 
@@ -181,7 +182,7 @@ func TestNestedMaps(t *testing.T) {
 	require.NotContains(t, merged.OuterMap, "map2")
 
 	// With ServerIsMaster
-	mergedSM, err := merge.Merge(oldObj, newObj, merge.MergeOptions{
+	mergedSM, err := merge.Merge(context.Background(), oldObj, newObj, merge.MergeOptions{
 		Mode: merge.ServerIsMaster,
 	})
 

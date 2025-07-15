@@ -80,7 +80,7 @@ func TestMerge(t *testing.T) {
 
   sl := strlogger.NewStringLogger() // <3>
 
-  res, err := merge.Merge(hubZero, hub, merge.MergeOptions{
+  res, err := merge.Merge(context.Background(), hubZero, hub, merge.MergeOptions{
     Mode:    merge.ServerIsMaster,   // <4>
     Loggers: merge.MergeLoggers{sl}, // <5>
   })
@@ -144,7 +144,9 @@ func TestDesiredReported(t *testing.T) {
 
   var err error
   
-  desired, err = merge.Merge(desired, HomeTemperatureHub{ // <3>
+  desired, err = merge.Merge(
+    context.Background(),
+    desired, HomeTemperatureHub{ // <3>
     IndoorTempSP: &IndoorTemperatureSetPoint{
       SetPoint:  22.0,
       UpdatedAt: parse("2023-01-01T13:00:00+01:00"),
@@ -159,7 +161,9 @@ func TestDesiredReported(t *testing.T) {
   // Output:
   // {"indoor_temp_sp":{"sp":22,"ts":"2023-01-01T13:00:00+01:00"}}
   
-  reported, err = merge.Merge(reported, HomeTemperatureHub{ // <4>
+  reported, err = merge.Merge(
+    context.Background(),
+    reported, HomeTemperatureHub{ // <4>
     IndoorTempSP: &IndoorTemperatureSetPoint{
       SetPoint: 22.0,      
       UpdatedAt: parse("2023-01-01T13:05:00+01:00"), // <5>

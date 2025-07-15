@@ -1,6 +1,7 @@
 package merge_test
 
 import (
+	"context"
 	"testing"
 
 	"github.com/mariotoffia/godeviceshadow/merge"
@@ -29,7 +30,7 @@ func TestDesiredRecursiveEdgeCases(t *testing.T) {
 		}
 
 		// This should not panic
-		result, err := merge.Desired(reported, desired, merge.DesiredOptions{})
+		result, err := merge.Desired(context.Background(), reported, desired, merge.DesiredOptions{})
 		assert.NoError(t, err)
 		assert.NotNil(t, result.Data)
 	})

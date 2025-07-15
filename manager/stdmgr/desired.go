@@ -166,7 +166,7 @@ func (mgr *ManagerImpl) Desire(ctx context.Context, operations ...managermodel.D
 			mergeMode = rr.dop.MergeMode
 		}
 
-		newDesired, err := merge.MergeAny(rr.desired.Model, rr.dop.Model, merge.MergeOptions{
+		newDesired, err := merge.MergeAny(context.Background(), rr.desired.Model, rr.dop.Model, merge.MergeOptions{
 			Mode:    mergeMode,
 			Loggers: ml,
 		})

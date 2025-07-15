@@ -1,6 +1,7 @@
 package merge_test
 
 import (
+	"context"
 	"errors"
 	"testing"
 	"time"
@@ -18,21 +19,21 @@ type MockMergeLoggerWithPreparePost struct {
 	PostError    error
 }
 
-func (m *MockMergeLoggerWithPreparePost) Managed(path string, operation model.MergeOperation, oldValue, newValue model.ValueAndTimestamp, oldTimeStamp, newTimeStamp time.Time) {
-	m.Called(path, operation, oldValue, newValue, oldTimeStamp, newTimeStamp)
+func (m *MockMergeLoggerWithPreparePost) Managed(ctx context.Context, path string, operation model.MergeOperation, oldValue, newValue model.ValueAndTimestamp, oldTimeStamp, newTimeStamp time.Time) {
+	m.Called(ctx, path, operation, oldValue, newValue, oldTimeStamp, newTimeStamp)
 }
 
-func (m *MockMergeLoggerWithPreparePost) Plain(path string, operation model.MergeOperation, oldValue, newValue any) {
-	m.Called(path, operation, oldValue, newValue)
+func (m *MockMergeLoggerWithPreparePost) Plain(ctx context.Context, path string, operation model.MergeOperation, oldValue, newValue any) {
+	m.Called(ctx, path, operation, oldValue, newValue)
 }
 
-func (m *MockMergeLoggerWithPreparePost) Prepare() error {
-	m.Called()
+func (m *MockMergeLoggerWithPreparePost) Prepare(ctx context.Context) error {
+	m.Called(ctx)
 	return m.PrepareError
 }
 
-func (m *MockMergeLoggerWithPreparePost) Post(err error) error {
-	m.Called(err)
+func (m *MockMergeLoggerWithPreparePost) Post(ctx context.Context, err error) error {
+	m.Called(ctx, err)
 	return m.PostError
 }
 
@@ -42,7 +43,7 @@ func TestLoggerNotifyPrepare(t *testing.T) {
 	mockLogger.On("Prepare").Return(nil).Once()
 
 	loggers := merge.MergeLoggers{mockLogger}
-	err := loggers.NotifyPrepare()
+	err := loggers.NotifyPrepare(context.Background())
 	assert.NoError(t, err)
 	mockLogger.AssertExpectations(t)
 
@@ -53,7 +54,7 @@ func TestLoggerNotifyPrepare(t *testing.T) {
 	mockLogger.On("Prepare").Return(mockLogger.PrepareError).Once()
 
 	loggers = merge.MergeLoggers{mockLogger}
-	err = loggers.NotifyPrepare()
+	err = loggers.NotifyPrepare(context.Background())
 	assert.Error(t, err)
 	assert.Equal(t, "prepare error", err.Error())
 	mockLogger.AssertExpectations(t)
@@ -68,7 +69,7 @@ func TestLoggerNotifyPrepare(t *testing.T) {
 	mockLogger2.On("Prepare").Return(mockLogger2.PrepareError).Once()
 
 	loggers = merge.MergeLoggers{mockLogger1, mockLogger2}
-	err = loggers.NotifyPrepare()
+	err = loggers.NotifyPrepare(context.Background())
 	assert.Error(t, err)
 	assert.Equal(t, "prepare error from logger 2", err.Error())
 	mockLogger1.AssertExpectations(t)
@@ -83,7 +84,7 @@ func TestLoggerNotifyPost(t *testing.T) {
 	mockLogger.On("Post", inputErr).Return(nil).Once()
 
 	loggers := merge.MergeLoggers{mockLogger}
-	err := loggers.NotifyPost(inputErr)
+	err := loggers.NotifyPost(context.Background(), inputErr)
 	assert.NoError(t, err)
 	mockLogger.AssertExpectations(t)
 
@@ -94,7 +95,7 @@ func TestLoggerNotifyPost(t *testing.T) {
 	mockLogger.On("Post", inputErr).Return(mockLogger.PostError).Once()
 
 	loggers = merge.MergeLoggers{mockLogger}
-	err = loggers.NotifyPost(inputErr)
+	err = loggers.NotifyPost(context.Background(), inputErr)
 	assert.Error(t, err)
 	assert.Equal(t, "post error", err.Error())
 	mockLogger.AssertExpectations(t)
@@ -109,7 +110,7 @@ func TestLoggerNotifyPost(t *testing.T) {
 	mockLogger2.On("Post", inputErr).Return(mockLogger2.PostError).Once()
 
 	loggers = merge.MergeLoggers{mockLogger1, mockLogger2}
-	err = loggers.NotifyPost(inputErr)
+	err = loggers.NotifyPost(context.Background(), inputErr)
 	assert.Error(t, err)
 	assert.Equal(t, "post error from logger 2", err.Error())
 	mockLogger1.AssertExpectations(t)

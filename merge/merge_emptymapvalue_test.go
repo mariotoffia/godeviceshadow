@@ -1,6 +1,7 @@
 package merge_test
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -38,7 +39,7 @@ func TestIsEmptyValue(t *testing.T) {
 	}
 
 	// Merge with DoOverrideWithEmpty=true so empty values from the override will be used
-	result, err := merge.MergeAny(nonEmptyStruct, emptyStruct, merge.MergeOptions{
+	result, err := merge.MergeAny(context.Background(), nonEmptyStruct, emptyStruct, merge.MergeOptions{
 		DoOverrideWithEmpty: true,
 		Mode:                merge.ClientIsMaster,
 	})
@@ -55,7 +56,7 @@ func TestIsEmptyValue(t *testing.T) {
 	assert.Nil(t, resultStruct.Ptr)
 
 	// Now try with DoOverrideWithEmpty=false, non-empty values should be preserved
-	result, err = merge.MergeAny(nonEmptyStruct, emptyStruct, merge.MergeOptions{
+	result, err = merge.MergeAny(context.Background(), nonEmptyStruct, emptyStruct, merge.MergeOptions{
 		DoOverrideWithEmpty: false, // Don't override with empty
 		Mode:                merge.ClientIsMaster,
 	})
@@ -82,7 +83,7 @@ func TestMergeMapEdgeCases(t *testing.T) {
 	var nilMap map[string]string
 	emptyMap := map[string]string{}
 
-	result, err := merge.MergeAny(nilMap, emptyMap, merge.MergeOptions{
+	result, err := merge.MergeAny(context.Background(), nilMap, emptyMap, merge.MergeOptions{
 		Mode: merge.ClientIsMaster,
 	})
 
@@ -113,7 +114,7 @@ func TestMergeMapEdgeCases(t *testing.T) {
 		"key3": {ID: 3, TimeStamp: older}, // New key, should be added
 	}
 
-	result, err = merge.MergeAny(oldMap, newMap, merge.MergeOptions{
+	result, err = merge.MergeAny(context.Background(), oldMap, newMap, merge.MergeOptions{
 		Mode: merge.ClientIsMaster,
 	})
 
@@ -143,7 +144,7 @@ func TestMergeMapEdgeCases(t *testing.T) {
 	}
 
 	// With DoOverrideWithEmpty=true, empty values from override will be used
-	result, err = merge.MergeAny(oldData, newData, merge.MergeOptions{
+	result, err = merge.MergeAny(context.Background(), oldData, newData, merge.MergeOptions{
 		Mode:                merge.ClientIsMaster,
 		DoOverrideWithEmpty: true, // Override with empty values
 	})

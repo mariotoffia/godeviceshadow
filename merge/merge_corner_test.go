@@ -1,6 +1,7 @@
 package merge_test
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -26,7 +27,7 @@ func TestMixedImplementationSlice(t *testing.T) {
 	}
 
 	// Should fall back to position-based merging
-	merged, err := merge.Merge(mixedSlice1, mixedSlice2, merge.MergeOptions{
+	merged, err := merge.Merge(context.Background(), mixedSlice1, mixedSlice2, merge.MergeOptions{
 		Mode:            merge.ClientIsMaster,
 		MergeSlicesByID: true, // Even though this is true, it should use position-based due to mixed types
 	})
@@ -69,7 +70,7 @@ func TestNestedIDBasedSliceMerging(t *testing.T) {
 	}
 
 	// Test with ClientIsMaster mode and ID-based merging
-	merged, err := merge.Merge(oldContainer, newContainer, merge.MergeOptions{
+	merged, err := merge.Merge(context.Background(), oldContainer, newContainer, merge.MergeOptions{
 		Mode:            merge.ClientIsMaster,
 		MergeSlicesByID: true,
 	})
@@ -92,7 +93,7 @@ func TestNestedIDBasedSliceMerging(t *testing.T) {
 	assert.Equal(t, now, sensorMap["temp2"].TimeStamp, "temp2 timestamp should be updated")
 
 	// Test with ServerIsMaster mode
-	mergedServer, err := merge.Merge(oldContainer, newContainer, merge.MergeOptions{
+	mergedServer, err := merge.Merge(context.Background(), oldContainer, newContainer, merge.MergeOptions{
 		Mode:            merge.ServerIsMaster,
 		MergeSlicesByID: true,
 	})

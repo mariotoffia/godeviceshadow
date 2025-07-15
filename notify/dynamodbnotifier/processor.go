@@ -154,32 +154,32 @@ func (p *Processor) HandleRequest(ctx context.Context, event events.DynamoDBEven
 		switch DynamoDbEventType(record.EventName) {
 		case DynamoDbEventTypeInsert:
 			if newImage.Reported != nil {
-				merge.MergeAny(createInstance(newImage.Reported), newImage.Reported, reportMergeOpts)
+				merge.MergeAny(ctx, createInstance(newImage.Reported), newImage.Reported, reportMergeOpts)
 				reported = true
 			}
 
 			if newImage.Desired != nil {
-				merge.MergeAny(createInstance(newImage.Desired), newImage.Desired, desiredMergeOpts)
+				merge.MergeAny(ctx, createInstance(newImage.Desired), newImage.Desired, desiredMergeOpts)
 				desired = true
 			}
 		case DynamoDbEventTypeModify:
 			if newImage.Reported != nil && oldImage.Reported != nil {
-				merge.MergeAny(oldImage.Reported, newImage.Reported, reportMergeOpts)
+				merge.MergeAny(ctx, oldImage.Reported, newImage.Reported, reportMergeOpts)
 				reported = true
 			}
 
 			if newImage.Desired != nil && oldImage.Desired != nil {
-				merge.MergeAny(oldImage.Desired, newImage.Desired, desiredMergeOpts)
+				merge.MergeAny(ctx, oldImage.Desired, newImage.Desired, desiredMergeOpts)
 				desired = true
 			}
 		case DynamoDbEventTypeRemove:
 			if oldImage.Reported != nil {
-				merge.MergeAny(oldImage.Reported, createInstance(oldImage.Reported), reportMergeOpts)
+				merge.MergeAny(ctx, oldImage.Reported, createInstance(oldImage.Reported), reportMergeOpts)
 				reported = true
 			}
 
 			if oldImage.Desired != nil {
-				merge.MergeAny(oldImage.Desired, createInstance(oldImage.Desired), desiredMergeOpts)
+				merge.MergeAny(ctx, oldImage.Desired, createInstance(oldImage.Desired), desiredMergeOpts)
 				desired = true
 			}
 		}

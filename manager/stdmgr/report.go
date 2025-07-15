@@ -54,7 +54,7 @@ func (mgr *ManagerImpl) Report(ctx context.Context, operations ...managermodel.R
 	}
 
 	// Merge the models
-	readResults = mgr.reportMergeModels(readResults, operations, results)
+	readResults = mgr.reportMergeModels(ctx, readResults, operations, results)
 
 	// Now we may have queueDesired|Reported models to persist.
 	writes := reportCreateWrites(readResults)
@@ -70,6 +70,7 @@ func (mgr *ManagerImpl) Report(ctx context.Context, operations ...managermodel.R
 }
 
 func (mgr *ManagerImpl) reportMergeModels(
+	ctx context.Context,
 	readResults []groupedPersistenceResult,
 	operations []managermodel.ReportOperation,
 	results map[string]*managermodel.ReportOperationResult,
@@ -110,7 +111,7 @@ func (mgr *ManagerImpl) reportMergeModels(
 				mergeMode = op.MergeMode
 			}
 
-			reported, err = merge.MergeAny(rdr.reported.Model, op.Model, merge.MergeOptions{
+			reported, err = merge.MergeAny(context.Background(), rdr.reported.Model, op.Model, merge.MergeOptions{
 				Mode:    mergeMode,
 				Loggers: ml,
 			})
@@ -148,7 +149,7 @@ func (mgr *ManagerImpl) reportMergeModels(
 
 		if rdr.desired != nil && reported != nil {
 			dl := mgr.createDesiredLoggers(op.DesiredLoggers)
-			modelDesired, err := merge.DesiredAny(reported, rdr.desired.Model, merge.DesiredOptions{
+			modelDesired, err := merge.DesiredAny(ctx, reported, rdr.desired.Model, merge.DesiredOptions{
 				Loggers: dl,
 			})
 

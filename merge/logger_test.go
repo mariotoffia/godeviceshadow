@@ -1,6 +1,7 @@
 package merge_test
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -27,15 +28,15 @@ type MockLogger struct {
 	AcknowledgedPaths []string
 }
 
-func (m *MockLogger) Acknowledge(path string, value model.ValueAndTimestamp) {
+func (m *MockLogger) Acknowledge(ctx context.Context, path string, value model.ValueAndTimestamp) {
 	m.AcknowledgedPaths = append(m.AcknowledgedPaths, path)
 }
 
-func (m *MockLogger) Managed(path string, operation model.MergeOperation, oldValue, newValue model.ValueAndTimestamp, oldTimeStamp, newTimeStamp time.Time) {
+func (m *MockLogger) Managed(ctx context.Context, path string, operation model.MergeOperation, oldValue, newValue model.ValueAndTimestamp, oldTimeStamp, newTimeStamp time.Time) {
 	m.Called(path, operation, oldValue, newValue, oldTimeStamp, newTimeStamp)
 }
 
-func (m *MockLogger) Plain(path string, operation model.MergeOperation, oldValue, newValue any) {
+func (m *MockLogger) Plain(ctx context.Context, path string, operation model.MergeOperation, oldValue, newValue any) {
 	m.Called(path, operation, oldValue, newValue)
 }
 
@@ -72,7 +73,7 @@ func TestLoggerProcessedCalled(t *testing.T) {
 			&newDevice.Circuits[0].Sensors[0],
 			oneHourAgo, now).Once()
 
-	_, err := merge.Merge(oldDevice, newDevice, merge.MergeOptions{
+	_, err := merge.Merge(context.Background(), oldDevice, newDevice, merge.MergeOptions{
 		Loggers: merge.MergeLoggers{mockLogger},
 		Mode:    merge.ClientIsMaster,
 	})
@@ -115,7 +116,7 @@ func TestLoggerPlainCalledForUnchangedValue(t *testing.T) {
 			&oldDevice.Circuits[0].Sensors[0], &newDevice.Circuits[0].Sensors[0],
 			now, now).Once()
 
-	_, err := merge.Merge(oldDevice, newDevice, merge.MergeOptions{
+	_, err := merge.Merge(context.Background(), oldDevice, newDevice, merge.MergeOptions{
 		Loggers: merge.MergeLoggers{mockLogger},
 		Mode:    merge.ClientIsMaster,
 	})
@@ -156,7 +157,7 @@ func TestLoggerProcessedCalledForAddedValue(t *testing.T) {
 			nil, &newDevice.Circuits[0].Sensors[0],
 			time.Time{}, now).Once()
 
-	_, err := merge.Merge(oldDevice, newDevice, merge.MergeOptions{
+	_, err := merge.Merge(context.Background(), oldDevice, newDevice, merge.MergeOptions{
 		Loggers: merge.MergeLoggers{mockLogger},
 		Mode:    merge.ClientIsMaster,
 	})
@@ -200,7 +201,7 @@ func TestLoggerProcessedCalledForUpdatedValue(t *testing.T) {
 			&oldDevice.Circuits[0].Sensors[0], &newDevice.Circuits[0].Sensors[0],
 			oneHourAgo, now).Once()
 
-	_, err := merge.Merge(oldDevice, newDevice, merge.MergeOptions{
+	_, err := merge.Merge(context.Background(), oldDevice, newDevice, merge.MergeOptions{
 		Loggers: merge.MergeLoggers{mockLogger},
 		Mode:    merge.ClientIsMaster,
 	})
@@ -241,7 +242,7 @@ func TestLoggerProcessedCalledForRemovedValue(t *testing.T) {
 			&oldDevice.Circuits[0].Sensors[0], nil,
 			now, time.Time{}).Once()
 
-	_, err := merge.Merge(oldDevice, newDevice, merge.MergeOptions{
+	_, err := merge.Merge(context.Background(), oldDevice, newDevice, merge.MergeOptions{
 		Loggers: merge.MergeLoggers{mockLogger},
 		Mode:    merge.ClientIsMaster,
 	})
@@ -295,7 +296,7 @@ func TestLoggerProcessedCalledForNestedValues(t *testing.T) {
 			&oldDevice.Circuits[1].Sensors[0], &newDevice.Circuits[1].Sensors[0],
 			oneHourAgo, oneHourAgo).Once()
 
-	_, err := merge.Merge(oldDevice, newDevice, merge.MergeOptions{
+	_, err := merge.Merge(context.Background(), oldDevice, newDevice, merge.MergeOptions{
 		Loggers: merge.MergeLoggers{mockLogger},
 		Mode:    merge.ClientIsMaster,
 	})
@@ -331,7 +332,7 @@ func TestLoggerPlainCalledForAddedPlainValue(t *testing.T) {
 	mockLogger.
 		On("Plain", circuits1ID, model.MergeOperationAdd, nil, 2).Once()
 
-	_, err := merge.Merge(oldDevice, newDevice, merge.MergeOptions{
+	_, err := merge.Merge(context.Background(), oldDevice, newDevice, merge.MergeOptions{
 		Loggers: merge.MergeLoggers{mockLogger},
 		Mode:    merge.ClientIsMaster,
 	})
@@ -367,7 +368,7 @@ func TestLoggerPlainCalledForRemovedPlainValue(t *testing.T) {
 	mockLogger.
 		On("Plain", circuits1ID, model.MergeOperationRemove, 2, nil).Once()
 
-	_, err := merge.Merge(oldDevice, newDevice, merge.MergeOptions{
+	_, err := merge.Merge(context.Background(), oldDevice, newDevice, merge.MergeOptions{
 		Loggers: merge.MergeLoggers{mockLogger},
 		Mode:    merge.ClientIsMaster,
 	})
@@ -423,7 +424,7 @@ func TestLoggerProcessedAndPlainForMixedUpdates(t *testing.T) {
 			nil, &newDevice.Circuits[0].Sensors[1],
 			time.Time{}, oneHourAgo).Once()
 
-	_, err := merge.Merge(oldDevice, newDevice, merge.MergeOptions{
+	_, err := merge.Merge(context.Background(), oldDevice, newDevice, merge.MergeOptions{
 		Loggers: merge.MergeLoggers{mockLogger},
 		Mode:    merge.ClientIsMaster,
 	})
@@ -466,7 +467,7 @@ func TestLoggerProcessedForEqualTimestamps(t *testing.T) {
 			&oldDevice.Circuits[0].Sensors[0], &newDevice.Circuits[0].Sensors[0],
 			now, now).Once()
 
-	_, err := merge.Merge(oldDevice, newDevice, merge.MergeOptions{
+	_, err := merge.Merge(context.Background(), oldDevice, newDevice, merge.MergeOptions{
 		Loggers: merge.MergeLoggers{mockLogger},
 		Mode:    merge.ClientIsMaster,
 	})
@@ -525,7 +526,7 @@ func TestLoggerProcessedForMultipleNestedChanges(t *testing.T) {
 			&oldDevice.Circuits[1].Sensors[0], &newDevice.Circuits[1].Sensors[0],
 			twoHoursAgo, now).Once()
 
-	_, err := merge.Merge(oldDevice, newDevice, merge.MergeOptions{
+	_, err := merge.Merge(context.Background(), oldDevice, newDevice, merge.MergeOptions{
 		Loggers: merge.MergeLoggers{mockLogger},
 		Mode:    merge.ClientIsMaster,
 	})
@@ -574,7 +575,7 @@ func TestLoggerProcessedForMultipleAdditions(t *testing.T) {
 			nil, &newDevice.Circuits[0].Sensors[2],
 			time.Time{}, now.Add(-1*time.Hour)).Once()
 
-	_, err := merge.Merge(oldDevice, newDevice, merge.MergeOptions{
+	_, err := merge.Merge(context.Background(), oldDevice, newDevice, merge.MergeOptions{
 		Loggers: merge.MergeLoggers{mockLogger},
 		Mode:    merge.ClientIsMaster,
 	})
@@ -624,7 +625,7 @@ func TestLoggerProcessedForMultipleRemovals(t *testing.T) {
 			&oldDevice.Circuits[0].Sensors[2], nil,
 			oneHourAgo, time.Time{}).Once()
 
-	_, err := merge.Merge(oldDevice, newDevice, merge.MergeOptions{
+	_, err := merge.Merge(context.Background(), oldDevice, newDevice, merge.MergeOptions{
 		Loggers: merge.MergeLoggers{mockLogger},
 		Mode:    merge.ClientIsMaster,
 	})
@@ -691,7 +692,7 @@ func TestLoggerProcessedForMixedOperationsAcrossCircuits(t *testing.T) {
 			nil, &newDevice.Circuits[1].Sensors[1],
 			time.Time{}, oneHourAgo).Once()
 
-	_, err := merge.Merge(oldDevice, newDevice, merge.MergeOptions{
+	_, err := merge.Merge(context.Background(), oldDevice, newDevice, merge.MergeOptions{
 		Loggers: merge.MergeLoggers{mockLogger},
 		Mode:    merge.ClientIsMaster,
 	})
@@ -725,7 +726,7 @@ func TestLoggerPlainForMultiplePlainValueUpdates(t *testing.T) {
 		On("Plain", circuits0ID, model.MergeOperationUpdate, 1, 10).Once().
 		On("Plain", circuits1ID, model.MergeOperationUpdate, 2, 20).Once()
 
-	_, err := merge.Merge(oldDevice, newDevice, merge.MergeOptions{
+	_, err := merge.Merge(context.Background(), oldDevice, newDevice, merge.MergeOptions{
 		Loggers: merge.MergeLoggers{mockLogger},
 		Mode:    merge.ClientIsMaster,
 	})
@@ -754,7 +755,7 @@ func TestLoggerForEmptyCircuits(t *testing.T) {
 	// Expect no calls to Processed for circuits, since both are empty
 	mockLogger.AssertNotCalled(t, "Processed")
 
-	_, err := merge.Merge(oldDevice, newDevice, merge.MergeOptions{
+	_, err := merge.Merge(context.Background(), oldDevice, newDevice, merge.MergeOptions{
 		Loggers: merge.MergeLoggers{mockLogger},
 		Mode:    merge.ClientIsMaster,
 	})
@@ -800,7 +801,7 @@ func TestLoggerForAddingSensorsToEmptyList(t *testing.T) {
 			nil, &newDevice.Circuits[0].Sensors[1],
 			time.Time{}, oneHourAgo).Once()
 
-	_, err := merge.Merge(oldDevice, newDevice, merge.MergeOptions{
+	_, err := merge.Merge(context.Background(), oldDevice, newDevice, merge.MergeOptions{
 		Loggers: merge.MergeLoggers{mockLogger},
 		Mode:    merge.ClientIsMaster,
 	})
@@ -835,7 +836,7 @@ func TestLoggerProcessedForUpdatedMapValue(t *testing.T) {
 	oldObj := MapHolder{M: oldMap}
 	newObj := MapHolder{M: newMap}
 
-	_, err := merge.Merge(oldObj, newObj, merge.MergeOptions{
+	_, err := merge.Merge(context.Background(), oldObj, newObj, merge.MergeOptions{
 		Loggers: merge.MergeLoggers{mockLogger},
 		Mode:    merge.ClientIsMaster,
 	})
@@ -867,7 +868,7 @@ func TestLoggerProcessedForAddedMapKey(t *testing.T) {
 	oldObj := MapHolder{M: oldMap}
 	newObj := MapHolder{M: newMap}
 
-	_, err := merge.Merge(oldObj, newObj, merge.MergeOptions{
+	_, err := merge.Merge(context.Background(), oldObj, newObj, merge.MergeOptions{
 		Loggers: merge.MergeLoggers{mockLogger},
 		Mode:    merge.ClientIsMaster,
 	})
@@ -899,7 +900,7 @@ func TestLoggerProcessedForRemovedMapKey(t *testing.T) {
 	oldObj := MapHolder{M: oldMap}
 	newObj := MapHolder{M: newMap}
 
-	_, err := merge.Merge(oldObj, newObj, merge.MergeOptions{
+	_, err := merge.Merge(context.Background(), oldObj, newObj, merge.MergeOptions{
 		Loggers: merge.MergeLoggers{mockLogger},
 		Mode:    merge.ClientIsMaster,
 	})
@@ -933,7 +934,7 @@ func TestLoggerProcessedForUnchangedMapValue(t *testing.T) {
 	oldObj := MapHolder{M: oldMap}
 	newObj := MapHolder{M: newMap}
 
-	_, err := merge.Merge(oldObj, newObj, merge.MergeOptions{
+	_, err := merge.Merge(context.Background(), oldObj, newObj, merge.MergeOptions{
 		Loggers: merge.MergeLoggers{mockLogger},
 		Mode:    merge.ClientIsMaster,
 	})
@@ -978,7 +979,7 @@ func TestLoggerProcessedForMixedMapOperations(t *testing.T) {
 	oldObj := MapHolder{M: oldMap}
 	newObj := MapHolder{M: newMap}
 
-	_, err := merge.Merge(oldObj, newObj, merge.MergeOptions{
+	_, err := merge.Merge(context.Background(), oldObj, newObj, merge.MergeOptions{
 		Loggers: merge.MergeLoggers{mockLogger},
 		Mode:    merge.ClientIsMaster,
 	})
@@ -1020,7 +1021,7 @@ func TestLoggerProcessedForMultipleMapUpdates(t *testing.T) {
 	oldObj := MapHolder{M: oldMap}
 	newObj := MapHolder{M: newMap}
 
-	_, err := merge.Merge(oldObj, newObj, merge.MergeOptions{
+	_, err := merge.Merge(context.Background(), oldObj, newObj, merge.MergeOptions{
 		Loggers: merge.MergeLoggers{mockLogger},
 		Mode:    merge.ClientIsMaster,
 	})
@@ -1070,7 +1071,7 @@ func TestLoggerProcessedForAdditionsAndRemovalsInMap(t *testing.T) {
 	oldObj := MapHolder{M: oldMap}
 	newObj := MapHolder{M: newMap}
 
-	_, err := merge.Merge(oldObj, newObj, merge.MergeOptions{
+	_, err := merge.Merge(context.Background(), oldObj, newObj, merge.MergeOptions{
 		Loggers: merge.MergeLoggers{mockLogger},
 		Mode:    merge.ClientIsMaster,
 	})
@@ -1129,7 +1130,7 @@ func TestLoggerProcessedForMixedOperationsAndUnchangedValuesInMap(t *testing.T) 
 	oldObj := MapHolder{M: oldMap}
 	newObj := MapHolder{M: newMap}
 
-	_, err := merge.Merge(oldObj, newObj, merge.MergeOptions{
+	_, err := merge.Merge(context.Background(), oldObj, newObj, merge.MergeOptions{
 		Loggers: merge.MergeLoggers{mockLogger},
 		Mode:    merge.ClientIsMaster,
 	})
@@ -1171,7 +1172,7 @@ func TestLoggerProcessedForOnlyAdditionsInMap(t *testing.T) {
 	oldObj := MapHolder{M: oldMap}
 	newObj := MapHolder{M: newMap}
 
-	_, err := merge.Merge(oldObj, newObj, merge.MergeOptions{
+	_, err := merge.Merge(context.Background(), oldObj, newObj, merge.MergeOptions{
 		Loggers: merge.MergeLoggers{mockLogger},
 		Mode:    merge.ClientIsMaster,
 	})
@@ -1214,7 +1215,7 @@ func TestLoggerProcessedForOnlyRemovalsInMap(t *testing.T) {
 	oldObj := MapHolder{M: oldMap}
 	newObj := MapHolder{M: newMap}
 
-	_, err := merge.Merge(oldObj, newObj, merge.MergeOptions{
+	_, err := merge.Merge(context.Background(), oldObj, newObj, merge.MergeOptions{
 		Loggers: merge.MergeLoggers{mockLogger},
 		Mode:    merge.ClientIsMaster,
 	})

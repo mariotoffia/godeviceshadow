@@ -1,6 +1,7 @@
 package merge_test
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -33,7 +34,7 @@ func TestMergeSliceByID(t *testing.T) {
 	}
 
 	// Test with ID-based slice merging enabled
-	merged, err := merge.Merge(oldContainer, newContainer, merge.MergeOptions{
+	merged, err := merge.Merge(context.Background(), oldContainer, newContainer, merge.MergeOptions{
 		Mode:            merge.ClientIsMaster,
 		MergeSlicesByID: true,
 	})

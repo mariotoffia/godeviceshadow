@@ -1,6 +1,7 @@
 package merge_test
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -16,13 +17,13 @@ func TestDesiredWithDifferentTypes(t *testing.T) {
 	}
 	desired := "not a struct"
 
-	_, err := merge.DesiredAny(reported, desired, merge.DesiredOptions{})
+	_, err := merge.DesiredAny(context.Background(), reported, desired, merge.DesiredOptions{})
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "reported and desired model must be of the same kind")
 
 	// Using the generic version which should also fail
 	var s string = "not a struct"
-	_, err = merge.DesiredAny(reported, s, merge.DesiredOptions{})
+	_, err = merge.DesiredAny(context.Background(), reported, s, merge.DesiredOptions{})
 	assert.Error(t, err)
 }
 
@@ -34,7 +35,7 @@ func TestDesiredWithNilValues(t *testing.T) {
 	}
 
 	// Test with nil pointer as reported
-	result, err := merge.DesiredAny(nilPtr, &desired, merge.DesiredOptions{})
+	result, err := merge.DesiredAny(context.Background(), nilPtr, &desired, merge.DesiredOptions{})
 	assert.NoError(t, err)
 	assert.Nil(t, result)
 }
@@ -61,7 +62,7 @@ func TestDesiredSliceHandling(t *testing.T) {
 	mockLogger := &MockLogger{}
 	opts := merge.DesiredOptions{Loggers: merge.DesiredLoggers{mockLogger}}
 
-	result, err := merge.Desired(reported, desired, opts)
+	result, err := merge.Desired(context.Background(), reported, desired, opts)
 
 	assert.NoError(t, err)
 	assert.Equal(t, 3, len(result.Slice))
@@ -89,7 +90,7 @@ func TestDesiredMakeAddressable(t *testing.T) {
 	opts := merge.DesiredOptions{Loggers: merge.DesiredLoggers{mockLogger}}
 
 	// Use the map values directly, which are not addressable
-	result, err := merge.DesiredAny(reportedMap["key"], desiredMap["key"], opts)
+	result, err := merge.DesiredAny(context.Background(), reportedMap["key"], desiredMap["key"], opts)
 
 	assert.NoError(t, err)
 	resultStruct, ok := result.(TestStruct)

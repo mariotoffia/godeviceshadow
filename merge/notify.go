@@ -1,6 +1,7 @@
 package merge
 
 import (
+	"context"
 	"fmt"
 	"reflect"
 	"time"
@@ -12,7 +13,7 @@ import (
 //
 // NOTE: _op_ may only be `model.MergeOperationAdd`, `model.MergeOperationRemove`,  and
 // `model.MergeOperationNotChanged` nothing else.
-func notifyRecursive(val reflect.Value, op model.MergeOperation, obj MergeObject) {
+func notifyRecursive(ctx context.Context, val reflect.Value, op model.MergeOperation, obj MergeObject) {
 	if len(obj.Loggers) == 0 {
 		return
 	}
@@ -20,11 +21,11 @@ func notifyRecursive(val reflect.Value, op model.MergeOperation, obj MergeObject
 	if vt, ok := unwrapValueAndTimestamp(val); ok {
 		switch op {
 		case model.MergeOperationAdd:
-			obj.Loggers.NotifyManaged(obj.CurrentPath, op, nil, vt, time.Time{}, vt.GetTimestamp())
+			obj.Loggers.NotifyManaged(ctx, obj.CurrentPath, op, nil, vt, time.Time{}, vt.GetTimestamp())
 		case model.MergeOperationRemove:
-			obj.Loggers.NotifyManaged(obj.CurrentPath, op, vt, nil, vt.GetTimestamp(), time.Time{})
+			obj.Loggers.NotifyManaged(ctx, obj.CurrentPath, op, vt, nil, vt.GetTimestamp(), time.Time{})
 		case model.MergeOperationNotChanged:
-			obj.Loggers.NotifyManaged(obj.CurrentPath, op, vt, vt, vt.GetTimestamp(), vt.GetTimestamp())
+			obj.Loggers.NotifyManaged(ctx, obj.CurrentPath, op, vt, vt, vt.GetTimestamp(), vt.GetTimestamp())
 		}
 
 		return
@@ -50,19 +51,19 @@ func notifyRecursive(val reflect.Value, op model.MergeOperation, obj MergeObject
 
 			obj.CurrentPath = concatPath(basePath, tag)
 
-			notifyRecursive(val.Field(i), op, obj)
+			notifyRecursive(ctx, val.Field(i), op, obj)
 		}
 	case reflect.Map:
 		for _, key := range val.MapKeys() {
 			obj.CurrentPath = concatPath(basePath, formatKey(key))
 
-			notifyRecursive(val.MapIndex(key), op, obj)
+			notifyRecursive(ctx, val.MapIndex(key), op, obj)
 		}
 	case reflect.Slice, reflect.Array:
 		for i := 0; i < val.Len(); i++ {
 			obj.CurrentPath = fmt.Sprintf("%s.%d", basePath, i)
 
-			notifyRecursive(val.Index(i), op, obj)
+			notifyRecursive(ctx, val.Index(i), op, obj)
 		}
 	default:
 		if !val.IsValid() {
@@ -71,11 +72,11 @@ func notifyRecursive(val reflect.Value, op model.MergeOperation, obj MergeObject
 
 		switch op {
 		case model.MergeOperationAdd:
-			obj.Loggers.NotifyPlain(obj.CurrentPath, op, nil, val.Interface())
+			obj.Loggers.NotifyPlain(ctx, obj.CurrentPath, op, nil, val.Interface())
 		case model.MergeOperationRemove:
-			obj.Loggers.NotifyPlain(obj.CurrentPath, op, val.Interface(), nil)
+			obj.Loggers.NotifyPlain(ctx, obj.CurrentPath, op, val.Interface(), nil)
 		case model.MergeOperationNotChanged:
-			obj.Loggers.NotifyPlain(obj.CurrentPath, op, val.Interface(), val.Interface())
+			obj.Loggers.NotifyPlain(ctx, obj.CurrentPath, op, val.Interface(), val.Interface())
 		}
 	}
 }

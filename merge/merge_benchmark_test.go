@@ -1,6 +1,7 @@
 package merge_test
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -37,7 +38,7 @@ func BenchmarkMergeSimple(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		_, _ = merge.Merge(oldDevice, newDevice, merge.MergeOptions{
+		_, _ = merge.Merge(context.Background(), oldDevice, newDevice, merge.MergeOptions{
 			Mode: merge.ClientIsMaster,
 		})
 	}
@@ -64,7 +65,7 @@ func BenchmarkMergeMap(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		_, _ = merge.Merge(oldMap, newMap, merge.MergeOptions{
+		_, _ = merge.Merge(context.Background(), oldMap, newMap, merge.MergeOptions{
 			Mode: merge.ClientIsMaster,
 		})
 	}
@@ -91,7 +92,7 @@ func BenchmarkMergeSliceByID(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		_, _ = merge.Merge(oldSlice, newSlice, merge.MergeOptions{
+		_, _ = merge.Merge(context.Background(), oldSlice, newSlice, merge.MergeOptions{
 			Mode:            merge.ClientIsMaster,
 			MergeSlicesByID: true,
 		})
@@ -118,7 +119,7 @@ func BenchmarkCustomMerger(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		_, _ = merge.Merge(oldObj, newObj, merge.MergeOptions{
+		_, _ = merge.Merge(context.Background(), oldObj, newObj, merge.MergeOptions{
 			Mode: merge.ClientIsMaster,
 		})
 	}

@@ -32,11 +32,12 @@ func Find(loggers []model.MergeLogger) *DsqlLogger {
 	return nil
 }
 
-func (sl *DsqlLogger) Plain(path string, operation model.MergeOperation, oldValue, newValue any) {
+func (sl *DsqlLogger) Plain(ctx context.Context, path string, operation model.MergeOperation, oldValue, newValue any) {
 	// NOOP - We're only logging managed values in this implementation
 }
 
 func (sl *DsqlLogger) Managed(
+	ctx context.Context,
 	path string,
 	operation model.MergeOperation,
 	oldValue, newValue model.ValueAndTimestamp,
@@ -67,12 +68,12 @@ func (sl *DsqlLogger) Managed(
 }
 
 // Prepare implements the model.MergeLoggerPrepare interface
-func (sl *DsqlLogger) Prepare() error {
+func (sl *DsqlLogger) Prepare(ctx context.Context) error {
 	return nil
 }
 
 // Post implements the model.MergeLoggerPost interface
-func (sl *DsqlLogger) Post(err error) error {
+func (sl *DsqlLogger) Post(ctx context.Context, err error) error {
 	if err != nil {
 		return err
 	}

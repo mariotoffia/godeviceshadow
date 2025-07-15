@@ -1,6 +1,7 @@
 package merge_test
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -39,7 +40,7 @@ func TestNotifyRecursive(t *testing.T) {
 
 		// Pass empty device as base and the device as client to simulate an Add operation
 		emptyDevice := Device{}
-		_, err := merge.Merge(emptyDevice, device, merge.MergeOptions{
+		_, err := merge.Merge(context.Background(), emptyDevice, device, merge.MergeOptions{
 			Loggers: merge.MergeLoggers{mockLogger},
 			Mode:    merge.ClientIsMaster,
 		})
@@ -71,7 +72,7 @@ func TestNotifyRecursive(t *testing.T) {
 
 		// Pass the device as base and empty device as client to simulate a Remove operation
 		emptyDevice := Device{}
-		_, err := merge.Merge(device, emptyDevice, merge.MergeOptions{
+		_, err := merge.Merge(context.Background(), device, emptyDevice, merge.MergeOptions{
 			Loggers: merge.MergeLoggers{mockLogger},
 			Mode:    merge.ClientIsMaster,
 		})
@@ -110,7 +111,7 @@ func TestNotifyRecursive(t *testing.T) {
 				now, now).Once()
 
 		// Pass identical devices to trigger NotChanged operations
-		_, err := merge.Merge(device1, device2, merge.MergeOptions{
+		_, err := merge.Merge(context.Background(), device1, device2, merge.MergeOptions{
 			Loggers: merge.MergeLoggers{mockLogger},
 			Mode:    merge.ClientIsMaster,
 		})
@@ -142,7 +143,7 @@ func TestNotifyRecursive(t *testing.T) {
 			On("Plain", "nested_map.outer1.inner1", model.MergeOperationRemove, 10, mock.Anything).Once()
 
 		// Merge from nested map to empty to simulate removal
-		_, err := merge.MergeAny(nestedMapStruct1, nestedMapStruct2, merge.MergeOptions{
+		_, err := merge.MergeAny(context.Background(), nestedMapStruct1, nestedMapStruct2, merge.MergeOptions{
 			Loggers: merge.MergeLoggers{mockLogger},
 			Mode:    merge.ClientIsMaster,
 		})
@@ -159,7 +160,7 @@ func TestNotifyRecursive(t *testing.T) {
 		emptyDevice := Device{}
 
 		// No loggers should not cause any errors
-		_, err := merge.Merge(emptyDevice, device, merge.MergeOptions{
+		_, err := merge.Merge(context.Background(), emptyDevice, device, merge.MergeOptions{
 			Loggers: merge.MergeLoggers{},
 			Mode:    merge.ClientIsMaster,
 		})

@@ -1,6 +1,7 @@
 package merge_test
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -13,13 +14,13 @@ import (
 func TestMapKeyFormatting(t *testing.T) {
 	// Test with string keys
 	strMap := map[string]int{"a": 1, "b": 2}
-	merged, err := merge.Merge(strMap, strMap, merge.MergeOptions{})
+	merged, err := merge.Merge(context.Background(), strMap, strMap, merge.MergeOptions{})
 	require.NoError(t, err)
 	require.Len(t, merged, 2)
 
 	// Test with int keys
 	intMap := map[int]int{1: 10, 2: 20}
-	merged2, err := merge.Merge(intMap, intMap, merge.MergeOptions{})
+	merged2, err := merge.Merge(context.Background(), intMap, intMap, merge.MergeOptions{})
 	require.NoError(t, err)
 	require.Len(t, merged2, 2)
 
@@ -32,7 +33,7 @@ func TestMapKeyFormatting(t *testing.T) {
 		{ID: 1, Name: "first"}:  100,
 		{ID: 2, Name: "second"}: 200,
 	}
-	merged3, err := merge.Merge(structMap, structMap, merge.MergeOptions{})
+	merged3, err := merge.Merge(context.Background(), structMap, structMap, merge.MergeOptions{})
 	require.NoError(t, err)
 	require.Len(t, merged3, 2)
 
@@ -43,7 +44,7 @@ func TestMapKeyFormatting(t *testing.T) {
 		key1: 1000,
 		key2: 2000,
 	}
-	merged4, err := merge.Merge(ptrMap, ptrMap, merge.MergeOptions{})
+	merged4, err := merge.Merge(context.Background(), ptrMap, ptrMap, merge.MergeOptions{})
 	require.NoError(t, err)
 	require.Len(t, merged4, 2)
 
@@ -53,7 +54,7 @@ func TestMapKeyFormatting(t *testing.T) {
 		42:       2,
 		key1:     3,
 	}
-	merged5, err := merge.Merge(interfaceMap, interfaceMap, merge.MergeOptions{})
+	merged5, err := merge.Merge(context.Background(), interfaceMap, interfaceMap, merge.MergeOptions{})
 	require.NoError(t, err)
 	require.Len(t, merged5, 3)
 }
@@ -76,7 +77,7 @@ func TestIdInterfaceUnwrapping(t *testing.T) {
 	}
 
 	// Merge should still work even though some types require pointers
-	_, err := merge.Merge(slice1, slice2, merge.MergeOptions{
+	_, err := merge.Merge(context.Background(), slice1, slice2, merge.MergeOptions{
 		Mode:            merge.ClientIsMaster,
 		MergeSlicesByID: true,
 	})
@@ -94,7 +95,7 @@ func TestIdInterfaceUnwrapping(t *testing.T) {
 		{ID: "sensor3", TimeStamp: now, Value: 25.0}, // New sensor
 	}
 
-	merged, err := merge.Merge(idSensorSlice1, idSensorSlice2, merge.MergeOptions{
+	merged, err := merge.Merge(context.Background(), idSensorSlice1, idSensorSlice2, merge.MergeOptions{
 		Mode:            merge.ClientIsMaster,
 		MergeSlicesByID: true,
 	})
@@ -120,13 +121,13 @@ func TestIdInterfaceUnwrapping(t *testing.T) {
 func TestCustomMergerErrorPropagation(t *testing.T) {
 	// Test a custom merger that returns an error
 	errorMergeable := &ErrorMergeable{ShouldError: true}
-	_, err := merge.Merge(errorMergeable, errorMergeable, merge.MergeOptions{})
+	_, err := merge.Merge(context.Background(), errorMergeable, errorMergeable, merge.MergeOptions{})
 	require.Error(t, err, "Should propagate error from custom merger")
 	assert.Contains(t, err.Error(), "simulated error", "Error message should be preserved")
 
 	// Test with mismatched types for custom merger
 	customMergeable := &CustomMergeable{}
 	// Use MergeAny instead of Merge to allow different types
-	_, err = merge.MergeAny(customMergeable, 42, merge.MergeOptions{})
+	_, err = merge.MergeAny(context.Background(), customMergeable, 42, merge.MergeOptions{})
 	require.Error(t, err, "Should error with mismatched types")
 }

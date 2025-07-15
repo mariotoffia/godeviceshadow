@@ -1,6 +1,7 @@
 package selectlang_test
 
 import (
+	"context"
 	"time"
 
 	"github.com/mariotoffia/godeviceshadow/loggers/changelogger"
@@ -20,7 +21,7 @@ func createTestOperation() notifiermodel.NotifierOperation {
 
 	// Create a desire logger with some acknowledged values
 	dl := desirelogger.New()
-	dl.Acknowledge("device/settings/mode", &model.ValueAndTimestampImpl{
+	dl.Acknowledge(context.Background(), "device/settings/mode", &model.ValueAndTimestampImpl{
 		Timestamp: time.Now().UTC(),
 		Value:     "auto",
 	})

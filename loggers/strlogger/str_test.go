@@ -1,6 +1,7 @@
 package strlogger_test
 
 import (
+	"context"
 	"strings"
 	"testing"
 	"time"
@@ -57,7 +58,7 @@ func TestStringLogger(t *testing.T) {
 		},
 	}
 
-	_, err := merge.Merge(oldShadow, newShadow, merge.MergeOptions{
+	_, err := merge.Merge(context.Background(), oldShadow, newShadow, merge.MergeOptions{
 		Mode:    merge.ClientIsMaster,
 		Loggers: []model.MergeLogger{sl},
 	})

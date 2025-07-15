@@ -1,6 +1,7 @@
 package merge_test
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -49,7 +50,7 @@ func TestDesiredSimpleStruct(t *testing.T) {
 	mockLogger := &MockLogger{} // Using the pre-existing MockLogger
 	opts := merge.DesiredOptions{Loggers: merge.DesiredLoggers{mockLogger}}
 
-	result, err := merge.Desired(reported, desired, opts)
+	result, err := merge.Desired(context.Background(), reported, desired, opts)
 
 	assert.NoError(t, err)
 	assert.Equal(t, TestStruct{
@@ -88,7 +89,7 @@ func TestDesiredNestedStruct(t *testing.T) {
 	mockLogger := &MockLogger{}
 	opts := merge.DesiredOptions{Loggers: merge.DesiredLoggers{mockLogger}}
 
-	result, err := merge.Desired(reported, desired, opts)
+	result, err := merge.Desired(context.Background(), reported, desired, opts)
 
 	assert.NoError(t, err)
 	assert.Equal(t, TestStruct{
@@ -123,7 +124,7 @@ func TestDesiredMapMerge(t *testing.T) {
 	mockLogger := &MockLogger{}
 	opts := merge.DesiredOptions{Loggers: merge.DesiredLoggers{mockLogger}}
 
-	result, err := merge.Desired(reported, desired, opts)
+	result, err := merge.Desired(context.Background(), reported, desired, opts)
 
 	assert.NoError(t, err)
 	assert.Equal(t, TestStruct{
@@ -159,7 +160,7 @@ func TestDesiredMixedDataTypes(t *testing.T) {
 	mockLogger := &MockLogger{}
 	opts := merge.DesiredOptions{Loggers: merge.DesiredLoggers{mockLogger}}
 
-	result, err := merge.Desired(reported, desired, opts)
+	result, err := merge.Desired(context.Background(), reported, desired, opts)
 
 	assert.NoError(t, err)
 	assert.Equal(t, TestStruct{
@@ -205,7 +206,7 @@ func TestDesiredNestedMaps(t *testing.T) {
 	mockLogger := &MockLogger{}
 	opts := merge.DesiredOptions{Loggers: merge.DesiredLoggers{mockLogger}}
 
-	result, err := merge.Desired(reported, desired, opts)
+	result, err := merge.Desired(context.Background(), reported, desired, opts)
 
 	assert.NoError(t, err)
 	assert.Equal(t, TestStruct{
@@ -245,7 +246,7 @@ func TestDesiredEmptyAndNullFields(t *testing.T) {
 	mockLogger := &MockLogger{}
 	opts := merge.DesiredOptions{Loggers: merge.DesiredLoggers{mockLogger}}
 
-	result, err := merge.Desired(reported, desired, opts)
+	result, err := merge.Desired(context.Background(), reported, desired, opts)
 
 	assert.NoError(t, err)
 	assert.Equal(t, TestStruct{
@@ -277,7 +278,7 @@ func TestDesiredUnexportedFields(t *testing.T) {
 	mockLogger := &MockLogger{}
 	opts := merge.DesiredOptions{Loggers: merge.DesiredLoggers{mockLogger}}
 
-	result, err := merge.Desired(reported, desired, opts)
+	result, err := merge.Desired(context.Background(), reported, desired, opts)
 
 	assert.NoError(t, err)
 	assert.Equal(t, TestStruct{
@@ -328,7 +329,7 @@ func TestDesiredMultipleMatchesInNestedStructs(t *testing.T) {
 	mockLogger := &MockLogger{}
 	opts := merge.DesiredOptions{Loggers: merge.DesiredLoggers{mockLogger}}
 
-	result, err := merge.Desired(reported, desired, opts)
+	result, err := merge.Desired(context.Background(), reported, desired, opts)
 
 	assert.NoError(t, err)
 	assert.Equal(t, TestStruct{
@@ -371,7 +372,7 @@ func TestDesiredEmptyMapsAndStructs(t *testing.T) {
 	mockLogger := &MockLogger{}
 	opts := merge.DesiredOptions{Loggers: merge.DesiredLoggers{mockLogger}}
 
-	result, err := merge.Desired(reported, desired, opts)
+	result, err := merge.Desired(context.Background(), reported, desired, opts)
 
 	assert.NoError(t, err)
 	assert.Equal(t, TestStruct{
@@ -402,7 +403,7 @@ func TestDesiredMissingFieldsInDesired(t *testing.T) {
 	mockLogger := &MockLogger{}
 	opts := merge.DesiredOptions{Loggers: merge.DesiredLoggers{mockLogger}}
 
-	result, err := merge.Desired(reported, desired, opts)
+	result, err := merge.Desired(context.Background(), reported, desired, opts)
 
 	assert.NoError(t, err)
 	assert.Equal(t, TestStruct{
@@ -444,7 +445,7 @@ func TestDesiredMultiLevelNestedStructs(t *testing.T) {
 	mockLogger := &MockLogger{}
 	opts := merge.DesiredOptions{Loggers: merge.DesiredLoggers{mockLogger}}
 
-	result, err := merge.Desired(reported, desired, opts)
+	result, err := merge.Desired(context.Background(), reported, desired, opts)
 
 	assert.NoError(t, err)
 	assert.Equal(t, Level1{
@@ -484,7 +485,7 @@ func TestDesiredMapWithComplexKeys(t *testing.T) {
 	mockLogger := &MockLogger{}
 	opts := merge.DesiredOptions{Loggers: merge.DesiredLoggers{mockLogger}}
 
-	result, err := merge.Desired(reported, desired, opts)
+	result, err := merge.Desired(context.Background(), reported, desired, opts)
 
 	assert.NoError(t, err)
 	assert.Equal(t, TestStruct{
@@ -523,7 +524,7 @@ func TestDesiredMixedKeyTypesInMap(t *testing.T) {
 	mockLogger := &MockLogger{}
 	opts := merge.DesiredOptions{Loggers: merge.DesiredLoggers{mockLogger}}
 
-	result, err := merge.Desired(reported, desired, opts)
+	result, err := merge.Desired(context.Background(), reported, desired, opts)
 
 	assert.NoError(t, err)
 	assert.Equal(t, MixedKeyMap{
@@ -560,7 +561,7 @@ func TestDesiredStructWithPointerFields(t *testing.T) {
 	mockLogger := &MockLogger{}
 	opts := merge.DesiredOptions{Loggers: merge.DesiredLoggers{mockLogger}}
 
-	result, err := merge.Desired(reported, desired, opts)
+	result, err := merge.Desired(context.Background(), reported, desired, opts)
 
 	assert.NoError(t, err)
 	assert.Equal(t, TestStruct{
@@ -595,7 +596,7 @@ func TestDesiredNilPointersInStructs(t *testing.T) {
 	mockLogger := &MockLogger{}
 	opts := merge.DesiredOptions{Loggers: merge.DesiredLoggers{mockLogger}}
 
-	result, err := merge.Desired(reported, desired, opts)
+	result, err := merge.Desired(context.Background(), reported, desired, opts)
 
 	assert.NoError(t, err)
 	assert.Equal(t, TestStruct{

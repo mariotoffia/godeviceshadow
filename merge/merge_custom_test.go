@@ -1,6 +1,7 @@
 package merge_test
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -27,7 +28,7 @@ func TestCustomMerger(t *testing.T) {
 	}
 
 	// Test with ClientIsMaster
-	merged, err := merge.Merge(oldValue, newValue, merge.MergeOptions{
+	merged, err := merge.Merge(context.Background(), oldValue, newValue, merge.MergeOptions{
 		Mode: merge.ClientIsMaster,
 	})
 	require.NoError(t, err)
@@ -36,7 +37,7 @@ func TestCustomMerger(t *testing.T) {
 	assert.Equal(t, 20, merged.Value, "Value should be from client with ClientIsMaster")
 
 	// Test with ServerIsMaster
-	merged, err = merge.Merge(oldValue, newValue, merge.MergeOptions{
+	merged, err = merge.Merge(context.Background(), oldValue, newValue, merge.MergeOptions{
 		Mode: merge.ServerIsMaster,
 	})
 	require.NoError(t, err)
@@ -51,7 +52,7 @@ func TestCustomMergerError(t *testing.T) {
 	errorMergeable := &ErrorMergeable{ShouldError: true}
 	otherMergeable := &ErrorMergeable{ShouldError: false}
 
-	_, err := merge.Merge(errorMergeable, otherMergeable, merge.MergeOptions{
+	_, err := merge.Merge(context.Background(), errorMergeable, otherMergeable, merge.MergeOptions{
 		Mode: merge.ClientIsMaster,
 	})
 
@@ -68,7 +69,7 @@ func TestCustomMergerWithDifferentTypes(t *testing.T) {
 	}
 
 	// Use MergeAny instead of Merge to allow different types
-	_, err := merge.MergeAny(customMerger, "wrong type", merge.MergeOptions{
+	_, err := merge.MergeAny(context.Background(), customMerger, "wrong type", merge.MergeOptions{
 		Mode: merge.ClientIsMaster,
 	})
 
@@ -104,7 +105,7 @@ func TestNestedStructWithCustomMerger(t *testing.T) {
 		},
 	}
 
-	merged, err := merge.Merge(oldContainer, newContainer, merge.MergeOptions{
+	merged, err := merge.Merge(context.Background(), oldContainer, newContainer, merge.MergeOptions{
 		Mode: merge.ClientIsMaster,
 	})
 	require.NoError(t, err)

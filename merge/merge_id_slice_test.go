@@ -1,6 +1,7 @@
 package merge_test
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -34,7 +35,7 @@ func TestSliceByIDMerging(t *testing.T) {
 	}
 
 	// Test with ID-based slice merging enabled
-	merged, err := merge.Merge(oldContainer, newContainer, merge.MergeOptions{
+	merged, err := merge.Merge(context.Background(), oldContainer, newContainer, merge.MergeOptions{
 		Mode:            merge.ClientIsMaster,
 		MergeSlicesByID: true,
 	})
@@ -111,7 +112,7 @@ func TestNestedSliceByIDMerging(t *testing.T) {
 		},
 	}
 
-	merged, err := merge.Merge(oldDevice, newDevice, merge.MergeOptions{
+	merged, err := merge.Merge(context.Background(), oldDevice, newDevice, merge.MergeOptions{
 		Mode:            merge.ClientIsMaster,
 		MergeSlicesByID: true,
 	})
@@ -155,7 +156,7 @@ func TestEmptySliceByIDMerging(t *testing.T) {
 	}
 
 	// With ClientIsMaster, the result should be empty
-	merged, err := merge.Merge(oldContainer, emptyContainer, merge.MergeOptions{
+	merged, err := merge.Merge(context.Background(), oldContainer, emptyContainer, merge.MergeOptions{
 		Mode:            merge.ClientIsMaster,
 		MergeSlicesByID: true,
 	})
@@ -164,7 +165,7 @@ func TestEmptySliceByIDMerging(t *testing.T) {
 	assert.Empty(t, merged.Sensors, "With ClientIsMaster, should use empty slice from client")
 
 	// With ServerIsMaster, should keep the server values
-	merged, err = merge.Merge(oldContainer, emptyContainer, merge.MergeOptions{
+	merged, err = merge.Merge(context.Background(), oldContainer, emptyContainer, merge.MergeOptions{
 		Mode:            merge.ServerIsMaster,
 		MergeSlicesByID: true,
 	})

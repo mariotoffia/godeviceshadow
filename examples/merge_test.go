@@ -1,6 +1,7 @@
 package examples
 
 import (
+	"context"
 	"fmt"
 	"testing"
 
@@ -65,7 +66,7 @@ func TestMerge(t *testing.T) {
 
 	sl := strlogger.New() // <3>
 
-	res, err := merge.Merge(hubZero, hub, merge.MergeOptions{
+	res, err := merge.Merge(context.Background(), hubZero, hub, merge.MergeOptions{
 		Mode:    merge.ServerIsMaster,   // <4>
 		Loggers: merge.MergeLoggers{sl}, // <5>
 	})

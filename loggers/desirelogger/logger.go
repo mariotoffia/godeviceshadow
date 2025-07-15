@@ -1,6 +1,8 @@
 package desirelogger
 
 import (
+	"context"
+
 	"github.com/mariotoffia/godeviceshadow/model"
 	"github.com/mariotoffia/godeviceshadow/utils/reutils"
 )
@@ -12,7 +14,7 @@ func (d *DesireLogger) New() model.DesiredLogger {
 
 // Acknowledge Implements the `model.DesiredLogger` interface and keeps a record on the acknowledged
 // values.
-func (d *DesireLogger) Acknowledge(path string, value model.ValueAndTimestamp) {
+func (d *DesireLogger) Acknowledge(ctx context.Context, path string, value model.ValueAndTimestamp) {
 	d.acknowledged[path] = value
 }
 

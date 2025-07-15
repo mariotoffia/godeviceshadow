@@ -1,6 +1,7 @@
 package merge_test
 
 import (
+	"context"
 	"testing"
 
 	"github.com/mariotoffia/godeviceshadow/merge"
@@ -14,7 +15,7 @@ func TestDesiredAnyPanicCases(t *testing.T) {
 		desired := "not nil"
 
 		// This should not panic and now returns nil with no error
-		result, err := merge.DesiredAny(reported, desired, merge.DesiredOptions{})
+		result, err := merge.DesiredAny(context.Background(), reported, desired, merge.DesiredOptions{})
 		assert.NoError(t, err, "No error expected when reported is nil")
 		assert.Nil(t, result, "Expected nil result")
 	})
@@ -25,7 +26,7 @@ func TestDesiredAnyPanicCases(t *testing.T) {
 		var desired interface{} = nil
 
 		// This should not panic
-		result, err := merge.DesiredAny(reported, desired, merge.DesiredOptions{})
+		result, err := merge.DesiredAny(context.Background(), reported, desired, merge.DesiredOptions{})
 		assert.Error(t, err, "Expected an error when reported is not nil and desired is nil")
 		assert.Nil(t, result, "Expected nil result")
 	})
@@ -36,7 +37,7 @@ func TestDesiredAnyPanicCases(t *testing.T) {
 		var desired interface{}
 
 		// This should not panic
-		result, err := merge.DesiredAny(reported, desired, merge.DesiredOptions{})
+		result, err := merge.DesiredAny(context.Background(), reported, desired, merge.DesiredOptions{})
 		assert.NoError(t, err, "Nil interfaces should not cause an error")
 		assert.Nil(t, result, "Expected nil result")
 	})
