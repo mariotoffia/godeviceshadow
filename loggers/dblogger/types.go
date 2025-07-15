@@ -35,6 +35,15 @@ type LogValue struct {
 type DbLogger interface {
 	// Initialize make sure that the database has correct schema and is ready to use.
 	Initialize(ctx context.Context) error
+	// BeginTransaction will start a transaction. If not supported, it returns `nil`.
+	Begin(ctx context.Context) error
+	// Commit will commit all data persisted. This is a _NOOP_ if not supported.
+	Commit(ctx context.Context) error
+	// Rollback will rollback the current transaction. If not supported, it returns `nil`.
+	Rollback(ctx context.Context) error
 	// Upsert will insert or update the _values_ in a single batch operation.
-	Upsert(ctx context.Context, table string, values []LogValue) error
+	//
+	// If the underlying database do not support transactions, it will persist this
+	// in this operation and `Commit` or `Rollback` will just be a no-op.
+	Upsert(ctx context.Context, values []LogValue) error
 }

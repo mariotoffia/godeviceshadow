@@ -140,8 +140,8 @@ func (r *RdsqlLogger) Upsert(ctx context.Context, table string, values []dblogge
 	return err
 }
 
-// BeginTransaction starts a new transaction for batch operations.
-func (r *RdsqlLogger) BeginTransaction(ctx context.Context) error {
+// Begin starts a new transaction for batch operations.
+func (r *RdsqlLogger) Begin(ctx context.Context) error {
 	result, err := r.client.BeginTransaction(ctx, &rdsdata.BeginTransactionInput{
 		ResourceArn: aws.String(r.resourceArn),
 		SecretArn:   aws.String(r.secretArn),
@@ -155,8 +155,8 @@ func (r *RdsqlLogger) BeginTransaction(ctx context.Context) error {
 	return nil
 }
 
-// CommitTransaction commits the current transaction.
-func (r *RdsqlLogger) CommitTransaction(ctx context.Context) error {
+// Commit commits the current transaction.
+func (r *RdsqlLogger) Commit(ctx context.Context) error {
 	if r.transactionId == nil {
 		return nil
 	}
@@ -171,8 +171,8 @@ func (r *RdsqlLogger) CommitTransaction(ctx context.Context) error {
 	return err
 }
 
-// RollbackTransaction rolls back the current transaction.
-func (r *RdsqlLogger) RollbackTransaction(ctx context.Context) error {
+// Rollback rolls back the current transaction.
+func (r *RdsqlLogger) Rollback(ctx context.Context) error {
 	if r.transactionId == nil {
 		return nil
 	}

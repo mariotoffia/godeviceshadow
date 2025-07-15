@@ -2,6 +2,7 @@ package dblogger
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/mariotoffia/godeviceshadow/model"
@@ -59,7 +60,7 @@ func (sl *DsqlLogger) Managed(
 	})
 
 	if len(sl.currentBatch) >= sl.batchSize {
-		if err := sl.client.Upsert(context.Background(), path, sl.currentBatch); err != nil {
+		if err := sl.client.Upsert(ctx, sl.currentBatch); err != nil {
 			// Handle error (e.g., log it, return it, etc.)
 			return
 		}
@@ -69,7 +70,11 @@ func (sl *DsqlLogger) Managed(
 
 // Prepare implements the model.MergeLoggerPrepare interface
 func (sl *DsqlLogger) Prepare(ctx context.Context) error {
-	return nil
+	if sl.client == nil {
+		return fmt.Errorf("client is not initialized (nil)")
+	}
+
+	return sl.client.Begin(ctx)
 }
 
 // Post implements the model.MergeLoggerPost interface
@@ -79,12 +84,13 @@ func (sl *DsqlLogger) Post(ctx context.Context, err error) error {
 	}
 
 	if len(sl.currentBatch) > 0 {
-		if err := sl.client.Upsert(context.Background(), "", sl.currentBatch); err != nil {
+		if err := sl.client.Upsert(ctx, sl.currentBatch); err != nil {
 			return err
 		}
 
 		sl.currentBatch = nil
 	}
 
-	return nil
+	// Commit the transaction if supported
+	return sl.client.Commit(ctx)
 }

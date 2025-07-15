@@ -35,6 +35,7 @@
     "imagesdir",
     "instantiator",
     "interp",
+    "jackc",
     "jsonutils",
     "limhamn",
     "loggerutils",

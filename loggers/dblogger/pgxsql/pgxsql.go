@@ -40,11 +40,12 @@ type Config struct {
 // New creates a new PgxLogger instance.
 func New(pool *pgxpool.Pool, config Config) *PgxLogger {
 	return &PgxLogger{
-		pool:        pool,
-		schemaName:  config.SchemaName,
-		tableName:   config.TableName,
-		useFullPath: config.UseFullPath,
-		preferID:    config.PreferID,
+		pool:              pool,
+		schemaName:        config.SchemaName,
+		tableName:         config.TableName,
+		useFullPath:       config.UseFullPath,
+		preferID:          config.PreferID,
+		assumeTableExists: config.AssumeTableExists,
 	}
 }
 
@@ -94,7 +95,7 @@ func (p *PgxLogger) Initialize(ctx context.Context) error {
 }
 
 // Upsert performs batch insert of log values using native PostgreSQL.
-func (p *PgxLogger) Upsert(ctx context.Context, table string, values []dblogger.LogValue) error {
+func (p *PgxLogger) Upsert(ctx context.Context, values []dblogger.LogValue) error {
 	if len(values) == 0 {
 		return nil
 	}
@@ -157,8 +158,8 @@ func (p *PgxLogger) Upsert(ctx context.Context, table string, values []dblogger.
 	return nil
 }
 
-// BeginTransaction starts a new transaction for batch operations.
-func (p *PgxLogger) BeginTransaction(ctx context.Context) error {
+// Begin starts a new transaction for batch operations.
+func (p *PgxLogger) Begin(ctx context.Context) error {
 	if p.tx != nil {
 		return fmt.Errorf("transaction already active")
 	}
@@ -172,8 +173,8 @@ func (p *PgxLogger) BeginTransaction(ctx context.Context) error {
 	return nil
 }
 
-// CommitTransaction commits the current transaction.
-func (p *PgxLogger) CommitTransaction(ctx context.Context) error {
+// Commit commits the current transaction.
+func (p *PgxLogger) Commit(ctx context.Context) error {
 	if p.tx == nil {
 		return nil
 	}
@@ -183,8 +184,8 @@ func (p *PgxLogger) CommitTransaction(ctx context.Context) error {
 	return err
 }
 
-// RollbackTransaction rolls back the current transaction.
-func (p *PgxLogger) RollbackTransaction(ctx context.Context) error {
+// Rollback rolls back the current transaction.
+func (p *PgxLogger) Rollback(ctx context.Context) error {
 	if p.tx == nil {
 		return nil
 	}
