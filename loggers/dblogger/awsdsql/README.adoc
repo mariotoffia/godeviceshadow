@@ -1,0 +1,6 @@
+= Aurora DSQL
+
+Handles Aurora _DSQL_ clusters.
+
+== Cluster Management
+This package handles aurora _DSQL_ clusters, which are multi-region clusters with a primary and a witness region. This package provides functionality to create, manage, and delete these clusters.
