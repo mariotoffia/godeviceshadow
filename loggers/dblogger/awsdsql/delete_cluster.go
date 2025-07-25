@@ -86,6 +86,7 @@ func (cm *ClusterManagerImpl) RemoveDeleteProtection(ctx context.Context, region
 
 	return err
 }
+
 func (cm *ClusterManagerImpl) WaitForDeletion(ctx context.Context, region, identifier string) error {
 	if err := cm.ensureClient(ctx); err != nil {
 		return err
@@ -112,12 +113,10 @@ func (cm *ClusterManagerImpl) WaitForDeletion(ctx context.Context, region, ident
 		options.LogWaitAttempts = true
 	})
 
-	// Create the input for checking cluster status
-	getInput := &dsql.GetClusterInput{
-		Identifier: &identifier,
-	}
+	err = waiter.Wait(
+		ctx, &dsql.GetClusterInput{Identifier: &identifier}, 5*time.Minute,
+	)
 
-	err = waiter.Wait(ctx, getInput, 5*time.Minute)
 	if err != nil {
 		return fmt.Errorf("error waiting for cluster to be deleted: %w", err)
 	}
