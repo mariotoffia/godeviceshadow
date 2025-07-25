@@ -10,6 +10,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/rdsdata"
 	"github.com/aws/aws-sdk-go-v2/service/rdsdata/types"
+
 	"github.com/mariotoffia/godeviceshadow/loggers/dblogger"
 	"github.com/mariotoffia/godeviceshadow/model"
 )
@@ -147,6 +148,7 @@ func (r *RdsqlLogger) Begin(ctx context.Context) error {
 		SecretArn:   aws.String(r.secretArn),
 		Database:    aws.String(r.databaseName),
 	})
+
 	if err != nil {
 		return err
 	}

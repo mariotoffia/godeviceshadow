@@ -3,7 +3,6 @@ package awsdsql
 import (
 	"context"
 	"fmt"
-	"slices"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -11,6 +10,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/dsql/types"
 )
 
+// CreateClusterOptions contains the options when creating a new cluster using `CreateCluster`.
 type CreateClusterOptions struct {
 	// Identifier is the unique identifier for the cluster. It must be unique
 	// across all clusters in the AWS account and region.
@@ -29,62 +29,21 @@ type CreateClusterOptions struct {
 	// see https://docs.aws.amazon.com/aurora-dsql/latest/userguide/what-is-aurora-dsql.html for
 	// details.
 	//
-	// When the number of regions is one it is a single region cluster, if it is two it is a valid
+	// When the number of regions is zero/one it is a single region cluster, if it is two it is a valid
 	// multi-region cluster. Three and more is not supported.
+	//
+	// When zero, it will use the `Config.Region` when creating a single region cluster.
 	Regions []string
-	// Tags are the tags to apply to the cluster. These are used for filtering
-	// clusters in the `ClusterManagerImpl` instance.
+	// Tags are the tags to apply to the cluster. These are used when the RegionSpecificTags are not used.
 	Tags map[string]string
-	// NonWitnessTags are any optional tags on the non-witness cluster participant, matching _Regions_,
-	// property name. If not found here, it will revert to the _Tags_ property for those as well.
-	NonWitnessTags map[string]map[string]string
+	// RegionSpecificTags are any optional tags for a specific region. If not found here, it will
+	// revert to the _Tags_ property for those as well.
+	RegionSpecificTags map[string]map[string]string
 	// DeleteProtect, if set to true, will enable delete protection for the cluster.
 	DeleteProtect bool
-}
-
-// Clusters returns a map of clusters that match the specified tags and the status.
-//
-// NOTE: It will use the internal cached clusters from `FetchClusters` method. If you want to
-// ensure the clusters are up-to-date, you should call `FetchClusters` before calling this method.
-//
-// If no _status_ is provided, it will return all clusters matching the _tags_. If no _tags_ it will
-// set it to auto include all. Thus to get all clusters, just leave the _tags_ and _status_ empty.
-//
-// TIP: The _status_ are ORed together and the _tags_ are ANDed together.
-func (cm *ClusterManagerImpl) Clusters(tags map[string]string, status ...types.ClusterStatus) map[string]dsql.GetClusterOutput {
-	result := map[string]dsql.GetClusterOutput{}
-
-	// Checks that the _cluster_ has all the tags and tag value specified.
-	hasAllTagAndValue := func(cluster dsql.GetClusterOutput) bool {
-		if len(tags) == 0 {
-			return true // No tags specified, include all clusters
-		}
-		for key, value := range tags {
-			if tagValue, ok := cluster.Tags[key]; !ok || tagValue != value {
-				return false
-			}
-		}
-
-		return true
-	}
-
-	hasStatus := func(cluster dsql.GetClusterOutput) bool {
-		if len(status) == 0 {
-			return true // No status specified, include all clusters
-		}
-
-		return slices.ContainsFunc(status, func(s types.ClusterStatus) bool {
-			return cluster.Status == s
-		})
-	}
-
-	for _, cluster := range cm.cache {
-		if hasStatus(cluster) && hasAllTagAndValue(cluster) {
-			result[*cluster.Identifier] = cluster
-		}
-	}
-
-	return result
+	// MaxWaitTime is the maximum wait time per cluster to become active. If not set, it will
+	// default to 5 minutes.
+	MaxWaitTime time.Duration
 }
 
 // CreateCluster creates a new cluster with the specified options.
@@ -97,7 +56,7 @@ func (cm *ClusterManagerImpl) Clusters(tags map[string]string, status ...types.C
 // in the map.
 func (cm *ClusterManagerImpl) CreateCluster(ctx context.Context, opts CreateClusterOptions) (map[string]string, error) {
 	switch len(opts.Regions) {
-	case 1:
+	case 0, 1:
 		if id, err := cm.createClusterSingle(ctx, opts); id != "" {
 			return map[string]string{opts.Regions[0]: id}, err
 		} else {
@@ -116,25 +75,41 @@ func (cm *ClusterManagerImpl) CreateCluster(ctx context.Context, opts CreateClus
 //
 // If it succeeded creating but not waiting, it will return the identifier of the cluster and a error.
 //
-// CAUTION: This can take up to 5 minutes to complete.
+// CAUTION: This can take a *very* long time to complete.
 func (cm *ClusterManagerImpl) createClusterSingle(ctx context.Context, opts CreateClusterOptions) (string, error) {
 	if err := cm.ensureClient(ctx); err != nil {
 		return "", err
 	}
 
-	if len(opts.Regions) != 1 {
-		return "", fmt.Errorf("invalid number of regions specified: %d, must be 1 for single region cluster", len(opts.Regions))
+	regionTags := func(region string) map[string]string {
+		if t, ok := opts.RegionSpecificTags[opts.Regions[0]]; ok {
+			return t
+		} else {
+			return opts.Tags
+		}
 	}
+	var (
+		client *dsql.Client
+		tags   map[string]string
+	)
 
-	client, err := cm.clientInRegion(opts.Regions[0])
-
-	if err != nil {
-		return "", fmt.Errorf("failed to create client for region %s: %v", opts.Regions[0], err)
+	if len(opts.Regions) > 1 {
+		return "", fmt.Errorf("invalid number of regions specified: %d, must be 0 or 1 for single region cluster", len(opts.Regions))
+	} else if len(opts.Regions) == 1 {
+		if c, err := cm.clientInRegion(opts.Regions[0]); err != nil {
+			return "", fmt.Errorf("failed to create client for region %s: %v", opts.Regions[0], err)
+		} else {
+			client = c
+			tags = regionTags(opts.Regions[0])
+		}
+	} else {
+		client = cm.Client
+		tags = regionTags(cm.Config.Region)
 	}
 
 	clusterProperties, err := client.CreateCluster(ctx, &dsql.CreateClusterInput{
 		DeletionProtectionEnabled: &opts.DeleteProtect,
-		Tags:                      opts.Tags,
+		Tags:                      tags,
 	})
 
 	if err != nil {
@@ -156,7 +131,14 @@ func (cm *ClusterManagerImpl) createClusterSingle(ctx context.Context, opts Crea
 	}
 
 	// Wait for the cluster to become active
-	err = waiter.Wait(ctx, getInput, 5*time.Minute)
+	var maxWaitTime time.Duration
+	if opts.MaxWaitTime > 0 {
+		maxWaitTime = opts.MaxWaitTime
+	} else {
+		maxWaitTime = 5 * time.Minute
+	}
+
+	err = waiter.Wait(ctx, getInput, maxWaitTime)
 	if err != nil {
 		return *id, fmt.Errorf("error waiting for cluster to become active: %w", err)
 	}
@@ -171,8 +153,12 @@ func (cm *ClusterManagerImpl) createClusterSingle(ctx context.Context, opts Crea
 //
 // If it succeeds, it will return a map with the identifiers of the clusters created in each region and `nil` error.
 //
-// CAUTION: This can take up to 10 minutes to complete.
-func (cm *ClusterManagerImpl) createClusterMulti(ctx context.Context, opts CreateClusterOptions) (map[string]string, error) {
+// CAUTION: This can take a *very* long time to complete.
+func (cm *ClusterManagerImpl) createClusterMulti(
+	ctx context.Context,
+	opts CreateClusterOptions,
+) (map[string]string, error) {
+	// We require *explicit* region settings for multi-region clusters.
 	if len(opts.Regions) != 2 {
 		return nil, fmt.Errorf(
 			"invalid number of regions specified: %d, must be 2 for multi-region cluster",
@@ -180,11 +166,18 @@ func (cm *ClusterManagerImpl) createClusterMulti(ctx context.Context, opts Creat
 		)
 	}
 
+	// Wait for the cluster to become active
+	var maxWaitTime time.Duration
+
+	if opts.MaxWaitTime > 0 {
+		maxWaitTime = opts.MaxWaitTime
+	} else {
+		maxWaitTime = 5 * time.Minute
+	}
+
 	getTags := func(region string) map[string]string {
-		if opts.NonWitnessTags != nil {
-			if tags, ok := opts.NonWitnessTags[region]; ok {
-				return tags
-			}
+		if tags, ok := opts.RegionSpecificTags[region]; ok {
+			return tags
 		}
 
 		return opts.Tags
@@ -201,7 +194,7 @@ func (cm *ClusterManagerImpl) createClusterMulti(ctx context.Context, opts Creat
 	}
 
 	// witness is specified -> use it
-	if len(opts.Witness) > 0 {
+	if opts.Witness != "" {
 		input.MultiRegionProperties = &types.MultiRegionProperties{
 			WitnessRegion: aws.String(opts.Witness),
 		}
@@ -234,6 +227,11 @@ func (cm *ClusterManagerImpl) createClusterMulti(ctx context.Context, opts Creat
 	}
 
 	client2, err := cm.clientInRegion(opts.Regions[1])
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to create client for region %s: %v", opts.Regions[1], err)
+	}
+
 	node2, err := client2.CreateCluster(ctx, input2)
 
 	if err != nil {
@@ -255,48 +253,34 @@ func (cm *ClusterManagerImpl) createClusterMulti(ctx context.Context, opts Creat
 	_, err = client1.UpdateCluster(ctx, &update)
 
 	if err != nil {
-		return nil, fmt.Errorf("failed to update cluster to associate with first cluster. %v", err)
+		return nil, fmt.Errorf("failed to update first cluster to associate it with second cluster. %v", err)
 	}
-
-	// Create the waiter with our custom options for first cluster
-	waiter := dsql.NewClusterActiveWaiter(client1, func(o *dsql.ClusterActiveWaiterOptions) {
-		o.MaxDelay = 30 * time.Second // Creating a multi-region cluster can take a few minutes
-		o.MinDelay = 10 * time.Second
-		o.LogWaitAttempts = true
-	})
 
 	// Now that multiRegionProperties is fully defined for both clusters
 	// they'll begin the transition to ACTIVE
+	waitActive := func(client *dsql.Client, identifier *string) error {
+		waiter := dsql.NewClusterActiveWaiter(client, func(o *dsql.ClusterActiveWaiterOptions) {
+			o.MaxDelay = 30 * time.Second
+			o.MinDelay = 10 * time.Second
+			o.LogWaitAttempts = true
+		})
 
-	// Create the input for the clusterProperties to monitor for first cluster
-	getInput := &dsql.GetClusterInput{
-		Identifier: node1.Identifier,
+		// Wait for the cluster to become active
+		return waiter.Wait(
+			ctx, &dsql.GetClusterInput{Identifier: identifier}, maxWaitTime,
+		)
 	}
 
-	// Wait for the first cluster to become active - max 5 minutes
-	err = waiter.Wait(ctx, getInput, 5*time.Minute)
-	if err != nil {
+	// Wait for the first cluster to become active
+	if err := waitActive(client1, node1.Identifier); err != nil {
 		return map[string]string{
 			opts.Regions[0]: *node1.Identifier,
 			opts.Regions[1]: *node2.Identifier,
 		}, fmt.Errorf("error waiting for first cluster to become active: %w", err)
 	}
 
-	// Create the waiter with our custom options
-	waiter2 := dsql.NewClusterActiveWaiter(client2, func(o *dsql.ClusterActiveWaiterOptions) {
-		o.MaxDelay = 30 * time.Second // Creating a multi-region cluster can take a few minutes
-		o.MinDelay = 10 * time.Second
-		o.LogWaitAttempts = true
-	})
-
-	// Create the input for the clusterProperties to monitor for second
-	getInput2 := &dsql.GetClusterInput{
-		Identifier: node2.Identifier,
-	}
-
-	// Wait for the second cluster to become active - max 5 minutes
-	err = waiter2.Wait(ctx, getInput2, 5*time.Minute)
-	if err != nil {
+	// Wait for the seconds cluster to become active
+	if err := waitActive(client2, node2.Identifier); err != nil {
 		return map[string]string{
 			opts.Regions[0]: *node1.Identifier,
 			opts.Regions[1]: *node2.Identifier,
