@@ -3,6 +3,7 @@ package pgxsql_test
 import (
 	"fmt"
 	"net"
+	"regexp"
 	"slices"
 	"strings"
 	"sync"
@@ -12,13 +13,102 @@ import (
 	"github.com/jackc/pgproto3/v2"
 )
 
+// CapturedDbCommunication represents a slice of captured database queries with helper methods
+type CapturedDbCommunication []string
+
+// FindByRegex returns all statements that match the given regex pattern
+func (c CapturedDbCommunication) FindByRegex(pattern string) ([]string, error) {
+	re, err := regexp.Compile(pattern)
+	if err != nil {
+		return nil, fmt.Errorf("invalid regex pattern: %w", err)
+	}
+
+	var matches []string
+	for _, stmt := range c {
+		if re.MatchString(stmt) {
+			matches = append(matches, stmt)
+		}
+	}
+	return matches, nil
+}
+
+// HasRegex returns true if any statement matches the given regex pattern
+func (c CapturedDbCommunication) HasRegex(pattern string) (bool, error) {
+	matches, err := c.FindByRegex(pattern)
+	if err != nil {
+		return false, err
+	}
+	return len(matches) > 0, nil
+}
+
+// MustHaveRegex panics if no statement matches the given regex pattern
+func (c CapturedDbCommunication) MustHaveRegex(pattern string) CapturedDbCommunication {
+	has, err := c.HasRegex(pattern)
+	if err != nil {
+		panic(fmt.Sprintf("regex error: %v", err))
+	}
+	if !has {
+		panic(fmt.Sprintf("no statement found matching pattern: %s", pattern))
+	}
+	return c
+}
+
+// HasOrderedRegex returns true if statements matching the patterns appear in the specified order
+func (c CapturedDbCommunication) HasOrderedRegex(patterns ...string) (bool, error) {
+	if len(patterns) == 0 {
+		return true, nil
+	}
+
+	// Compile all patterns
+	regexes := make([]*regexp.Regexp, len(patterns))
+	for i, pattern := range patterns {
+		re, err := regexp.Compile(pattern)
+		if err != nil {
+			return false, fmt.Errorf("invalid regex pattern %d: %w", i, err)
+		}
+		regexes[i] = re
+	}
+
+	// Track which pattern we're looking for
+	currentPattern := 0
+
+	for _, query := range c {
+		if currentPattern < len(regexes) && regexes[currentPattern].MatchString(query) {
+			currentPattern++
+			if currentPattern == len(regexes) {
+				return true, nil // Found all patterns in order
+			}
+		}
+	}
+
+	return currentPattern == len(regexes), nil
+}
+
+// MustHaveOrderedRegex panics if statement matching the patterns don't appear in the specified order
+func (c CapturedDbCommunication) MustHaveOrderedRegex(patterns ...string) CapturedDbCommunication {
+	has, err := c.HasOrderedRegex(patterns...)
+	if err != nil {
+		panic(fmt.Sprintf("regex error: %v", err))
+	}
+	if !has {
+		panic(fmt.Sprintf("statements not found in expected order: %v", patterns))
+	}
+	return c
+}
+
+// Len returns the number of captured queries
+func (c CapturedDbCommunication) Len() int {
+	return len(c)
+}
+
 // MockServer represents a PostgreSQL protocol mock server for testing
 type MockServer struct {
-	listener        net.Listener
-	capturedQueries []string
-	serverDone      chan bool
-	t               *testing.T
-	mtx             *sync.Mutex
+	listener           net.Listener
+	capturedStatements []string
+	serverDone         chan bool
+	t                  *testing.T
+	mtx                *sync.Mutex
+	closed             bool
 }
 
 // NewMockServer creates a new mock PostgreSQL server
@@ -29,12 +119,26 @@ func NewMockServer(t *testing.T) (*MockServer, error) {
 	}
 
 	return &MockServer{
-		listener:        ln,
-		capturedQueries: make([]string, 0),
-		serverDone:      make(chan bool),
-		t:               t,
-		mtx:             &sync.Mutex{},
+		listener:           ln,
+		capturedStatements: make([]string, 0),
+		serverDone:         make(chan bool),
+		t:                  t,
+		mtx:                &sync.Mutex{},
+		closed:             false,
 	}, nil
+}
+
+// safeLog logs only if the server hasn't been closed
+func (m *MockServer) safeLog(format string, args ...interface{}) {
+	m.mtx.Lock()
+	defer m.mtx.Unlock()
+	if !m.closed {
+		if len(args) > 0 {
+			m.t.Logf(format, args...)
+		} else {
+			m.t.Log(format)
+		}
+	}
 }
 
 // Start begins the mock server in a goroutine
@@ -44,7 +148,7 @@ func (m *MockServer) Start() {
 
 		conn, err := m.listener.Accept()
 		if err != nil {
-			m.t.Logf("Accept error: %v", err)
+			m.safeLog("Accept error: %v", err)
 			return
 		}
 		defer conn.Close()
@@ -58,18 +162,19 @@ func (m *MockServer) Start() {
 		// Handle the startup message
 		startupMessage, err := backend.ReceiveStartupMessage()
 		if err != nil {
-			m.t.Logf("Error receiving startup: %v", err)
+			m.safeLog("Error receiving startup: %v", err)
 			return
 		}
-		m.t.Logf("Received startup: %v", startupMessage)
+		m.safeLog("Received startup: %v", startupMessage)
 
 		// Send authentication OK
 		if err := backend.Send(&pgproto3.AuthenticationOk{}); err != nil {
-			m.t.Logf("Error sending auth: %v", err)
+			m.safeLog("Error sending auth: %v", err)
 			return
 		}
+
 		if err := backend.Send(&pgproto3.ReadyForQuery{TxStatus: 'I'}); err != nil {
-			m.t.Logf("Error sending ready: %v", err)
+			m.safeLog("Error sending ready: %v", err)
 			return
 		}
 
@@ -77,28 +182,83 @@ func (m *MockServer) Start() {
 		for {
 			msg, err := backend.Receive()
 			if err != nil {
-				m.t.Logf("Error receiving message: %v", err)
+				m.safeLog("Error receiving message: %v", err)
 				break
 			}
 
 			switch query := msg.(type) {
 			case *pgproto3.Query:
-				m.t.Logf("Received query: %s", query.String)
-				m.capturedQueries = append(m.capturedQueries, query.String)
+				m.safeLog("Received query: %s", query.String)
+				m.mtx.Lock()
+				m.capturedStatements = append(m.capturedStatements, query.String)
+				m.mtx.Unlock()
 
 				// Send response
 				if err := backend.Send(&pgproto3.CommandComplete{CommandTag: []byte("OK")}); err != nil {
-					m.t.Logf("Error sending command complete: %v", err)
+					m.safeLog("Error sending command complete: %v", err)
 				}
 				if err := backend.Send(&pgproto3.ReadyForQuery{TxStatus: 'I'}); err != nil {
-					m.t.Logf("Error sending ready: %v", err)
+					m.safeLog("Error sending ready: %v", err)
+				}
+
+			case *pgproto3.Parse:
+				m.safeLog("Received parse: %s", query.Query)
+				m.mtx.Lock()
+				m.capturedStatements = append(m.capturedStatements, query.Query)
+				m.mtx.Unlock()
+
+				// Send ParseComplete
+				if err := backend.Send(&pgproto3.ParseComplete{}); err != nil {
+					m.safeLog("Error sending parse complete: %v", err)
+				}
+
+			case *pgproto3.Bind:
+				m.safeLog("Received bind")
+				// Send BindComplete
+				if err := backend.Send(&pgproto3.BindComplete{}); err != nil {
+					m.safeLog("Error sending bind complete: %v", err)
+				}
+
+			case *pgproto3.Describe:
+				m.safeLog("Received describe: %c %s", query.ObjectType, query.Name)
+				// For statement descriptions, send ParameterDescription and RowDescription
+				if query.ObjectType == 'S' { // Statement
+					// Send ParameterDescription first
+					if err := backend.Send(&pgproto3.ParameterDescription{
+						ParameterOIDs: []uint32{25, 3802, 1184}, // text, jsonb, timestamptz
+					}); err != nil {
+						m.safeLog("Error sending parameter description: %v", err)
+					}
+					// Then send NoData since INSERT doesn't return rows
+					if err := backend.Send(&pgproto3.NoData{}); err != nil {
+						m.safeLog("Error sending no data: %v", err)
+					}
+				} else {
+					// Send NoData for other describe types
+					if err := backend.Send(&pgproto3.NoData{}); err != nil {
+						m.safeLog("Error sending no data: %v", err)
+					}
+				}
+
+			case *pgproto3.Execute:
+				m.safeLog("Received execute")
+				// Send CommandComplete for successful execution
+				if err := backend.Send(&pgproto3.CommandComplete{CommandTag: []byte("INSERT 0 1")}); err != nil {
+					m.safeLog("Error sending command complete: %v", err)
+				}
+
+			case *pgproto3.Sync:
+				m.safeLog("Received sync")
+				// Send ReadyForQuery to indicate ready for next command
+				if err := backend.Send(&pgproto3.ReadyForQuery{TxStatus: 'I'}); err != nil {
+					m.safeLog("Error sending ready for query: %v", err)
 				}
 
 			case *pgproto3.Terminate:
-				m.t.Log("Received terminate")
+				m.safeLog("Received terminate")
 				return
 			default:
-				m.t.Logf("Received other message: %T", query)
+				m.safeLog("Received other message: %T", query)
 			}
 		}
 	}()
@@ -112,27 +272,53 @@ func (m *MockServer) GetConnectionString() string {
 	return fmt.Sprintf("sslmode=disable host=%s port=%s", host, port)
 }
 
-// GetCapturedQueries returns the SQL queries captured by the mock server
-func (m *MockServer) GetCapturedQueries() []string {
+// GetCapturedStatements returns the SQL statements captured by the mock server
+func (m *MockServer) GetCapturedStatements() CapturedDbCommunication {
 	m.mtx.Lock()
 	defer m.mtx.Unlock()
-	if len(m.capturedQueries) == 0 {
-		return nil
+
+	if len(m.capturedStatements) == 0 {
+		return CapturedDbCommunication(nil)
 	}
-	return slices.Clone(m.capturedQueries)
+	return CapturedDbCommunication(slices.Clone(m.capturedStatements))
+}
+
+// WaitForStatements waits until the specified number of statements are captured or timeout occurs
+func (m *MockServer) WaitForStatements(n int, timeout time.Duration) CapturedDbCommunication {
+	deadline := time.Now().Add(timeout)
+	ticker := time.NewTicker(10 * time.Millisecond)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			statements := m.GetCapturedStatements()
+			if statements.Len() >= n {
+				return statements
+			}
+			if time.Now().After(deadline) {
+				return statements // Return what we have, even if incomplete
+			}
+		case <-time.After(timeout):
+			return m.GetCapturedStatements() // Timeout reached
+		}
+	}
 }
 
 // WaitForCompletion waits for the server to complete or timeout
 func (m *MockServer) WaitForCompletion(timeout time.Duration) {
 	select {
 	case <-m.serverDone:
-		m.t.Log("Server completed")
+		m.safeLog("Server completed")
 	case <-time.After(timeout):
-		m.t.Log("Server timed out, but that's expected with our simple mock")
+		m.safeLog("Server timed out, but that's expected with our simple mock")
 	}
 }
 
 // Close closes the mock server
 func (m *MockServer) Close() error {
+	m.mtx.Lock()
+	m.closed = true
+	m.mtx.Unlock()
 	return m.listener.Close()
 }
