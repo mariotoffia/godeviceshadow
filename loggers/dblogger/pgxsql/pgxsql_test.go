@@ -17,6 +17,50 @@ func TestPgxLoggerInitializeWithMock(t *testing.T) {
 	// Create and start the mock server
 	mockServer, err := NewMockServer(t)
 	require.NoError(t, err)
+	defer mockServer.Close()
+
+	mockServer.Start()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	// Create PgxLogger instance
+	logger, err := pgxsql.New(ctx, pgxsql.Config{
+		SchemaName:        "test_schema",
+		TableName:         "test_table",
+		UseFullPath:       true,
+		PreferID:          false,
+		AssumeTableExists: false, // This should trigger table creation
+		ConnectionString:  mockServer.GetConnectionString(),
+	})
+	require.NoError(t, err)
+	defer logger.Close()
+
+	// Test Initialize
+	err = logger.Initialize(ctx)
+	t.Logf("Initialize result: %v", err)
+
+	// Wait for expected statements (CREATE SCHEMA, CREATE TABLE, CREATE INDEX)
+	capturedStatements := mockServer.WaitForStatements(3, 2*time.Second)
+	t.Logf("Captured statements: %v", capturedStatements)
+
+	// Verify CREATE SCHEMA was executed
+	capturedStatements.MustHaveRegex(`(?i)CREATE\s+SCHEMA\s+IF\s+NOT\s+EXISTS`)
+
+	// Verify CREATE TABLE was executed
+	capturedStatements.MustHaveRegex(`(?i)CREATE\s+TABLE\s+IF\s+NOT\s+EXISTS`)
+
+	// Verify CREATE INDEX was executed
+	capturedStatements.MustHaveRegex(`(?i)CREATE\s+UNIQUE\s+INDEX`)
+
+	// Wait for server to finish
+	mockServer.WaitForCompletion(1 * time.Second)
+}
+
+func TestPgxLoggerInitializeAndBasicInsert(t *testing.T) {
+	// Create and start the mock server
+	mockServer, err := NewMockServer(t)
+	require.NoError(t, err)
 
 	defer mockServer.Close()
 
