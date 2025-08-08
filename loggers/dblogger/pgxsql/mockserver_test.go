@@ -101,14 +101,21 @@ func (c CapturedDbCommunication) Len() int {
 	return len(c)
 }
 
+// BindCapture holds captured bind parameter values as strings
+type BindCapture struct {
+	Params []string
+}
+
 // MockServer represents a PostgreSQL protocol mock server for testing
 type MockServer struct {
 	listener           net.Listener
 	capturedStatements []string
+	capturedBinds      []BindCapture
 	serverDone         chan bool
 	t                  *testing.T
 	mtx                *sync.Mutex
 	closed             bool
+	txActive           bool
 }
 
 // NewMockServer creates a new mock PostgreSQL server
@@ -121,10 +128,12 @@ func NewMockServer(t *testing.T) (*MockServer, error) {
 	return &MockServer{
 		listener:           ln,
 		capturedStatements: make([]string, 0),
+		capturedBinds:      make([]BindCapture, 0),
 		serverDone:         make(chan bool),
 		t:                  t,
 		mtx:                &sync.Mutex{},
 		closed:             false,
+		txActive:           false,
 	}, nil
 }
 
@@ -189,6 +198,12 @@ func (m *MockServer) Start() {
 			switch query := msg.(type) {
 			case *pgproto3.Query:
 				m.safeLog("Received query: %s", query.String)
+				switch strings.ToLower(strings.TrimSpace(query.String)) {
+				case "begin":
+					m.txActive = true
+				case "commit", "rollback":
+					m.txActive = false
+				}
 				m.mtx.Lock()
 				m.capturedStatements = append(m.capturedStatements, query.String)
 				m.mtx.Unlock()
@@ -197,7 +212,11 @@ func (m *MockServer) Start() {
 				if err := backend.Send(&pgproto3.CommandComplete{CommandTag: []byte("OK")}); err != nil {
 					m.safeLog("Error sending command complete: %v", err)
 				}
-				if err := backend.Send(&pgproto3.ReadyForQuery{TxStatus: 'I'}); err != nil {
+				status := byte('I')
+				if m.txActive {
+					status = 'T'
+				}
+				if err := backend.Send(&pgproto3.ReadyForQuery{TxStatus: status}); err != nil {
 					m.safeLog("Error sending ready: %v", err)
 				}
 
@@ -214,6 +233,19 @@ func (m *MockServer) Start() {
 
 			case *pgproto3.Bind:
 				m.safeLog("Received bind")
+				// Capture parameters as strings (best-effort)
+				params := make([]string, 0, len(query.Parameters))
+				for _, p := range query.Parameters {
+					if p == nil {
+						params = append(params, "<NULL>")
+						continue
+					}
+					params = append(params, string(p))
+				}
+				m.mtx.Lock()
+				m.capturedBinds = append(m.capturedBinds, BindCapture{Params: params})
+				m.mtx.Unlock()
+
 				// Send BindComplete
 				if err := backend.Send(&pgproto3.BindComplete{}); err != nil {
 					m.safeLog("Error sending bind complete: %v", err)
@@ -250,7 +282,11 @@ func (m *MockServer) Start() {
 			case *pgproto3.Sync:
 				m.safeLog("Received sync")
 				// Send ReadyForQuery to indicate ready for next command
-				if err := backend.Send(&pgproto3.ReadyForQuery{TxStatus: 'I'}); err != nil {
+				status := byte('I')
+				if m.txActive {
+					status = 'T'
+				}
+				if err := backend.Send(&pgproto3.ReadyForQuery{TxStatus: status}); err != nil {
 					m.safeLog("Error sending ready for query: %v", err)
 				}
 
@@ -283,6 +319,18 @@ func (m *MockServer) GetCapturedStatements() CapturedDbCommunication {
 	return CapturedDbCommunication(slices.Clone(m.capturedStatements))
 }
 
+// GetCapturedBinds returns copies of captured bind parameter values
+func (m *MockServer) GetCapturedBinds() []BindCapture {
+	m.mtx.Lock()
+	defer m.mtx.Unlock()
+	if len(m.capturedBinds) == 0 {
+		return nil
+	}
+	cp := make([]BindCapture, len(m.capturedBinds))
+	copy(cp, m.capturedBinds)
+	return cp
+}
+
 // WaitForStatements waits until the specified number of statements are captured or timeout occurs
 func (m *MockServer) WaitForStatements(n int, timeout time.Duration) CapturedDbCommunication {
 	deadline := time.Now().Add(timeout)
@@ -290,18 +338,32 @@ func (m *MockServer) WaitForStatements(n int, timeout time.Duration) CapturedDbC
 	defer ticker.Stop()
 
 	for {
-		select {
-		case <-ticker.C:
-			statements := m.GetCapturedStatements()
-			if statements.Len() >= n {
-				return statements
-			}
-			if time.Now().After(deadline) {
-				return statements // Return what we have, even if incomplete
-			}
-		case <-time.After(timeout):
-			return m.GetCapturedStatements() // Timeout reached
+		statements := m.GetCapturedStatements()
+		if statements.Len() >= n {
+			return statements
 		}
+		if time.Now().After(deadline) {
+			return statements // Return what we have, even if incomplete
+		}
+		<-ticker.C
+	}
+}
+
+// WaitForBinds waits until the specified number of binds are captured or timeout occurs
+func (m *MockServer) WaitForBinds(n int, timeout time.Duration) []BindCapture {
+	deadline := time.Now().Add(timeout)
+	ticker := time.NewTicker(10 * time.Millisecond)
+	defer ticker.Stop()
+
+	for {
+		binds := m.GetCapturedBinds()
+		if len(binds) >= n {
+			return binds
+		}
+		if time.Now().After(deadline) {
+			return binds
+		}
+		<-ticker.C
 	}
 }
 

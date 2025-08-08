@@ -13,50 +13,6 @@ import (
 	"github.com/mariotoffia/godeviceshadow/model"
 )
 
-func TestPgxLoggerInitializeWithMock(t *testing.T) {
-	// Create and start the mock server
-	mockServer, err := NewMockServer(t)
-	require.NoError(t, err)
-	defer mockServer.Close()
-
-	mockServer.Start()
-
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-	defer cancel()
-
-	// Create PgxLogger instance
-	logger, err := pgxsql.New(ctx, pgxsql.Config{
-		SchemaName:        "test_schema",
-		TableName:         "test_table",
-		UseFullPath:       true,
-		PreferID:          false,
-		AssumeTableExists: false, // This should trigger table creation
-		ConnectionString:  mockServer.GetConnectionString(),
-	})
-	require.NoError(t, err)
-	defer logger.Close()
-
-	// Test Initialize
-	err = logger.Initialize(ctx)
-	t.Logf("Initialize result: %v", err)
-
-	// Wait for expected statements (CREATE SCHEMA, CREATE TABLE, CREATE INDEX)
-	capturedStatements := mockServer.WaitForStatements(3, 2*time.Second)
-	t.Logf("Captured statements: %v", capturedStatements)
-
-	// Verify CREATE SCHEMA was executed
-	capturedStatements.MustHaveRegex(`(?i)CREATE\s+SCHEMA\s+IF\s+NOT\s+EXISTS`)
-
-	// Verify CREATE TABLE was executed
-	capturedStatements.MustHaveRegex(`(?i)CREATE\s+TABLE\s+IF\s+NOT\s+EXISTS`)
-
-	// Verify CREATE INDEX was executed
-	capturedStatements.MustHaveRegex(`(?i)CREATE\s+UNIQUE\s+INDEX`)
-
-	// Wait for server to finish
-	mockServer.WaitForCompletion(1 * time.Second)
-}
-
 func TestPgxLoggerInitializeAndBasicInsert(t *testing.T) {
 	// Create and start the mock server
 	mockServer, err := NewMockServer(t)
@@ -208,7 +164,7 @@ func TestPgxLoggerUpsertBasicInsert(t *testing.T) {
 
 	// Wait for expected queries (1 INSERT statement for the batch)
 	stmt := mockServer.WaitForStatements(1, 2*time.Second)
-	t.Logf("Captured queries: %v", stmt)
+	t.Logf("Captured statements: %v", stmt)
 
 	// Verify INSERT statements were generated
 	stmt.MustHaveRegex(`(?i)INSERT\s+INTO\s+test_schema\.test_table`)
@@ -343,6 +299,18 @@ func TestPgxLoggerUpsertWithPreferID(t *testing.T) {
 
 	// Verify INSERT was generated
 	capturedStatements.MustHaveRegex(`(?i)INSERT\s+INTO\s+test_schema\.test_table`)
+
+	// Verify PreferID affected parameter $1 (pathToStore)
+	binds := mockServer.WaitForBinds(1, 2*time.Second)
+	if len(binds) > 0 {
+		assert.Equal(t, "sensor1_temp", binds[0].Params[0], "first bind param (path/id) should be the ID when PreferID=true")
+		// Assert JSON content in $2
+		if len(binds[0].Params) > 1 {
+			assert.JSONEq(t, `{"temp":20.5,"unit":"C"}`, binds[0].Params[1], "second bind param should be JSON value of TestValue")
+		}
+	} else {
+		t.Fatalf("no binds captured, cannot validate PreferID binding")
+	}
 
 	// Wait for server to finish
 	mockServer.WaitForCompletion(1 * time.Second)
